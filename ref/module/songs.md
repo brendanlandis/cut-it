@@ -74,11 +74,11 @@ Lines between `song` and the first `section` in its file. Sent on load and on re
 |---|---|---|
 | Creation arg 1 | The state directory, `u_state`'s: the songs' list and the setlists are `cut-it-songs.txt` there, and each song is two files (*The files*, below) | unknown |
 | Inlet 1 | From `u_map`'s fifth outlet: `top <1-8>`, a top-row button's press, `save` and `revert`, `key <1-25>`, an Organelle key's press ([map.md](map.md)) | unknown |
-| Inlet 2 | From `u_net`'s fourth outlet: the phone's sections page, `select <n>`, `page <-1 or 1>`, `new`, `saveas`, `up`, `down`, `length <bars>`, `delete`, `name <name>`; and its songs page, `songs <command> …` ([phone.md](../device/phone.md)) | unknown |
+| Inlet 2 | From `u_net`'s fourth outlet: the phone's sections, `select <n>`, `new`, `saveas`, `up`, `down`, `length <bars>`, `delete`, `name <name>`, `tweaks <0 or 1>`; and its songs and setlists, `songs <command> …` ([phone.md](../device/phone.md)) | unknown |
 | Inlet 3 | `bar`, from `c_steps`' fourth outlet, on the global loop's last step | unknown |
 | Inlet 4 | A bang meaning load now, from `u_init` after `u_state`'s restore, through a trigger in `u_root`: startup order is `u_init`'s | unknown |
 | Outlet 1 | To `g_grid`'s state inlet: `top <8 lamps>` and `unsaved <0 or 1>`, each when it changes ([display.md](display.md)) | unknown |
-| Outlet 2 | To `u_net`'s fifth inlet, each when it changes: the sections page's state, 22 atoms as a list, and the songs page's, `songs <47 atoms>` | unknown |
+| Outlet 2 | To `u_net`'s fifth inlet, when it changes: `lists <atoms>`, the setlists, the songs and the loaded song's sections, whole (*The lists, on the phone*, below) | unknown |
 | Buses | Hears `state` (`put section`, `put song`, `put seed`), `start`, `stop` and `panic`; says `restore` on `state`, and on `err` `info u_song saved`, `reverted` and `loaded-<name>`, `warn u_song last-section`, `last-song` and `set-full`, `fail u_song bad-button`, `bad-put`, `bad-selector`, `bad-starts`, `lua-<selector>`, `write-failed` and `no-lua` (C-12) | unknown |
 
 ### The top row
@@ -163,17 +163,27 @@ section 2 0 verse 2
 The id ties a section of the draft to the same section of the saved song, so a reordering or a
 rename is seen as one. A number is written whole, or with `%g` as Pd's own `[text]` writes a float.
 
+### The lists, on the phone
+
+**One address carries every list the app draws, whole**: the app scrolls, so nothing here keeps a
+page (`R.lists` in `u_song.lua`).
+
+| | | Evidence |
+|---|---|---|
+| The state | `/cutit/lists`, sent when it changes and on every heartbeat: the setlist chosen and how many, each one's name; the entry selected and how many, each one's song and its words; the song selected and how many, each one's name and its words; then the song loaded, its name, 1 while it's unsaved, the section playing, the one queued, 0 for none, and the one selected, the selected one's `tweaks`, and how many sections, each one's name and length | unknown |
+| A song's words | `loaded`, `next bar` while it waits, and `unsaved` while its draft differs from its save, joined by a middle dot; `-` for none | unknown |
+
 ### The sections page, on the phone
 
 | | | Evidence |
 |---|---|---|
-| The state | `/cutit/sections`: the song's name, how many sections, the one selected, the page and how many, the selected one's name and length, then five rows of number, name and length, `0 - 0` for a row with none; 22 atoms, sent when they change and on every heartbeat | unknown |
-| The selection | The phone's, held here: what `new`, `up`, `down`, `length`, `delete` and `name` act on. Playing a section stays the top row's | unknown |
+| The selection | The phone's, held here: what `new`, `up`, `down`, `length`, `delete`, `name` and `tweaks` act on. Playing a section stays the top row's | unknown |
 | `new` | A copy of the selected section, after it, named after it, "verse" to "verse 2", the first number from 2 the song does not have, and selected | unknown |
 | `saveas` | What's playing, as it stands, becomes a new section after it, named after it, playing and selected, and nothing heard changes. The section it was goes back to what it holds as saved, so playing around leaves it as it was; one never saved keeps what it has (Brendan, 2026-11-06) | verified |
 | `up` and `down` | The selected section a place earlier or later; the one playing and the one queued keep playing and queued | unknown |
 | `delete` | The selected section goes and the one now in its place is selected; a song keeps one section, so the last is `warn u_song last-section`; deleting the one playing starts the one now in its place, at once | unknown |
 | `name` | The name tab's done: the selected section renamed. A name is lowercase, A to Z, 0 to 9, space, - and ', single spaces, at most 20 characters | unknown |
+| `tweaks` | `tweaks <0 or 1>`: whether the voices' sounds carry on into the selected section, 1, or snap back, 0 ([voices.md](voices.md)) | unknown |
 
 ### Songs and setlists
 
@@ -193,15 +203,13 @@ rename is seen as one. A number is written whole, or with `%g` as Pd's own `[tex
 
 | | | Evidence |
 |---|---|---|
-| The state | `/cutit/songs`: the songs tab's how many songs, the one selected, the page and how many and the selected one's name, then six rows of number, name and words; then the setlists tab's setlist chosen and how many, its name, its page and how many, how many entries, the one selected, its song and how it starts, then five rows of key, song and starts, `0 - -` for a row with none; 47 atoms, sent when they change and on every heartbeat | unknown |
-| A song's words | `loaded`, `next bar` while it waits, and `unsaved` while its draft differs from its save, joined by a middle dot; `-` for none | unknown |
 | The selections | The phone's, held here: the song selected for `load`, `name`, `add` and `delete`, the entry selected for `up`, `down` and `remove` | unknown |
 | `load` | The selected song, as a key asks for it | unknown |
 | `new` | A song after the selected, "song 2", the first number from 2 no song has, of one section: a copy of the section playing, its name, length and parts. Saved as it is, selected, and not loaded | unknown |
 | `add` | The selected song, the setlist chosen's last entry, from silence, and selected; past 25, `warn u_song set-full` | unknown |
 | `delete` | The selected song goes, from every setlist too, its files with it, and the one now in its place is selected; the last song is `warn u_song last-song`; deleting the song loaded loads the one now in its place, at once. The phone asks first (*Delete asks first*, below) | unknown |
 | `entry`, `up`, `down`, `remove` | A row tapped selects an entry; move up and down move it and its key; remove takes it out, the one now in its place selected | unknown |
-| `set` | The arrows: through the setlist chosen's own pages, then on to the next setlist, or back to the last page of the one before, which is then chosen, its first entry on the page selected | unknown |
+| `choose` | `choose <n>`: setlist *n* chosen, its first entry selected, none in an empty one; a number with no setlist does nothing | unknown |
 | `new-set` | An empty setlist after the one chosen, "set 2" the same way as songs, and chosen | unknown |
 | `name`, `set-name` | The name tab's done: the selected song, or the setlist chosen, renamed. A name is cleaned as a section's is | unknown |
 
@@ -210,7 +218,7 @@ rename is seen as one. A number is written whole, or with `%g` as Pd's own `[tex
 | | Lives in | Evidence |
 |---|---|---|
 | The songs, the setlists, the song loaded and the one waiting, the sections, playing and queued, the window, the bars, the drafts against the saves, the files' text | `u_song.lua`: a state table and a function per rule, each returning what leaves | verified |
-| Reading and writing the files, the lamps and the phone's states sent when they change | `u_song-lua.pd_lua`, the class `u_song-lua`: three inlets (the top row, save, revert, the keys; the phone; `u_song.pd`'s own `put`, `put-song`, `seed-song`, `bar`, `start`, `stop`, `load`, `flush` and `init`), six outlets (to `g_grid`, the phone, the state bus, `err`, a bang on `init`, the stop bus). Before a press, a key, go, a phone command, `start` or `stop` it sends `sync` on the state bus, so a part holding its put back (`c_steps`, up to 100 ms, [sequencer.md](sequencer.md)) puts it first, into the section still playing of the song still loaded | verified |
+| Reading and writing the files, the lamps and the phone's lists sent when they change | `u_song-lua.pd_lua`, the class `u_song-lua`: three inlets (the top row, save, revert, the keys; the phone; `u_song.pd`'s own `put`, `put-song`, `seed-song`, `bar`, `start`, `stop`, `load`, `flush` and `init`), six outlets (to `g_grid`, the phone, the state bus, `err`, a bang on `init`, the stop bus). Before a press, a key, go, a phone command, `start` or `stop` it sends `sync` on the state bus, so a part holding its put back (`c_steps`, up to 100 ms, [sequencer.md](sequencer.md)) puts it first, into the section still playing of the song still loaded | verified |
 | The cords, the state bus's section policy, the transport and the STOP a silence sends, the draft's 2 s timer armed by the load, the `no-lua` guard | `u_song.pd` | verified |
 
 ## Traps

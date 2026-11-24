@@ -5,7 +5,7 @@
 
 Everything the app's Swift sends the patch, every cut.press, cut.send and cut.control in
 phone/CutIt/, is read from the source and checked, word by word, against what takes it: u_net's
-route of commands and its acknowledgments, then the Lua tables behind each outlet -- c_steps'
+route of commands, then the Lua tables behind each outlet -- c_steps'
 presses, c_synth's synths and velocity, u_tempo's number, u_song's sections and songs, c_melody's
 inputs, u_voices', u_perform's and u_sound's phone commands -- and, for a control the app moves
 through u_perform, u_map's route of destinations and the destination's own table. The two ends
@@ -349,13 +349,12 @@ def main():
     print("\n=== the app's commands, read against the patch's -- no Pd, no phone ===")
     t, why = lua_tables()
     top = route_of(UNET, "result")
-    usynth, uvel, uonce = route_of(UNET, "fm"), route_of(UNET, "on"), route_of(UNET, "once")
+    uonce = route_of(UNET, "once")
     dests = route_of(UMAP, "tempo")
     A.check("u_net's routes, u_map's destinations and the Lua's tables are all readable",
-            None not in (t, top, usynth, uvel, uonce, dests),
-            "lua: %s  u_net: %r / %r / %r / %r  u_map: %r" % (why or "ok", top, usynth, uvel, uonce,
-                                                             dests))
-    if None in (t, top, usynth, uvel, uonce, dests):
+            None not in (t, top, uonce, dests),
+            "lua: %s  u_net: %r / %r  u_map: %r" % (why or "ok", top, uonce, dests))
+    if None in (t, top, uonce, dests):
         return A.report()
 
     def keys(mod, name):
@@ -440,9 +439,9 @@ def main():
         if c == "drums":
             takes("drums", f, line, words, 1, keys("c_steps", "presses"))
         elif c == "synth":
-            takes("synth", f, line, words, 1, keys("c_synth", "SYNTHS") & set(usynth))
+            takes("synth", f, line, words, 1, keys("c_synth", "SYNTHS"))
         elif c == "velocity":
-            takes("velocity", f, line, words, 1, keys("c_synth", "VELOCITY") & set(uvel))
+            takes("velocity", f, line, words, 1, keys("c_synth", "VELOCITY"))
         elif c == "tempo":
             seen["tempo"] = seen.get("tempo", 0) + 1
             if len(words) < 2 or any(w[0] in ("lit", "pat") for w in words[1]):
@@ -484,8 +483,8 @@ def main():
             % (" ".join(sorted(cmds)), " ".join(top), bad.get("top")))
     for what, who in [
             ("drums", "c_steps takes (R.presses)"),
-            ("synth", "c_synth takes (R.SYNTHS) and u_net acknowledges (route %s)" % " ".join(usynth)),
-            ("velocity", "c_synth takes (R.VELOCITY) and u_net acknowledges (route %s)" % " ".join(uvel)),
+            ("synth", "c_synth takes (R.SYNTHS)"),
+            ("velocity", "c_synth takes (R.VELOCITY)"),
             ("tempo", "u_tempo takes: a number"),
             ("sections", "u_song takes (R.phone_cmds)"),
             ("songs", "u_song takes after songs (R.songs_cmds)"),

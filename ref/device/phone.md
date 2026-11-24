@@ -20,12 +20,13 @@ reverses the decision on [display.md](../module/display.md) that the phone stays
 was right for a readout and is not for a control surface.
 
 `u_net.pd` is the only file that talks to it, and it reads nothing on `disp`. Outbound it carries
-nine addresses — a heartbeat, the mode, the sequencer's state, the synth choice, the velocity
-switch, the tempo, the song's sections, the songs page and the generator — each sent when it changes
-and again on every heartbeat, and a tenth, the chord loop's place, on each step; and it rebuilds its
+a heartbeat and each module's state — the sequencer's, the synth choice, the velocity switch, the
+tempo, the song's lists, the generator's and its notes, the voices and the page, the controls in
+play and the sounds — each sent when it changes and again on every heartbeat, and the chord
+loop's place on each step (*The wire format*, below); and it rebuilds its
 own socket, which a phone leaving the network destroys
 outright. Inbound it takes **a closed vocabulary of commands**, each a literal on one `route`
-box (*The inbound vocabulary*, below), acknowledges some, and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
+box (*The inbound vocabulary*, below), and drops everything else in silence. ⚠️ **UDP over WiFi arrives unevenly**, visibly so in
 the heartbeat counter and measured under *Broadcast* in Reference and below; that is the evidence
 anything time-critical would have to answer to.
 
@@ -75,16 +76,19 @@ that cannot be discovered — see *The phone cannot announce itself* under **Des
 ```
 Organelle -> phone
 /cutit/hb        <counter> <test mode, 0 or 1>      every 500 ms
-/cutit/mode      <page>                             on change and every 500 ms
 /cutit/drums     <148 numbers>                      c_steps' state, on change and every 500 ms
 /cutit/synth     <fm or strings>                    c_synth's choice, on change and every 500 ms
 /cutit/velocity  <on or off>                        c_synth's velocity switch, the same
 /cutit/tempo     <bpm>                              u_tempo's, coalesced at 20 Hz, and every 500 ms
-/cutit/sections  <22 atoms>                         u_song's sections page, on change and every 500 ms
-/cutit/songs     <47 atoms>                         u_song's songs page, the same
+/cutit/lists     <R.lists' atoms>                   u_song's setlists, songs and sections, on change and every 500 ms
 /cutit/melody    <R.phone's atoms>                  c_melody's state, the same
+/cutit/notes     <R.phone_notes' atoms>             c_melody's notes, the same
+/cutit/voices    <page> <kind> <row> <24 atoms>     u_voices' page and voices, the same
+/cutit/perform   <113 atoms>                        u_perform's controls in play, the same
+/cutit/sound     <R.phone's atoms>                  u_sound's sounds, the same
 /cutit/here      <step>                             the chord loop's place, -1 stopped, each step of 40 ms or more
-/cutit/ack       <command> [<what>]                 once per command a button shows
+/cutit/once      <seq>                              the answer to a press (A press, once)
+/cutit/ack       result                             the answer to a line check's verdict
 
 phone -> Organelle
 /cutit           <command> [<argument> ...]         port 9001, anything else dropped
@@ -92,7 +96,10 @@ phone -> Organelle
 
 Each of the state addresses is empty, no arguments, until its first value arrives, and the phone
 leaves its screen as it was on one. `/cutit/param`, `/cutit/status` and `/cutit/alert` are gone
-with the mirror (Brendan, 2026-11-04), and `phone-assert` requires that none of them ever leaves.
+with the mirror (Brendan, 2026-11-04), and `/cutit/mode`, `/cutit/sections` and `/cutit/songs`
+with the TouchOSC layout, whose pages they drew: the app takes the page from `/cutit/voices` and
+the songs and sections from `/cutit/lists`. `phone-assert` requires that none of the six ever
+leaves.
 
 | Address | Carries | Evidence |
 |---|---|---|
@@ -115,12 +122,12 @@ button.
 | Command | Does | Evidence | Item |
 |---------|------|----------|------|
 | `result` | A step's verdict, `<checklist>-<n>-<pass or fail>`, logged as `info phone <verdict>`, in test mode or not; answered `ack result`. The app's line check sends it, as a press, from Pass and Fail (*Test mode*, below) | unknown | — |
-| `drums` | A drum or arrangement screen control, passed on whole: whatever follows `drums` goes out `u_net`'s first outlet to `c_steps`, which refuses one it does not know as `fail c_steps bad-selector`, so a new control needs nothing in `u_net` (Brendan, 2026-11-04). `sync`, `snap` and `select` are answered `ack drums <action>`, the rest not, since the state shows them | verified | — |
-| `synth` | The synth choice, passed on whole: whatever follows `synth` goes out `u_net`'s second outlet to `c_synth`, which refuses a synth it does not know as `fail c_synth bad-synth`, so a new synth needs nothing in `u_net` but its acknowledgment. `fm` and `strings` are answered `ack synth <choice>`; the phone lights the chosen button from `/cutit/synth`, not from the answer ([synths.md](../module/synths.md)) | unknown | — |
+| `drums` | A drum or arrangement screen control, passed on whole: whatever follows `drums` goes out `u_net`'s first outlet to `c_steps`, which refuses one it does not know as `fail c_steps bad-selector`, so a new control needs nothing in `u_net` (Brendan, 2026-11-04). Not answered: the state shows them | verified | — |
+| `synth` | The synth choice, passed on whole: whatever follows `synth` goes out `u_net`'s second outlet to `c_synth`, which refuses a synth it does not know as `fail c_synth bad-synth`, so a new synth needs nothing in `u_net`. Not answered: the choice comes back as `/cutit/synth` ([synths.md](../module/synths.md)) | unknown | — |
 | `tempo` | The arrangement screen's tempo, `tempo <bpm>`, passed on whole out `u_net`'s third outlet to `u_tempo`, which puts it on the tempo bus, whole and within 5–1000 BPM, and refuses anything but a number as `fail u_tempo bad-tempo` ([tempo.md](../module/tempo.md)). Not answered: the tempo coming back says it | unknown | — |
-| `velocity` | The keyboard tab's velocity switch, passed on whole out `u_net`'s second outlet to `c_synth`, which refuses anything but the two below as `fail c_synth bad-velocity`; each of them is answered `ack velocity <setting>` | unknown | — |
-| `sections` | The sections page and its name tab, passed on whole out `u_net`'s fourth outlet to `u_song`, which refuses one it does not know as `fail u_song bad-selector` ([songs.md](../module/songs.md)). The five below are answered `ack sections <action>`, a button's flash; `select`, `page` and `length` are not, since the state shows them | unknown | — |
-| `songs` | The songs page, its setlists tab and its name tab, passed on out the same fourth outlet with `songs` kept in front, so `u_song` tells them from the sections page's, and refuses one it does not know as `fail u_song bad-selector`. The ten below are answered `ack songs <action>`; `select`, `page`, `entry`, `set` and `starts` are not, since the state shows them | unknown | — |
+| `velocity` | The keyboard tab's velocity switch, passed on whole out `u_net`'s second outlet to `c_synth`, which refuses anything but the two below as `fail c_synth bad-velocity`. Not answered: the switch comes back as `/cutit/velocity` | unknown | — |
+| `sections` | The app's sections, passed on whole out `u_net`'s fourth outlet to `u_song`, which refuses one it does not know as `fail u_song bad-selector` ([songs.md](../module/songs.md)). Not answered: the lists show them | unknown | — |
+| `songs` | The app's songs and setlists, passed on out the same fourth outlet with `songs` kept in front, so `u_song` tells them from the sections', and refuses one it does not know as `fail u_song bad-selector`. Not answered: the lists show them | unknown | — |
 | `melody` | The harmony, rhythm and melody tabs, passed on whole out `u_net`'s fifth outlet to `c_melody`, which refuses one it does not know as `fail c_melody bad-selector`: `set <control> <value>`, `audition <slot> <1 or 0>`, `move <slot> <start>`, `chord-pin <slot>` from a chord's box held 700 ms, and `roll-chords`, `roll-melody`, `roll-rhythm`, `on-h`, `on-m`, `style` and `bass`, each with a 1 ([synths.md](../module/synths.md), *The generator*). Not answered: the state shows them | unknown | — |
 | `voices` | The app's rails and voice page, passed on out `u_net`'s sixth outlet to `u_voices` ([voices.md](../module/voices.md)) | unknown | — |
 | `perform` | The app's performance page, passed on out `u_net`'s seventh outlet to `u_perform` ([voices.md](../module/voices.md)) | unknown | — |
@@ -163,53 +170,48 @@ send `den`: the bottom number changes nothing, so the app has no control for it 
 | `set-swing` | The swing, `set-swing <50-75>`, as it stands. The swing is the phone's alone since knob 4 became rush (Brendan, 2026-11-05); `swing <0-1>`, a knob position that passes a latch, stays for a map row that wants it | unknown | — |
 | `set-last` | The global last step, `set-last <1-32>`, the same way beside knob 2's `last`, clipped to the time signature's reach ([sequencer.md](../module/sequencer.md)) | unknown | — |
 
-What `sections` carries, each one `u_song`'s own (`R.phone_cmds` in `u_song.lua`): `select <n>`,
-a row tapped, `page <-1 or 1>`, `new`, `up`, `down`, `length <0-64>`, `delete` and `name <name>`,
-the name one OSC string, spaces and all. These five are acknowledged.
-
-<!-- check: pd-route "Cut It/u_net.pd" new -->
+What `sections` carries, each one `u_song`'s own (`R.phone_cmds` in `u_song.lua`); what each does
+is in [songs.md](../module/songs.md). A name is one OSC string, spaces and all.
 
 | Action | Is | Evidence | Item |
 |--------|----|----------|------|
+| `select <n>` | A row tapped: section *n* selected | unknown | — |
 | `new` | A copy of the selected section | unknown | — |
+| `saveas` | What's playing, as it stands, as a new section | verified | — |
 | `up` | Move it up | unknown | — |
 | `down` | Move it down | unknown | — |
+| `length <0-64>` | Its length in bars | unknown | — |
 | `delete` | Delete it | unknown | — |
-| `name` | Its new name | unknown | — |
+| `name <name>` | Its new name | unknown | — |
+| `tweaks <0 or 1>` | Whether the voices' sounds carry on into it, 1, or snap back, 0 ([voices.md](../module/voices.md)) | unknown | — |
 
-What `songs` carries, each one `u_song`'s own (`R.songs_cmds` in `u_song.lua`): for the songs
-`select <n>`, a row tapped, `page <-1 or 1>`, `load`, `new`, `add` and `delete`; for the setlists
-`entry <n>`, a row tapped, `set <-1 or 1>`, `up`, `down`, `new-set` and `remove`; and `name <name>`
-for a song, `set-name <name>` for a setlist. These ten are acknowledged.
-
-<!-- check: pd-route "Cut It/u_net.pd" load -->
+What `songs` carries, each one `u_song`'s own (`R.songs_cmds` in `u_song.lua`).
 
 | Action | Is | Evidence | Item |
 |--------|----|----------|------|
+| `select <n>` | A song's row tapped: song *n* selected | unknown | — |
 | `load` | Load the selected song | unknown | — |
 | `new` | A new song | unknown | — |
 | `add` | Add it to the setlist | unknown | — |
 | `delete` | Delete it | unknown | — |
+| `name <name>` | The song's new name | unknown | — |
+| `choose <n>` | Setlist *n* chosen, its first entry selected | unknown | — |
+| `entry <n>` | An entry's row tapped: entry *n* selected | unknown | — |
 | `up` | Move the selected entry up | unknown | — |
 | `down` | Move it down | unknown | — |
 | `new-set` | A new setlist | unknown | — |
 | `remove` | Take the entry out | unknown | — |
-| `name` | The song's new name | unknown | — |
-| `set-name` | The setlist's new name | unknown | — |
+| `set-name <name>` | The setlist's new name | unknown | — |
 
-What `synth` carries, `c_synth.lua`'s `R.SYNTHS`, each acknowledged by `u_net`. The app sends
+What `synth` carries, `c_synth.lua`'s `R.SYNTHS`. The app sends
 neither: a voice's machine chooses the synth (`voices`).
-
-<!-- check: pd-route "Cut It/u_net.pd" fm -->
 
 | Synth | Is | Evidence | Item |
 |-------|----|----------|------|
 | `fm` | The M-VAVE FM-1 ([fm1.md](fm1.md)) | unknown | — |
 | `strings` | The Waldorf Streichfett ([streichfett.md](streichfett.md)) | unknown | — |
 
-What the keys page's velocity button sends after `velocity`, each acknowledged by `u_net`.
-
-<!-- check: pd-route "Cut It/u_net.pd" on -->
+What the keys page's velocity button sends after `velocity`, `c_synth.lua`'s `R.VELOCITY`.
 
 | Setting | Is | Evidence | Item |
 |---------|----|----------|------|
@@ -219,7 +221,7 @@ What the keys page's velocity button sends after `velocity`, each acknowledged b
 | Property | Value | Evidence | Item |
 |----------|-------|----------|------|
 | `hb` | Sent **unconditionally at 2 Hz**, and at once on a flip of test mode | verified | — |
-| The state | `mode`, `drums`, `synth`, `velocity`, `tempo`, `sections`, `songs`, `voices` and `perform` go again on every heartbeat **on top of** their sends on change | unknown | — |
+| The state | `drums`, `synth`, `velocity`, `tempo`, `lists`, `melody`, `notes`, `voices`, `perform` and `sound` go again on every heartbeat **on top of** their sends on change | unknown | — |
 | Late or returning phone | Repopulates within half a second with nothing moving | unknown | — |
 | `tempo` | Coalesced into **one slot** at 20 Hz: `u_tempo` hands on every BPM the tempo bus carries, and one sweep of knob 1 is some 200 a second. `phone-assert` sweeps 401 and requires at most ~60 datagrams and the last BPM | unknown | — |
 | Socket recovery | `u_net` rebuilds within about five seconds of the phone coming back, nothing touched on the instrument | verified | 119 |
@@ -389,13 +391,13 @@ identically.**
 
 ### The inbound vocabulary is closed, and the closure is the design
 
-Seven commands, every one of them a **literal argument on a `route` box you can read**, with
+Eleven commands, every one of them a **literal argument on a `route` box you can read**, with
 everything else falling out of an unconnected reject. That is the same allowlist guard `u_map` uses
 for its destinations and it is here for the same reason: the set of things a datagram can reach
-stays the set of boxes you can read. **`drums`, `synth`, `tempo`, `velocity`, `sections` and
-`songs` pass on what follows them**: `c_steps`, `c_synth`, `u_tempo` and `u_song` hold those lists
+stays the set of boxes you can read. **All but `result` pass on what follows them**: `c_steps`,
+`c_synth`, `u_tempo`, `u_song`, `c_melody`, `u_voices`, `u_perform` and `u_sound` hold those lists
 and refuse the rest, as `bad-selector`, `bad-synth`, `bad-tempo` and `bad-velocity`, so a new drum control or synth
-needs nothing here but an acknowledgment (Brendan, 2026-11-04).
+needs nothing here (Brendan, 2026-11-04).
 
 ⚠️ **Nothing here may be built on a sender identity that is not available** — `[netreceive]` in
 0.49 cannot supply one (Reference, *Pure Data*), and a bidirectional link does not change that.
@@ -436,10 +438,6 @@ app is to take on its line check, random pitch, chord pins and command gate (Bre
 but not its tap tempo, since the Launchpad's tap pad and the nanoKONTROL's LOOP still tap, nor its
 control for the time signature's bottom number:
 
-- ⬜ **Three outbound addresses have no reader** (`cut-it/cut-it-app`): `/cutit/mode`,
-  `/cutit/sections` and `/cutit/songs`, the layout's, which the app takes from `/cutit/voices` and
-  `/cutit/lists` instead; and of `/cutit/ack` it reads only `ack result`, taking the rest from `once`.
-  They still go on every heartbeat.
 - ⬜ **No choosing the nanoKEY's synth but by a voice's page** (`cut-it/cut-it-app`), outside the
   line check, whose FM and STRINGS send `synth fm` and `synth strings` in test mode: the layout's
   keyboard tab sent them too, which `c_synth` puts in the section, so the choice survived a reload.

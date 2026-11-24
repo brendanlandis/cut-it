@@ -30,7 +30,7 @@ local function song(names, lengths)
     local s = st.song.sections[i]
     s.name, s.length, s.parts = names[i], (lengths or {})[i] or 0, { drums = { i } }
   end
-  st.selected, st.page = st.song.sections[1], 1
+  st.selected = st.song.sections[1]
   st.saved = nil
   st.saved = (function()
     local out = { name = st.song.name, sections = {} }
@@ -273,7 +273,7 @@ R.press(st, 1)
 equal("playing, back queues the fourth: the window scrolls to show it beside the fifth",
       { st.first, R.top(st) }, { 4, { A, A, Q, P, S, S, S, S } })
 
-print("\n--- the sections page: select, page, new, move, length, delete ---")
+print("\n--- the sections, from the phone: select, new, move, length, delete ---")
 st = song({ "intro", "verse", "chorus" })
 R.select(st, 2)
 equal("a row tapped selects that section, and plays nothing", { st.selected.name,
@@ -291,8 +291,6 @@ R.select(st, 1)
 R.add(st)
 equal("... and of intro, intro 2", names(st), { "intro", "intro 2", "verse", "verse 2",
       "verse 3", "chorus" })
-equal("six sections: two pages, the copy's page shown", { R.phone(st)[4], R.phone(st)[5] },
-      { 1, 2 })
 R.up(st)
 equal("move up: the selected one a place earlier, still selected",
       { names(st)[1], names(st)[2], st.selected.name }, { "intro 2", "intro", "intro 2" })
@@ -433,23 +431,24 @@ equal("a part its save did not hold: the draft's", (function()
 end)(), { { "state", "restore", { "new-part", 5 } } })
 equal("a part nobody holds: nothing", R.internal.recall(st, { "nothing" }), {})
 
-print("\n--- the phone's state ---")
+print("\n--- the lists: the song loaded ---")
+-- The last n atoms of a list.
+local function tail(a, n)
+  return { table.unpack(a, #a - n + 1) }
+end
 st = song({ "intro", "verse", "chorus", "verse 2", "bridge", "outro", "end" }, { 8, 16, 0 })
 R.select(st, 3)
-equal("the song, how many, the selected, the page and pages, the selected one's name and "
-      .. "length, then five rows", R.phone(st),
-      { "song 1", 7, 3, 1, 2, "chorus", 0, 1, "intro", 8, 2, "verse", 16, 3, "chorus", 0,
-        4, "verse 2", 0, 5, "bridge", 0 })
-equal("... 22 atoms", #R.phone(st), R.PHONE)
-R.turn(st, 1)
-equal("page on: the sixth and seventh, then empty rows", R.phone(st),
-      { "song 1", 7, 3, 2, 2, "chorus", 0, 6, "outro", 0, 7, "end", 0, 0, "-", 0, 0, "-", 0,
-        0, "-", 0 })
-R.turn(st, 1)
-equal("... and no further than the last page", R.phone(st)[4], 2)
-R.turn(st, -1)
-R.turn(st, -1)
-equal("... nor before the first", R.phone(st)[4], 1)
+equal("the lists end with the song loaded: its name, unsaved or not, the section playing, queued "
+      .. "and selected, its tweaks, how many, then every section's name and length",
+      tail(R.lists(st), 21),
+      { "song 1", 0, 1, 0, 3, 0, 7, "intro", 8, "verse", 16, "chorus", 0, "verse 2", 0,
+        "bridge", 0, "outro", 0, "end", 0 })
+R.start(st)
+R.press(st, 4)
+R.length(st, 4)
+equal("... a section queued, and a change unsaved", tail(R.lists(st), 21),
+      { "song 1", 1, 1, 2, 3, 0, 7, "intro", 8, "verse", 16, "chorus", 4, "verse 2", 0,
+        "bridge", 0, "outro", 0, "end", 0 })
 
 print("\n--- several songs: a fresh load, and the index ---")
 -- A song's text, one section of each name given, each with drums <n> of its place.
@@ -797,46 +796,35 @@ for _, id in ipairs({ 3, 1, 7, 3, 1, 7, 3 }) do
   st.sel_song = (function() for _, r in ipairs(st.songs) do if r.id == id then return r end end end)()
   R.song_add(st)
 end
-equal("seven entries: two pages", { #st.sets[2].entries, st.set_page, R.songs_phone(st)[28] },
-      { 7, 2, 2 })
-st.set_page = 1
-R.set_turn(st, 1)
-equal("the arrows go through a setlist's own pages first", { st.set, st.set_page }, { 2, 2 })
-R.set_turn(st, 1)
-equal("... then on to the next, which is then the one chosen, its first entry selected",
-      { st.set, st.set_page, st.entry, st.sets[st.set].name }, { 3, 1, 1, "set 1" })
-R.set_turn(st, 1)
-equal("... and no further than the last", { st.set, st.set_page }, { 3, 1 })
-R.set_turn(st, -1)
-equal("back: the setlist before, on its last page", { st.set, st.set_page, st.entry },
-      { 2, 2, 6 })
-for _ = 1, 4 do R.set_turn(st, -1) end
-equal("... and no further than the first's first", { st.set, st.set_page }, { 1, 1 })
+equal("seven entries, the last added selected", { #st.sets[2].entries, st.entry }, { 7, 7 })
+R.songs_cmds.choose(st, { 3 })
+equal("choose: the setlist chosen, its first entry selected",
+      { st.set, st.entry, st.sets[st.set].name }, { 3, 1, "set 1" })
+equal("... a setlist that isn't there changes nothing", { R.songs_cmds.choose(st, { 9 }), st.set },
+      { {}, 3 })
+R.songs_cmds.choose(st, { 2 })
+equal("... and back, the first entry again", { st.set, st.entry }, { 2, 1 })
 
-print("\n--- the songs page's state ---")
+print("\n--- the lists: the setlists and the songs ---")
 st = load3()
 st.set = 1
 R.start(st)
 R.put(st, { "tempo", 91 })
 R.key(st, 2)
 R.entry_select(st, 3)
-local ph = R.songs_phone(st)
-equal("41 atoms", #ph, R.SONGS_PHONE)
-equal("the songs tab: how many, the selected, the page and pages, the selected one's name",
-      { ph[1], ph[2], ph[3], ph[4], ph[5] }, { 3, 1, 1, 1, "night drive" })
-equal("... each row its number, name and words: loaded and unsaved, queued, unsaved; then none",
-      { table.unpack(ph, 6, 17) }, { 1, "night drive", "loaded · unsaved", 2, "song 1", "next bar",
-      3, "lantern", "unsaved", 0, "-", "-" })
-equal("the setlists tab: the setlist chosen and how many, its name, the page and pages, how many "
-      .. "entries, the one selected and its song",
-      { table.unpack(ph, 24, 31) }, { 1, 2, "friday at the bell", 1, 1, 3, 3, "night drive" })
-equal("... five rows of key and song", { table.unpack(ph, 32, 41) },
-      { 1, "lantern", 2, "song 1", 3, "night drive", 0, "-", 0, "-" })
+local ph = R.lists(st)
+equal("the setlist chosen and how many, their names, the entry selected and how many",
+      { table.unpack(ph, 1, 6) }, { 1, 2, "friday at the bell", "set 1", 3, 3 })
+equal("... each entry its song and words: unsaved, queued, loaded and unsaved",
+      { table.unpack(ph, 7, 12) }, { "lantern", "unsaved", "song 1", "next bar", "night drive",
+      "loaded · unsaved" })
+equal("the song selected and how many, each its name and words",
+      { table.unpack(ph, 13, 20) }, { 1, 3, "night drive", "loaded · unsaved", "song 1",
+      "next bar", "lantern", "unsaved" })
 for _ = 1, 5 do R.song_new(st) end
-R.song_turn(st, 1)
-ph = R.songs_phone(st)
-equal("eight songs: the second page, the seventh and eighth", { ph[3], ph[4], ph[6], ph[9],
-      ph[12] }, { 2, 2, 7, 8, 0 })
+ph = R.lists(st)
+equal("eight songs, every one in the lists, each new one after the one selected, and selected",
+      { ph[14], ph[13], #ph }, { 8, 6, 12 + 2 + 16 + 7 + 2 * #st.song.sections })
 
 print("\n--- the Pd face ---")
 local tmp = os.tmpname()
@@ -850,7 +838,7 @@ local function lamps(sent)
   return l
 end
 local function phone(sent)
-  for _, e in ipairs(sent) do if e[1] == 2 then return e[3] end end
+  for _, e in ipairs(sent) do if e[1] == 2 and e[2] == "lists" then return e[3] end end
 end
 local function file(name)
   local fh = io.open(tmp .. "/" .. name)
@@ -860,10 +848,10 @@ local function file(name)
   return t
 end
 local sent = T.send(o, 3, "init", {})
-equal("init: the lamps and the phone's two states, once each, then the proof bang",
-      { sent[1], sent[2], sent[3][1], sent[3][2], sent[4][2], sent[5][2], sent[6], #sent },
+equal("init: the lamps and the phone's lists, once each, then the proof bang",
+      { sent[1], sent[2], sent[3][1], sent[3][2], sent[4], #sent },
       { { 1, "top", { D, D, P, D, D, D, D, D } }, { 1, "unsaved", { 0 } }, 2,
-        "list", "songs", "lists", { 5, "bang", {} }, 6 })
+        "lists", { 5, "bang", {} }, 4 })
 equal("a put the lamps don't show sends nothing", T.send(o, 3, "put", { "drums", 7 }), {})
 sent = T.send(o, 3, "flush", {})
 equal("⛔ the draft's timer before the load writes nothing", { sent, file("cut-it-song-draft.txt") },
@@ -887,8 +875,8 @@ equal("⛔ a phone command first asks the parts for what they hold back: sync on
       sent[1], { 3, "sync", {} })
 table.remove(sent, 1)
 local ph = phone(sent)
-equal("the phone's new: the phone's state, two sections, the copy selected, its row",
-      { ph[2], ph[3], ph[11], ph[12] }, { 2, 2, 2, "section 2" })
+equal("the phone's new: the phone's lists, two sections, the copy selected, its name",
+      { ph[18], ph[16], ph[21] }, { 2, 2, "section 2" })
 equal("... and the top row's second section, and the forward arrow", sent[1],
       { 1, "top", { D, A, P, S, D, D, D, D } })
 sent = T.send(o, 1, "top", { 4 })
@@ -943,9 +931,6 @@ local function put_file(name, text)
   w:write(text)
   w:close()
 end
-local function songs_state(sent)
-  for _, e in ipairs(sent) do if e[1] == 2 and e[2] == "songs" then return e[3] end end
-end
 local one = "song song 1\nsection 1 0 intro\ndrums 1\ntempo 100\n"
 put_file("cut-it-song.txt", one)
 put_file("cut-it-song-draft.txt", one)
@@ -961,9 +946,9 @@ equal("... and the first flush writes the index, song 1 the first setlist's open
 equal("... song 1's files as they were", { file("cut-it-song.txt"), file("cut-it-song-draft.txt") },
       { one, one })
 sent = T.send(o, 2, "songs", { "new" })
-equal("⛔ songs new, from the phone: the songs page's state, two songs, the new one selected, "
-      .. "after a sync", { sent[1], songs_state(sent)[1], songs_state(sent)[5] },
-      { { 3, "sync", {} }, 2, "song 2" })
+equal("⛔ songs new, from the phone: the phone's lists, two songs, the new one selected, "
+      .. "after a sync", { sent[1], phone(sent)[9], phone(sent)[8], phone(sent)[12] },
+      { { 3, "sync", {} }, 2, 2, "song 2" })
 equal("... its two files written at once, named for its id",
       { file("cut-it-song-2.txt"), file("cut-it-song-2-draft.txt") },
       { "song song 2\nsection 1 0 intro\ndrums 1\ntempo 100\n",
@@ -983,20 +968,23 @@ equal("⛔ the flush writes song 1's draft, its change kept, and the index, song
 o2 = T.new(class, { tmp })
 T.send(o2, 3, "init", {})
 sent = T.send(o2, 3, "load", {})
-local ss = songs_state(sent)
-equal("⛔ a reload: both songs, song 2 loaded, song 1 unsaved", { o2.state.cur.id, ss[7], ss[8],
-      ss[10], ss[11] }, { 2, "song 1", "unsaved", "song 2", "loaded" })
+local ss = phone(sent)
+equal("⛔ a reload: both songs, song 2 loaded, song 1 unsaved", { o2.state.cur.id, ss[12], ss[13],
+      ss[14], ss[15] }, { 2, "song 1", "unsaved", "song 2", "loaded" })
 sent = T.send(o2, 1, "key", { 1 })
 equal("⛔ key 1 loads song 1 again, its change still unsaved: save and revert lit",
       { lamps(sent), o2.state.song.sections[1].parts.tempo }, { { { 1, "unsaved", { 1 } } }, { 120 } })
 sent = T.send(o2, 2, "songs", { "select", 2 })
 sent = T.send(o2, 2, "songs", { "delete" })
 equal("songs delete: song 2's files go", { file("cut-it-song-2.txt"), file("cut-it-song-2-draft.txt"),
-      songs_state(sent)[1] }, { nil, nil, 1 })
-T.send(o2, 2, "songs", { "set", 1 })
+      phone(sent)[9] }, { nil, nil, 1 })
 equal("an unknown songs command is fail u_song bad-selector",
       T.send(o2, 2, "songs", { "shuffle" }), { { 3, "sync", {} }, { 4, "fail",
       { "u_song", "bad-selector" } } })
+local refused = { { 3, "sync", {} }, { 4, "fail", { "u_song", "bad-selector" } } }
+equal("⛔ the pagers went with the TouchOSC layout: page, songs page and songs set are refused",
+      { T.send(o2, 2, "page", { 1 }), T.send(o2, 2, "songs", { "page", 1 }),
+        T.send(o2, 2, "songs", { "set", 1 }) }, { refused, refused, refused })
 T.send(o2, 3, "start", {})
 T.send(o2, 2, "songs", { "new" })
 T.send(o2, 2, "songs", { "add" })

@@ -22,11 +22,10 @@
 -- the songs. Every rule returns what leaves, in order, as {outlet, selector, atoms}:
 --   {"state", "restore", {key, atoms...}}         to the state bus: a section starting
 --   {"err", "fail" | "warn" | "info", {"u_song", text}}   to err (C-12)
--- The top row's lamps (R.top), the save and revert lamps (R.unsaved)
--- and the phone's two states (R.phone, R.songs_phone) are worked out from the state after every
--- answer, by the face, and sent when they change; and the face writes the files the state asks
--- for (st.dirty, st.write_saved, and a song's own dirty and write_saved, st.index_dirty,
--- st.removed).
+-- The top row's lamps (R.top), the save and revert lamps (R.unsaved) and the phone's lists
+-- (R.lists) are worked out from the state after every answer, by the face, and sent when they
+-- change; and the face writes the files the state asks for (st.dirty, st.write_saved, and a
+-- song's own dirty and write_saved, st.index_dirty, st.removed).
 
 local R = {}
 
@@ -37,8 +36,6 @@ R.BUTTONS = 6
 -- section queued (blinking), an arrow that has somewhere to go, the next arrow when that is the next
 -- song, blue, and that song queued (blinking) (Brendan, 2026-11-06).
 R.DARK, R.SECTION, R.PLAYING, R.QUEUED, R.ARROW, R.NEXT_SONG, R.NEXT_QUEUED = 0, 1, 2, 3, 4, 5, 6
--- The phone's sections tab: five rows to a page (Brendan, 2026-11-05).
-R.ROWS = 5
 -- A section's length, in bars, each the pattern's loop, the global last step's steps (Brendan,
 -- 2026-11-05): 0 loops until another is queued; the phone drags 0 to 64.
 R.MAX_LENGTH = 64
@@ -47,9 +44,7 @@ R.MAX_LENGTH = 64
 R.MAX_NAME = 20
 -- With no song saved yet: one section, named so a copy of it is "section 2".
 R.SONG, R.FIRST = "song 1", "section 1"
--- The phone's songs tab: six rows to a page; its setlists tab, five (Brendan, 2026-11-05, as
--- drawn). A new setlist is "set 2", and the first "set 1".
-R.SONG_ROWS, R.SET_ROWS = 6, 5
+-- A new setlist is "set 2", and the first "set 1".
 R.SET = "set 1"
 -- The Organelle's keys, og-key-60 to og-key-84: key N loads the Nth song of the setlist chosen,
 -- the lowest the opener, so a setlist holds at most this many.
@@ -154,9 +149,9 @@ local function record(id, song, saved)
 end
 
 function R.new()
-  local st = { next_id = 1, page = 1, first = 1, bars = 0, running = false, loaded = false,
-               dirty = false, write_saved = false, next_song = 2, song_page = 1, set = 1,
-               set_page = 1, entry = 1, index_dirty = false, removed = {} }
+  local st = { next_id = 1, first = 1, bars = 0, running = false, loaded = false,
+               dirty = false, write_saved = false, next_song = 2, set = 1, entry = 1,
+               index_dirty = false, removed = {} }
   local s = section(st, R.FIRST, 0, {})
   st.song = { name = R.SONG, parts = {}, sections = { s } }
   st.playing, st.selected = s, s
@@ -172,15 +167,6 @@ function R.index(st, s)
     if x == s then return i end
   end
   return nil
-end
-
-local function pages(st)
-  return math.max(1, math.ceil(#st.song.sections / R.ROWS))
-end
-
--- The page that shows section i.
-local function page_of(i)
-  return (i - 1) // R.ROWS + 1
 end
 
 -- The six buttons' window, moved as little as it can be: the playing section always in it,
@@ -403,7 +389,6 @@ function R.revert(st)
     return st.song.sections[math.min(i, #st.song.sections)]
   end
   st.selected = find(s, si)
-  st.page = page_of(R.index(st, st.selected))
   st.dirty = true
   local out = song_parts(st, begin(st, find(p, pi)))
   table.insert(out, 1, report("info", "reverted"))
@@ -562,7 +547,7 @@ end
 --   next <id>                 the id the next new song takes
 --   current <id>              the song loaded, which loads again at the next load
 --   chosen <n>                the setlist chosen, the one the keys play, 1 the first
---   song <id>                 a song, in the songs tab's order: its files are named for its id
+--   song <id>                 a song, in the songs' order: its files are named for its id
 --   set <name>                a setlist, its name to the end of the line, then its entries:
 --   entry <song id>           a song of it, in order
 function R.index_text(st)
@@ -678,15 +663,15 @@ function R.load(st, draft_text, saved_text, index_text, files)
     st.sets[1] = { name = R.SET, entries = { { song = recs[1] } } }
   end
   st.set = math.floor(clip(ix and ix.chosen or 1, 1, #st.sets))
-  st.set_page, st.entry = 1, #st.sets[st.set].entries > 0 and 1 or 0
+  st.entry = #st.sets[st.set].entries > 0 and 1 or 0
   st.index_dirty = ix == nil or #recs < #ix.songs
   st.removed = {}
   local cur = ix and by[ix.current] or recs[1]
   take(st, cur)
-  st.sel_song, st.song_page = cur, 1
+  st.sel_song = cur
   st.pending = nil
   st.loaded = true
-  st.selected, st.page, st.first = st.song.sections[1], 1, 1
+  st.selected, st.first = st.song.sections[1], 1
   return song_parts(st, begin(st, st.song.sections[1]))
 end
 
@@ -826,26 +811,7 @@ function R.top(st)
   return out
 end
 
--- ------------------------------------------------------------------ the sections page (7)
-
--- The phone's sections tab: the song's name, how many sections, the one selected, the page and
--- how many, the selected one's name and length; then five rows, each a section's number, name
--- and length, 0 - 0 for a row with none. 22 atoms.
-R.PHONE = 7 + 3 * R.ROWS
-function R.phone(st)
-  local secs = st.song.sections
-  local np = pages(st)
-  local page = clip(st.page, 1, np)
-  local out = { st.song.name, #secs, R.index(st, st.selected), page, np, st.selected.name,
-                st.selected.length }
-  for r = 1, R.ROWS do
-    local i = (page - 1) * R.ROWS + r
-    local s = secs[i]
-    local row = s and { i, s.name, s.length } or { 0, "-", 0 }
-    for _, a in ipairs(row) do out[#out + 1] = a end
-  end
-  return out
-end
+-- ------------------------------------------------------------------ the sections, from the phone
 
 -- A row tapped: that section selected for editing. Playing it stays the top row's.
 function R.select(st, n)
@@ -855,19 +821,13 @@ function R.select(st, n)
   return {}
 end
 
--- The pager's arrows: a page back or on.
-function R.turn(st, d)
-  st.page = clip(clip(st.page, 1, pages(st)) + (num(d) < 0 and -1 or 1), 1, pages(st))
-  return {}
-end
-
 -- new: a copy of the selected section, after it, named after it, and selected.
 function R.add(st)
   local src = st.selected
   local i = R.index(st, src)
   local s = section(st, R.copy_name(st.song, src.name), src.length, copy_parts(src.parts))
   table.insert(st.song.sections, i + 1, s)
-  st.selected, st.page = s, page_of(i + 1)
+  st.selected = s
   follow(st)
   st.dirty = true
   return {}
@@ -885,7 +845,7 @@ function R.save_new(st)
   for _, t in ipairs(st.saved and st.saved.sections or {}) do
     if t.id == src.id then src.parts = copy_parts(t.parts) end
   end
-  st.playing, st.selected, st.page = s, s, page_of(i + 1)
+  st.playing, st.selected = s, s
   follow(st)
   st.dirty = true
   return {}
@@ -898,7 +858,6 @@ local function move(st, d)
   local j = i + d
   if j < 1 or j > #secs then return {} end
   secs[i], secs[j] = secs[j], secs[i]
-  st.page = page_of(j)
   follow(st)
   st.dirty = true
   return {}
@@ -924,7 +883,7 @@ function R.delete(st)
   local i = R.index(st, st.selected)
   local gone = table.remove(secs, i)
   local k = math.min(i, #secs)
-  st.selected, st.page = secs[k], page_of(k)
+  st.selected = secs[k]
   if st.queued == gone then st.queued = nil end
   st.dirty = true
   if st.playing == gone then return begin(st, secs[k]) end
@@ -932,7 +891,7 @@ function R.delete(st)
   return {}
 end
 
--- The name tab's done: the selected section renamed. A name with nothing in it, once cleaned,
+-- A name typed: the selected section renamed. A name with nothing in it, once cleaned,
 -- changes nothing.
 function R.rename(st, atoms)
   local name = R.clean(atoms)
@@ -951,14 +910,6 @@ local function find(list, x)
   return nil
 end
 
-local function song_pages(st)
-  return math.max(1, math.ceil(#st.songs / R.SONG_ROWS))
-end
-
-local function set_pages(set)
-  return math.max(1, math.ceil(#set.entries / R.SET_ROWS))
-end
-
 -- The log's line for a song loaded: its name, a word, in the 21 characters C-12 allows. info
 -- draws nothing on the OLED, which is for alerts and warnings (ref/module/error.md).
 local function loaded(rec)
@@ -974,7 +925,7 @@ function R.load_now(st, rec)
     leave(st)
     take(st, rec)
     st.index_dirty = true
-    st.selected, st.page, st.first = st.song.sections[1], 1, 1
+    st.selected, st.first = st.song.sections[1], 1
     local out = song_parts(st, begin(st, st.song.sections[1]))
     table.insert(out, 1, loaded(rec))
     return out
@@ -1005,18 +956,12 @@ function R.key(st, n)
   return R.ask(st, e.song)
 end
 
--- ---- the songs tab
+-- ---- the songs
 
 -- A row tapped: the nth song selected, for load, name, add to set and delete.
 function R.song_select(st, n)
   local rec = st.songs[math.floor(num(n))]
   if rec then st.sel_song = rec end
-  return {}
-end
-
-function R.song_turn(st, d)
-  st.song_page = clip(clip(st.song_page, 1, song_pages(st)) + (num(d) < 0 and -1 or 1), 1,
-                      song_pages(st))
   return {}
 end
 
@@ -1040,12 +985,12 @@ function R.song_new(st)
   st.next_song = st.next_song + 1
   local i = find(st.songs, st.sel_song) + 1
   table.insert(st.songs, i, rec)
-  st.sel_song, st.song_page = rec, (i - 1) // R.SONG_ROWS + 1
+  st.sel_song = rec
   st.index_dirty = true
   return {}
 end
 
--- The name tab's done, from the songs tab: the selected song renamed. A song's name is what it
+-- A name typed for a song: the selected song renamed. A song's name is what it
 -- is called, not a change to it: the draft and the saved song both take it, at once, so it
 -- leaves nothing to save.
 function R.song_rename(st, atoms)
@@ -1065,7 +1010,6 @@ function R.song_add(st)
   if #set.entries >= R.KEYS then return { report("warn", "set-full") } end
   set.entries[#set.entries + 1] = { song = st.sel_song }
   st.entry = #set.entries
-  st.set_page = (st.entry - 1) // R.SET_ROWS + 1
   st.index_dirty = true
   return {}
 end
@@ -1086,16 +1030,15 @@ function R.song_delete(st)
   local es = st.sets[st.set].entries
   st.entry = math.min(st.entry, #es)
   if st.entry == 0 and #es > 0 then st.entry = 1 end
-  st.set_page = clip(st.set_page, 1, set_pages(st.sets[st.set]))
   if st.pending and st.pending.rec == gone then st.pending = nil end
   st.removed[#st.removed + 1] = gone.id
   st.index_dirty = true
   local k = math.min(i, #st.songs)
-  st.sel_song, st.song_page = st.songs[k], (k - 1) // R.SONG_ROWS + 1
+  st.sel_song = st.songs[k]
   if gone == st.cur then
     st.pending, st.queued = nil, nil
     take(st, st.songs[k])
-    st.selected, st.page, st.first = st.song.sections[1], 1, 1
+    st.selected, st.first = st.song.sections[1], 1
     local out = begin(st, st.song.sections[1])
     table.insert(out, 1, loaded(st.cur))
     return out
@@ -1103,41 +1046,12 @@ function R.song_delete(st)
   return {}
 end
 
--- ---- the setlists tab
+-- ---- the setlists
 
 -- A row tapped: the nth entry of the setlist selected, for move up, move down and remove.
 function R.entry_select(st, n)
   local k = math.floor(num(n))
   if st.sets[st.set].entries[k] then st.entry = k end
-  return {}
-end
-
--- The arrows page between setlists (Brendan, 2026-11-05): through a setlist's own pages first,
--- where it has more entries than rows, and on into the next. The setlist showing is the one
--- chosen, which the keys play.
-function R.set_turn(st, d)
-  local set = st.sets[st.set]
-  local p = clip(st.set_page, 1, set_pages(set))
-  local was = st.set
-  if num(d) < 0 then
-    if p > 1 then
-      st.set_page = p - 1
-    elseif st.set > 1 then
-      st.set = st.set - 1
-      st.set_page = set_pages(st.sets[st.set])
-    end
-  else
-    if p < set_pages(set) then
-      st.set_page = p + 1
-    elseif st.set < #st.sets then
-      st.set, st.set_page = st.set + 1, 1
-    end
-  end
-  if st.set ~= was then
-    local es = st.sets[st.set].entries
-    st.entry = #es > 0 and math.min(#es, (st.set_page - 1) * R.SET_ROWS + 1) or 0
-    st.index_dirty = true
-  end
   return {}
 end
 
@@ -1148,7 +1062,7 @@ local function move_entry(st, d)
   local j = i + d
   if not es[i] or j < 1 or j > #es then return {} end
   es[i], es[j] = es[j], es[i]
-  st.entry, st.set_page = j, (j - 1) // R.SET_ROWS + 1
+  st.entry = j
   st.index_dirty = true
   return {}
 end
@@ -1159,7 +1073,6 @@ function R.entry_remove(st)
   if not es[st.entry] then return {} end
   table.remove(es, st.entry)
   st.entry = math.min(st.entry, #es)
-  st.set_page = clip(st.set_page, 1, set_pages(st.sets[st.set]))
   st.index_dirty = true
   return {}
 end
@@ -1169,12 +1082,12 @@ function R.set_new(st)
   local names = {}
   for i, set in ipairs(st.sets) do names[i] = set.name end
   table.insert(st.sets, st.set + 1, { name = R.next_name(names, "set"), entries = {} })
-  st.set, st.set_page, st.entry = st.set + 1, 1, 0
+  st.set, st.entry = st.set + 1, 0
   st.index_dirty = true
   return {}
 end
 
--- The name tab's done, from the setlists tab: the setlist chosen renamed.
+-- A name typed for a setlist: the setlist chosen renamed.
 function R.set_rename(st, atoms)
   local name = R.clean(atoms)
   local set = st.sets[st.set]
@@ -1184,7 +1097,7 @@ function R.set_rename(st, atoms)
   return {}
 end
 
--- ---- the songs page's state, /cutit/songs
+-- ---- the lists, /cutit/lists
 
 -- A song's row's words: queued for the next bar, or loaded; and unsaved when
 -- its draft differs from its save. - for none.
@@ -1200,41 +1113,6 @@ local function status(st, rec, unsaved_now)
     w[#w + 1] = "unsaved"
   end
   return #w > 0 and table.concat(w, " · ") or "-"
-end
-
--- The songs page: first the songs tab, how many songs, the one selected, the page and how many,
--- the selected one's name, then six rows of number, name and words, 0 - - for a row with none;
--- then the setlists tab, the setlist chosen and how many, its name, its page and how many, how
--- many entries, the one selected and its song's name, then five rows of key and song, 0 - for a
--- row with none. 41 atoms.
-R.SONGS_PHONE = 5 + 3 * R.SONG_ROWS + 8 + 2 * R.SET_ROWS
-function R.songs_phone(st, unsaved_now)
-  if unsaved_now == nil then unsaved_now = R.unsaved(st) end
-  local np = song_pages(st)
-  local page = clip(st.song_page, 1, np)
-  local out = { #st.songs, find(st.songs, st.sel_song) or 0, page, np, st.sel_song.song.name }
-  for r = 1, R.SONG_ROWS do
-    local i = (page - 1) * R.SONG_ROWS + r
-    local rec = st.songs[i]
-    local row = rec and { i, rec.song.name, status(st, rec, unsaved_now) } or { 0, "-", "-" }
-    for _, a in ipairs(row) do out[#out + 1] = a end
-  end
-  local set = st.sets[st.set]
-  local es = set.entries
-  local sp = set_pages(set)
-  local spage = clip(st.set_page, 1, sp)
-  local e = es[st.entry]
-  for _, a in ipairs({ st.set, #st.sets, set.name, spage, sp, #es, e and st.entry or 0,
-                       e and e.song.song.name or "-" }) do
-    out[#out + 1] = a
-  end
-  for r = 1, R.SET_ROWS do
-    local j = (spage - 1) * R.SET_ROWS + r
-    local en = es[j]
-    local row = en and { j, en.song.song.name } or { 0, "-" }
-    for _, a in ipairs(row) do out[#out + 1] = a end
-  end
-  return out
 end
 
 -- The whole lists, for the app, which scrolls: the setlist chosen and how many, their names; the entry
@@ -1283,10 +1161,9 @@ R.presses = {
   key = function(st, a) return R.key(st, a[1]) end,
 }
 
--- What arrives on the second: the phone's sections page, through u_net.
+-- What arrives on the second: the phone's sections, through u_net.
 R.phone_cmds = {
   select = function(st, a) return R.select(st, a[1]) end,
-  page = function(st, a) return R.turn(st, a[1]) end,
   new = function(st) return R.add(st) end,
   saveas = function(st) return R.save_new(st) end,
   up = function(st) return R.up(st) end,
@@ -1302,18 +1179,16 @@ R.phone_cmds = {
   end,
 }
 
--- What arrives on the second after songs: the phone's songs page, through u_net, its songs tab
--- and its setlists tab, and the name tab's done from each.
+-- What arrives on the second after songs: the phone's songs and setlists, through u_net, and a
+-- name typed for each.
 R.songs_cmds = {
   select = function(st, a) return R.song_select(st, a[1]) end,
-  page = function(st, a) return R.song_turn(st, a[1]) end,
   load = function(st) return R.song_load(st) end,
   new = function(st) return R.song_new(st) end,
   name = function(st, a) return R.song_rename(st, a) end,
   add = function(st) return R.song_add(st) end,
   delete = function(st) return R.song_delete(st) end,
   entry = function(st, a) return R.entry_select(st, a[1]) end,
-  set = function(st, a) return R.set_turn(st, a[1]) end,
   up = function(st) return move_entry(st, -1) end,
   down = function(st) return move_entry(st, 1) end,
   ["new-set"] = function(st) return R.set_new(st) end,
@@ -1322,7 +1197,7 @@ R.songs_cmds = {
   choose = function(st, a)
     local n = math.floor(num(a[1]))
     if not st.sets[n] then return {} end
-    st.set, st.set_page, st.entry = n, 1, #st.sets[n].entries > 0 and 1 or 0
+    st.set, st.entry = n, #st.sets[n].entries > 0 and 1 or 0
     st.at_entry = nil
     st.index_dirty = true
     return {}

@@ -403,14 +403,16 @@ stream arrives in true order with the data around it.
 alert, a meter and `diag` put on `disp` (Brendan, 2026-11-04: the phone stopped copying the OLED); a
 monotonic heartbeat at 2 Hz; the tempo from `u_tempo`'s cord at once, on every heartbeat, coalesced
 at 20 Hz with its trailing edge; `re-wire`, `clear-alert` and `test-note` reaching nothing, as six
-malformed commands do; test mode, `result` and the gone `send`; every drum and arrangement command
-out the first outlet as it came, acknowledged or not as the screens need; `synth` and `velocity`
+malformed commands do; test mode, `result`, the one command acknowledged, and the gone `send`;
+every drum and arrangement command
+out the first outlet as it came; `synth` and `velocity`
 out the second, `tempo` out the third, each passing on what it does not know for its owner to
-refuse; `sections` out the fourth, each of the sections page's commands as it came, a name with a
-space as one string, the buttons' five acknowledged and the rest not; `songs` out the same fourth,
-`songs` kept in front, its sixteen commands in order, the buttons' ten acknowledged and the rest
-not; and the mode, `c_steps`' numbers, the choice, the velocity switch, `u_song`'s 22 atoms and its
-songs page's 47 at once and on every heartbeat, the two pages each on its own address. Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
+refuse; `sections` out the fourth, each command as it came, a name with a
+space as one string; `songs` out the same fourth,
+`songs` kept in front, its fourteen commands in order; none of them acknowledged; and `c_steps`'
+numbers, the choice, the velocity switch and `u_song`'s lists, as `/cutit/lists`, at once and on
+every heartbeat, with **no `/cutit/mode`, `/cutit/sections` or `/cutit/songs` ever on the wire**
+(the TouchOSC layout's pages, which nothing reads). Its rate-limit history, below, is the old mirror's, whose coalescer the tempo now uses.
 
 
 ## `app-assert.sh` — what the app sends, by reading
@@ -422,8 +424,8 @@ songs page's 47 at once and on every heartbeat, the two pages each on its own ad
 **The app's half of the inbound vocabulary**, as `touchosc-assert` was the TouchOSC layout's until
 the layout went (2026-11-19). It reads every `cut.press`, `cut.send` and `cut.control` in
 `phone/CutIt/` and checks each word in a command's place against what takes it: `u_net`'s route of
-commands (exactly: a command the app never sends is a route nothing uses), its acknowledgments of
-`synth` and `velocity`, and the Lua table behind each outlet, as each module's face looks it up;
+commands (exactly: a command the app never sends is a route nothing uses) and the Lua table behind
+each outlet, as each module's face looks it up, `c_synth`'s `R.SYNTHS` and `R.VELOCITY` among them;
 and a control moved through `u_perform`, `perform ctl <row> <dest> <arg> <value>`, against `u_map`'s
 destinations and the destination's own table. **The patch's side is loaded, not grepped**: the
 gate runs the modules' Lua under Lua 5.4 and lists their tables, so the keys `c_steps` makes in a
@@ -556,9 +558,10 @@ half is unchanged since its layer was Pd: **it is the proof the port changed not
 **Two halves, two tallies.** First `test/gate/lua/u_song_test.lua`, with lua.org's Lua 5.4 and no
 Pd: a fresh load, the files' text both ways, a load from the draft, the saved song or both, the top
 row stopped and playing, lengths and the last one with a length, the six buttons scrolling, the
-sections page's commands, names, save and revert, the phone's state; several songs, the index both
-ways, a load with and without one, the songs tab's and the setlists tab's commands, the keys stopped
-and playing, the next arrow, a song left keeping its draft, the songs page's state; and
+phone's section commands, names, save and revert; several songs, the index both
+ways, a load with and without one, the phone's song and setlist commands, the keys stopped
+and playing, the next arrow, a song left keeping its draft, the lists the phone is sent, and the old
+pagers refused; and
 `u_song-lua.pd_lua` through `lib_test.lua`'s stand-in for pdlua, reading and writing real files in a
 folder of its own, across reloads, a song's own files made, flushed and deleted, a write that fails,
 and a throwing rule. Then **four runs of a scratch copy of the instrument**, one analyzer reading

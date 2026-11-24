@@ -41,41 +41,36 @@ DRIVE = os.path.join(WORK, "drive.pd")
 LIMIT_HZ = 20.0
 HB_HZ = 2.0
 ADDRS = {"/cutit/hb", "/cutit/ack", "/mark",
-         # what the phone shows: the mode, c_steps' state, c_synth's choice and
-         # velocity switch, the tempo, u_song's sections and songs, c_melody's state
-         # and its loop's place, the one state with no repeat, u_voices' page and voices,
-         # and u_perform's controls in play
-         "/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
-         "/cutit/sections", "/cutit/songs", "/cutit/melody", "/cutit/here", "/cutit/notes",
+         # what the phone shows: c_steps' state, c_synth's choice and velocity switch, the
+         # tempo, u_song's lists, c_melody's state and its loop's place, the one state with
+         # no repeat, u_voices' page and voices, u_perform's controls in play and u_sound's
+         # sounds
+         "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
+         "/cutit/melody", "/cutit/here", "/cutit/notes",
          "/cutit/voices", "/cutit/perform", "/cutit/lists", "/cutit/sound", "/cutit/once",
          # the driver's taps for the inbound half: u_net's outlets, err, and the presence
          # bus, which re-wire once wrote and must not now
          "/probe/drums", "/probe/synth", "/probe/tempo", "/probe/sections", "/probe/err",
          "/probe/presence", "/probe/voices", "/probe/perform"}
 # The state addresses, each sent on a change and again on every heartbeat.
-STATE = ("/cutit/mode", "/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
-         "/cutit/sections", "/cutit/songs", "/cutit/melody", "/cutit/notes", "/cutit/voices",
+STATE = ("/cutit/drums", "/cutit/synth", "/cutit/velocity", "/cutit/tempo",
+         "/cutit/melody", "/cutit/notes", "/cutit/voices",
          "/cutit/perform", "/cutit/lists", "/cutit/sound")
-# The sections page's commands u_net acknowledges, a button's flash: the rest show in the state.
-SECTIONS_ACKED = ["new", "up", "down", "delete", "name"]
-# The songs page's, the same way: the rest show in the state, or u_song refuses them.
-SONGS_ACKED = ["load", "new", "add", "delete", "up", "down", "new-set", "remove", "name",
-               "set-name"]
 # The OLED's mirror, gone (Brendan, 2026-11-04): u_net reads nothing on disp, so
 # none of these may ever leave it.
 GONE = ["/cutit/param", "/cutit/status", "/cutit/alert"]
-# What u_net does not acknowledge: the screens' state shows each.
-DRUMS_QUIET = ["num", "den", "drunk", "vol", "pitch", "set-track-last", "randomness",
-               "set-swing", "set-last", "char", "verb-type", "rnd-pitch"]
+# The TouchOSC layout's pages, gone with it: the app reads the page from /cutit/voices and the
+# songs and sections from /cutit/lists, so none of these may leave either.
+OLD_PAGES = ["/cutit/mode", "/cutit/sections", "/cutit/songs"]
 WINDOWS = ["idle", "dispsweep", "dispother", "tempo", "tpsweep", "idle2", "cmdwire",
            "cmdclear", "cmdfm1", "cmdbogus", "sendoff", "tmon", "sendon", "result",
            "tmoff", "sendoff2", "tmtwice", "tmoff2", "cmdsync", "cmdsnap", "cmdselect",
            "cmdnum", "cmdden", "cmddrunk", "cmdvol", "cmdpitch", "cmdtracklast", "cmdrand",
            "cmdswing", "cmdlast", "cmdchar",
            "cmddrumsnew", "cmdverbtype", "cmdrolled", "cmdsynth", "cmdsynthnew", "cmdtempo", "cmdtemponew", "cmdvel",
-           "cmdvelnew", "tmmodeon", "tmmode", "drumstate", "cmdsecsel", "cmdsecpage", "cmdsecnew",
+           "cmdvelnew", "tmmodeon", "tmmode", "drumstate", "cmdsecsel", "cmdsecnew",
            "cmdsecup", "cmdsecdown", "cmdseclen", "cmdsecdel", "cmdsecname", "cmdsecnew2",
-           "secstate", "cmdsongs", "songstate", "cmdvoices", "cmdperform", "cmdonce", "cmdonce2", "voicestate", "done"]
+           "cmdsongs", "liststate", "cmdvoices", "cmdperform", "cmdonce", "cmdonce2", "voicestate", "done"]
 
 
 # ------------------------------------------------------------------- collection
@@ -191,6 +186,9 @@ def main():
     gone = sorted({a for _, rowset in wins for _, a, _ in rowset if a in GONE})
     A.check("⛔ NOTHING ever leaves as /cutit/param, /cutit/status or /cutit/alert",
             not gone, "saw %s -- the phone copying the OLED again" % gone)
+    old = sorted({a for _, rowset in wins for _, a, _ in rowset if a in OLD_PAGES})
+    A.check("⛔ nor as /cutit/mode, /cutit/sections or /cutit/songs, which nothing reads",
+            not old, "saw %s -- the TouchOSC layout's pages again" % old)
 
     # -- shape ---------------------------------------------------------------
     seen = sorted({a for _, rowset in wins for _, a, _ in rowset})
@@ -342,16 +340,13 @@ def main():
     A.check("done: the heartbeat says off", f and all(v == 0 for v in f), f)
 
     one("cmdselect", "/probe/drums", ["select", 3.0], "drums select 3 leaves for c_steps")
-    one("cmdselect", "/cutit/ack", ["drums", "select"], "and is acknowledged")
+    none_of("cmdselect", ["/cutit/ack"], "and is not acknowledged: the screens' state says it")
     state = [float(v) for v in [1, 12, 2, 1, 16, 5] + [16] * 14 + [0, 1] + [0] * 14
              + [7, 8, 30, 62] + [0, -6] + [0] * 14 + [0, 7] + [0] * 14 + [0, 40] + [0] * 14]
     sent = args("drumstate", "/cutit/drums")
     A.check("drumstate: c_steps' 88 numbers leave as /cutit/drums, at once and on the heartbeat",
             len(sent) >= 2 and all(g == state for g in sent),
             "%d sent: %s" % (len(sent), sent[:1]))
-    sent = args("drumstate", "/cutit/mode")
-    A.check("drumstate: the page leaves alone as /cutit/mode, at once and on the heartbeat",
-            len(sent) >= 2 and all(g == ["drums"] for g in sent), sent[:3])
     # The app's voices and controls in play: each command out its own outlet, whole, and each
     # state back, at once and on the heartbeat, as every other.
     one("cmdvoices", "/probe/voices", ["left", 2.0], "voices left 2 goes to u_voices, whole")
@@ -377,7 +372,7 @@ def main():
     sent = args("drumstate", "/cutit/velocity")
     A.check("⛔ drumstate: its velocity switch leaves as /cutit/velocity off, at once and on the "
             "heartbeat", len(sent) >= 2 and all(g == ["off"] for g in sent), sent[:3])
-    A.check("done: all seven still repeat, so a phone that comes back late catches up",
+    A.check("done: every state still repeats, so a phone that comes back late catches up",
             min(len(args("done", a)) for a in STATE) >= 2,
             ", ".join("%d" % len(args("done", a)) for a in STATE))
     early = [g for w in ("idle", "cmdwire", "tmmode") for a in ("/cutit/synth", "/cutit/velocity")
@@ -385,17 +380,8 @@ def main():
     A.check("before c_synth says anything, the repeats carry no choice and no switch",
             early and all(g == [] for g in early), early[:3])
 
-    # -- the sections page (ref/module/songs.md) -------------------------------
-    sec = ["song 1", 3.0, 2.0, 1.0, 1.0, "verse 2", 8.0, 1.0, "intro", 0.0, 2.0, "verse 2", 8.0,
-           3.0, "chorus", 0.0, 0.0, "-", 0.0, 0.0, "-", 0.0]
-    sent = args("secstate", "/cutit/sections")
-    A.check("⛔ secstate: u_song's 22 atoms leave as /cutit/sections, at once and on the "
-            "heartbeat, a name with a space one string", len(sent) >= 2 and all(g == sec for g in sent),
-            "%d sent: %s" % (len(sent), sent[:1]))
-    early = [g for w in ("idle", "cmdwire", "drumstate") for g in args(w, "/cutit/sections")]
-    A.check("before u_song says anything, the repeats carry no sections",
-            early and all(g == [] for g in early), early[:3])
-    for win, cmd, rest in (("cmdsecsel", "select", [2.0]), ("cmdsecpage", "page", [1.0]),
+    # -- the sections (ref/module/songs.md) ------------------------------------
+    for win, cmd, rest in (("cmdsecsel", "select", [2.0]),
                            ("cmdsecnew", "new", []), ("cmdsecup", "up", []),
                            ("cmdsecdown", "down", []), ("cmdseclen", "length", [8.0]),
                            ("cmdsecdel", "delete", []), ("cmdsecname", "name", ["verse 2"]),
@@ -405,50 +391,45 @@ def main():
         one(win, "/probe/sections", [cmd] + rest,
             "⛔ sections %s leaves for u_song as %s" % (said, said)
             if cmd in ("name", "shuffle") else "sections %s leaves for u_song" % said)
-        if cmd in SECTIONS_ACKED:
-            one(win, "/cutit/ack", ["sections", cmd], "and is acknowledged")
-        else:
-            none_of(win, ["/cutit/ack"], "and is not acknowledged: the state says it, or u_song "
-                    "refuses it" if cmd == "shuffle" else "and is not acknowledged: the state says it")
+        none_of(win, ["/cutit/ack"], "and is not acknowledged: u_song refuses it"
+                if cmd == "shuffle" else "and is not acknowledged: the lists say it")
         none_of(win, ["/probe/drums", "/probe/synth", "/probe/tempo", "/probe/presence"],
                 "and reaches nothing else")
 
-    # -- the songs page (ref/module/songs.md) ----------------------------------
-    cmds = [["songs", "select", 2.0], ["songs", "page", 1.0], ["songs", "load"], ["songs", "new"],
+    # -- the songs and setlists (ref/module/songs.md) --------------------------
+    cmds = [["songs", "select", 2.0], ["songs", "load"], ["songs", "new"],
             ["songs", "name", "hollow bell"], ["songs", "add"], ["songs", "delete"],
-            ["songs", "entry", 3.0], ["songs", "set", -1.0], ["songs", "up"], ["songs", "down"],
+            ["songs", "entry", 3.0], ["songs", "up"], ["songs", "down"],
             ["songs", "starts", "go"], ["songs", "new-set"], ["songs", "remove"],
             ["songs", "set-name", "friday"], ["songs", "shuffle"]]
     heard = args("cmdsongs", "/probe/sections")
     A.check("⛔ cmdsongs: each songs command leaves for u_song as it came, songs in front, in "
             "order, a name with a space one string", heard == cmds,
             "wanted %d, got %d: %s" % (len(cmds), len(heard), heard[:4]))
-    acks = args("cmdsongs", "/cutit/ack")
-    A.check("⛔ ... and the ten a button shows are acknowledged, ack songs <action>, the rest not",
-            acks == [["songs", c[1]] for c in cmds if c[1] in SONGS_ACKED], acks)
+    none_of("cmdsongs", ["/cutit/ack"], "and none is acknowledged: the lists say it")
     none_of("cmdsongs", ["/probe/drums", "/probe/synth", "/probe/tempo", "/probe/presence"],
             "and they reach nothing else")
-    songs_ = (["songs"] + [3.0, 1.0, 1.0, 1.0, "night drive", 1.0, "night drive", "loaded", 2.0,
-               "lantern", "-", 3.0, "hollow bell", "next bar", 0.0, "-", "-", 0.0, "-", "-", 0.0,
-               "-", "-", 1.0, 2.0, "gig", 1.0, 1.0, 3.0, 1.0, "lantern", "silence", 1.0,
-               "lantern", "silence", 2.0, "hollow bell", "next-bar", 3.0, "night drive", "go",
-               0.0, "-", "-", 0.0, "-", "-"])[1:]
-    sent = args("songstate", "/cutit/songs")
-    A.check("⛔ songstate: u_song's songs page, its 47 atoms, leaves as /cutit/songs, at once and "
-            "on the heartbeat", len(sent) >= 2 and all(g == songs_ for g in sent),
+    lists_ = [1.0, 2.0, "gig", "friday", 1.0, 2.0, "lantern", "-", "night drive", "loaded",
+              2.0, 3.0, "lantern", "-", "night drive", "loaded", "hollow bell", "next bar",
+              "night drive", 1.0, 2.0, 0.0, 2.0, 0.0, 3.0, "intro", 4.0, "verse 2", 8.0,
+              "chorus", 0.0]
+    sent = args("liststate", "/cutit/lists")
+    A.check("⛔ liststate: u_song's lists leave as /cutit/lists, at once and on the heartbeat, "
+            "a name with a space one string", len(sent) >= 2 and all(g == lists_ for g in sent),
             "%d sent: %s" % (len(sent), sent[:1]))
-    A.check("⛔ ... and /cutit/sections goes on saying the sections page, untouched by it",
-            args("songstate", "/cutit/sections") and
-            all(g == sec for g in args("songstate", "/cutit/sections")),
-            args("songstate", "/cutit/sections")[:1])
-    early = [g for w in ("idle", "secstate") for g in args(w, "/cutit/songs")]
-    A.check("before u_song says anything of its songs, the repeats carry none",
+    first = next((t for t, a, g in got.get("liststate", [])
+                  if a == "/cutit/lists" and g == lists_), None)
+    A.check("⛔ liststate: the first of them as u_song says so, not at the next heartbeat",
+            first is not None and first - MARK_T["liststate"] < 0.06,
+            "%s ms after it went in" % (None if first is None
+                                        else round((first - MARK_T["liststate"]) * 1000)))
+    early = [g for w in ("idle", "cmdwire", "drumstate") for g in args(w, "/cutit/lists")]
+    A.check("before u_song says anything, the repeats carry no lists",
             early and all(g == [] for g in early), early[:3])
 
     one("cmdsynth", "/probe/synth", ["synth", "strings"], "synth strings leaves for c_synth")
-    one("cmdsynth", "/cutit/ack", ["synth", "strings"], "and is acknowledged")
-    none_of("cmdsynth", ["/probe/drums", "/probe/tempo", "/probe/presence"],
-            "and reaches nothing else")
+    none_of("cmdsynth", ["/cutit/ack", "/probe/drums", "/probe/tempo", "/probe/presence"],
+            "and is not acknowledged -- /cutit/synth says it -- and reaches nothing else")
     one("cmdsynthnew", "/probe/synth", ["synth", "organ"],
         "⛔ a synth u_net has never heard of goes to c_synth whole, to refuse")
     none_of("cmdsynthnew", ["/cutit/ack"], "and is not acknowledged")
@@ -462,9 +443,8 @@ def main():
     none_of("cmdtemponew", ["/cutit/ack"], "and is not acknowledged")
 
     one("cmdvel", "/probe/synth", ["velocity", "off"], "⛔ velocity off leaves for c_synth")
-    one("cmdvel", "/cutit/ack", ["velocity", "off"], "and is acknowledged")
-    none_of("cmdvel", ["/probe/drums", "/probe/tempo", "/probe/presence"],
-            "and reaches nothing else")
+    none_of("cmdvel", ["/cutit/ack", "/probe/drums", "/probe/tempo", "/probe/presence"],
+            "and is not acknowledged -- /cutit/velocity says it -- and reaches nothing else")
     one("cmdvelnew", "/probe/synth", ["velocity", "loud"],
         "a setting u_net has never heard of goes to c_synth whole, to refuse as bad-velocity")
     none_of("cmdvelnew", ["/cutit/ack"], "and is not acknowledged")
@@ -482,10 +462,7 @@ def main():
                            ("cmdrolled", "rnd-pitch", [3.0, 1.0])):
         said = " ".join([cmd] + ["%g" % v for v in rest])
         one(win, "/probe/drums", [cmd] + rest, "drums %s leaves for c_steps as %s" % (said, said))
-        if cmd in DRUMS_QUIET:
-            none_of(win, ["/cutit/ack"], "and is not acknowledged: the screens' state says it")
-        else:
-            one(win, "/cutit/ack", ["drums", cmd], "and is acknowledged")
+        none_of(win, ["/cutit/ack"], "and is not acknowledged: the screens' state says it")
         none_of(win, ["/probe/synth", "/probe/tempo", "/probe/presence"],
                 "and reaches nothing else")
 

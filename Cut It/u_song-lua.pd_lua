@@ -9,14 +9,14 @@
 -- cut-it-song-<id>-draft.txt for the rest (R.files).
 -- inlet 1: u_map's top row, save and revert, the Organelle's keys -- top <1-8>, save,
 -- revert, key <1-25>.
--- inlet 2: the phone's sections page, through u_net -- select, page, new, up, down, length,
--- delete, name; and its songs page, songs <command> ... (R.songs_cmds).
+-- inlet 2: the phone's sections, through u_net -- select, new, saveas, up, down, length, delete,
+-- name, tweaks (R.phone_cmds); and its songs and setlists, songs <command> ... (R.songs_cmds).
 -- inlet 3: u_song.pd's own -- put <key> <atoms...> off the state bus, bar and recall <key> from
 -- c_steps, start and stop, load at the restore, flush on the draft's timer, init.
 -- outlet 1: to g_grid -- top <8 lamps> and unsaved <0 or 1>, each when it
 -- changes.
--- outlet 2: to u_net, each when it changes: the sections page's state, R.phone's 22 atoms, as a
--- list, and the songs page's, songs <R.songs_phone's 47 atoms>.
+-- outlet 2: to u_net, when it changes: lists <R.lists' atoms>, the setlists, the songs and the
+-- loaded song's sections, whole.
 -- outlet 3: to the state bus: restore <key> <atoms...>, a section starting, and sync before a
 -- press, a phone command, start or stop, so a part holding back a put puts it first.
 -- outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded.
@@ -82,7 +82,7 @@ local function key(atoms)
 end
 
 -- After every answer: the top row's lamps, the save and revert lamps and the
--- phone's two states, each when it differs from the last sent; the saved song loaded, when a
+-- phone's lists, each when it differs from the last sent; the saved song loaded, when a
 -- save or a rename asked for it, with the draft beside it, and a new or renamed song's two
 -- files; and the files of a song deleted, gone.
 function SongLua:answered()
@@ -103,28 +103,12 @@ function SongLua:answered()
       self:outlet(1, "unsaved", { v })
     end
   end
-  local ok3, phone = pcall(R.phone, st)
-  if ok3 then
-    local k = key(phone)
-    if k ~= self.phone_sent then
-      self.phone_sent = k
-      self:outlet(2, "list", phone)
-    end
-  end
-  -- The songs page's state changes with what a put changes only through the song loaded's
-  -- unsaved, so a put that leaves that as it was skips it: a knob's sweep puts many.
-  if not (self.putting and ok2 and unsaved == self.songs_unsaved) then
-    self.songs_unsaved = ok2 and unsaved
-    local ok5, songs = pcall(R.songs_phone, st, ok2 and unsaved)
-    if ok5 then
-      local k = key(songs)
-      if k ~= self.songs_sent then
-        self.songs_sent = k
-        self:outlet(2, "songs", songs)
-      end
-    end
-    local ok6, lists = pcall(R.lists, st, ok2 and unsaved)
-    if ok6 then
+  -- The lists change with what a put changes only through the song loaded's unsaved, so a put
+  -- that leaves that as it was skips them: a knob's sweep puts many.
+  if not (self.putting and ok2 and unsaved == self.lists_unsaved) then
+    self.lists_unsaved = ok2 and unsaved
+    local ok3, lists = pcall(R.lists, st, ok2 and unsaved)
+    if ok3 then
       local k = key(lists)
       if k ~= self.lists_sent then
         self.lists_sent = k
@@ -166,8 +150,8 @@ function SongLua:in_1(sel, atoms)
   self:answer(sel, R.presses[sel], self.state, atoms)
 end
 
--- The phone's sections page as it comes, and its songs page after songs: the command, then what
--- follows it.
+-- The phone's section commands as they come, and its song and setlist commands after songs: the
+-- command, then what follows it.
 function SongLua:in_2(sel, atoms)
   self:sync()
   if sel == "songs" then

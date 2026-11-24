@@ -20,7 +20,6 @@
 -- outlet 3: to the state bus: restore <key> <atoms...>, a section starting, and sync before a
 -- press, a phone command, start or stop, so a part holding back a put puts it first.
 -- outlet 4: err. outlet 5: a bang on init, the proof the Lua loaded.
--- bus, a song starting from silence.
 --
 -- A Lua error leaves outlet 4 as fail u_song lua-<selector>, and its text goes to Pd's console
 -- where there is one: the device has none (C-12). A file that can't be written is fail u_song
@@ -75,46 +74,23 @@ function SongLua:write_song(id, saved, draft)
   self:write(d, R.text(draft))
 end
 
-local function key(atoms)
-  local parts = {}
-  for i, a in ipairs(atoms) do parts[i] = R.fmt(a) end
-  return table.concat(parts, "\1")
-end
-
 -- After every answer: the top row's lamps, the save and revert lamps and the
 -- phone's lists, each when it differs from the last sent; the saved song loaded, when a
 -- save or a rename asked for it, with the draft beside it, and a new or renamed song's two
 -- files; and the files of a song deleted, gone.
 function SongLua:answered()
   local st = self.state
-  local ok, top = pcall(R.top, st)
-  if ok then
-    local k = table.concat(top, " ")
-    if k ~= self.top_sent then
-      self.top_sent = k
-      self:outlet(1, "top", top)
-    end
-  end
+  F.changed(self, "top", 1, "top", R.top, st)
   local ok2, unsaved = pcall(R.unsaved, st)
   if ok2 then
-    local v = unsaved and 1 or 0
-    if v ~= self.unsaved_sent then
-      self.unsaved_sent = v
-      self:outlet(1, "unsaved", { v })
-    end
+    local lamp = { unsaved and 1 or 0 }
+    if F.differs(self, "unsaved", lamp) then self:outlet(1, "unsaved", lamp) end
   end
   -- The lists change with what a put changes only through the song loaded's unsaved, so a put
   -- that leaves that as it was skips them: a knob's sweep puts many.
   if not (self.putting and ok2 and unsaved == self.lists_unsaved) then
     self.lists_unsaved = ok2 and unsaved
-    local ok3, lists = pcall(R.lists, st, ok2 and unsaved)
-    if ok3 then
-      local k = key(lists)
-      if k ~= self.lists_sent then
-        self.lists_sent = k
-        self:outlet(2, "lists", lists)
-      end
-    end
+    F.changed(self, "lists", 2, "lists", R.lists, st, ok2 and unsaved)
   end
   if st.write_saved then
     st.write_saved, st.dirty = false, false

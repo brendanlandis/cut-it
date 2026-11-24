@@ -93,7 +93,8 @@ struct RootView: View {
     }
 }
 
-/// A column: eight buttons, in each voice's color; dark for a row with none. Under the left one, songs.
+/// A column: eight buttons, in each voice's color; dark for a row with none. Over each, the page its buttons open;
+/// under the left one, songs.
 struct Rail: View {
     enum Side { case left, right }
     let side: Side
@@ -101,9 +102,18 @@ struct Rail: View {
 
     var body: some View {
         VStack(spacing: 3) {
+            head
             rows
             foot.padding(.top, 3)
         }
+    }
+
+    /// What the column's buttons open, in the manual's words for the two pages (Brendan, 2026-11-24: "the left and
+    /// right columns are easy to forget about the functionality of. Can they have small labels on top?").
+    private var head: some View {
+        Text(side == .left ? "behavior" : "setup")
+            .font(.system(size: 12)).foregroundStyle(Theme.dim).lineLimit(1).minimumScaleFactor(0.7)
+            .frame(width: 58, height: 16)
     }
 
     /// The songs page, opened and closed as aux opens and closes it, and lit white while it's open, as aux's LED

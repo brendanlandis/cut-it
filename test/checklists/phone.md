@@ -9,7 +9,7 @@ The rate limit and what `u_net` takes are `phone-assert`'s: what is left is the 
 - [ ] **1. The link is up, on the performance page**
   - **Need:** The Cut It app open on the phone, on the same network. A red no link bar along the top here means nothing below can be judged.
   - **Do:** If a voice's page is on show, press its lit button on the Launchpad again.
-  - **Pass if:** No red no link bar tops the page. The phone shows the performance page: along the top the song's name, the section playing, the tempo and take into play; under them eight strips, each a knob, a fader and two buttons. Down each side runs a column of eight buttons, the Launchpad's, each voice's in its color and a row with none dark, and under the left one songs. Nothing sits close to the notch.
+  - **Pass if:** No red no link bar tops the page. The phone shows the performance page: along the top the song's name, the section playing, the tempo and take into play; under them eight strips, each a knob, a fader and two buttons. Down each side runs a column of eight buttons, the Launchpad's, each voice's in its color and a row with none dark, the left one headed behavior and the right setup, and under the left one songs. Nothing sits close to the notch.
 
 - [ ] **2. The phone and the Launchpad turn each other's page**
   - **Need:** The performance page, and a voice on row 1.

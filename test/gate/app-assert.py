@@ -383,6 +383,14 @@ def main():
             None not in (gave_up, answered, bar),
             "given up sets it: %s  an answer clears it: %s  the bar reads it: %s"
             % (bool(gave_up), bool(answered), bool(bar)))
+    # ref/device/phone.md, A socket that can't send keeps what it's given: a press must never leave late.
+    link = open(os.path.join(SWIFT, "Link.swift"), encoding="utf-8").read()
+    sends = re.findall(r"\bout\?\.send\(", link)
+    kept = re.search(r"func send\(_ args: \[OSCValue\]\) \{[^}]*queue\.async \{[^}]*guard ready, viable else \{ return \}"
+                     r"\s*out\?\.send\(", link)
+    A.check("⛔ nothing is given to a socket that can't send now, which would send it late",
+            kept is not None and len(sends) == 1,
+            "Link.send's guard: %s  places that send: %d" % (bool(kept), len(sends)))
     A.check("⛔ cut.control sends perform ctl <row> <dest> <arg> <value>, as u_perform's ctl takes it",
             inline is not None and inline[0] == ["dest", "arg", "value"]
             and inline[1][:2] == ['"perform"', '"ctl"'] and inline[1][3:] == inline[0],

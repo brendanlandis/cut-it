@@ -393,6 +393,15 @@ and no press leaves the phone. So the app reports its presses too: one given up 
 answered (`phone/CutIt/Cut.swift`). **Fix:** on the phone, in Settings, Privacy & Security, Local Network, switch Cut It off and on,
 then quit the app and open it. The switch can read on while it blocks (iOS, in Reference).
 
+### A socket that can't send keeps what it's given
+
+⛔ **A press given to a socket that can't send acts late.** iOS keeps what such a socket is handed
+and sends all of it once it can (iOS, in Reference): two presses tapped while the app was blocked
+turned the page twice, at once, when the block lifted. **Fix:** `Link.send` gives the socket
+nothing unless it is ready and has a way out. A press is sent again by `resend` and, unanswered,
+given up (*The app can hear and not be heard*); a drag's next value follows. A sending socket that
+fails is made again by itself, the listener left hearing (`phone/CutIt/Link.swift`).
+
 ### The Organelle never waits for the phone
 
 Fire and forget over `[netsend -u]`. Phone off, phone crashed, WiFi gone — **the instrument plays

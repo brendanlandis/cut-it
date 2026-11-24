@@ -453,6 +453,10 @@ can hear and not be heard*): the give-up in `Cut.swift`'s `resend` sets `unheard
 press still being sent clears it, and `App.swift`'s bar reads it beside `linked`. Taking the
 give-up's line out failed it. What the bar looks like is a look at the app, not this gate's.
 
+⛔ **Nothing may be given to a socket that can't send now** (the same page, *A socket that can't
+send keeps what it's given*): `Link.send` is the one place that sends, behind its guard. Taking the
+guard out failed it. Whether iOS then holds nothing back is the phone checklist's.
+
 ## `sequencer-assert.sh` — the drum machine, from the outside
 
 ```sh

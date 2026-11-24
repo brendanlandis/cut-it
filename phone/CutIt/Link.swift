@@ -12,6 +12,12 @@ final class Link: @unchecked Sendable {
 
     private let queue = DispatchQueue(label: "cutit.link")
     private var out: NWConnection?
+    /// Whether `out` can send now. One that can't (no route yet, or iOS blocking the app's local network) keeps
+    /// what it's given and sends it all when it can, so a press made then would act late (ref/device/phone.md,
+    /// A socket that can't send keeps what it's given). So nothing is given to one that can't: Cut sends a
+    /// press again, and a drag's next value follows.
+    private var ready = false
+    private var viable = true
     private var listener: NWListener?
     private var incoming: [NWConnection] = []
     private var host = Link.host
@@ -25,16 +31,39 @@ final class Link: @unchecked Sendable {
     /// New sockets both ways, dropping whatever iOS left of the old ones.
     func restart() {
         queue.async { [self] in
-            out?.cancel()
             listener?.stateUpdateHandler = nil
             listener?.cancel()
             incoming.forEach { $0.cancel() }
             incoming = []
-            let o = NWConnection(host: NWEndpoint.Host(host), port: Link.sendPort, using: .udp)
-            o.start(queue: queue)
-            out = o
+            connect()
             listen()
         }
+    }
+
+    /// A new socket out, on the queue, in place of the old one and whatever it still held.
+    private func connect() {
+        out?.cancel()
+        let o = NWConnection(host: NWEndpoint.Host(host), port: Link.sendPort, using: .udp)
+        ready = false
+        viable = true
+        out = o
+        // Both called on the queue. An old socket's last words say nothing of the new one.
+        o.stateUpdateHandler = { [weak self, weak o] state in
+            guard let self, let o, self.out === o else { return }
+            if case .ready = state { self.ready = true } else { self.ready = false }
+            // A waiting one tries again by itself when the network changes; a failed one is done, and only it
+            // is made again: the listener may be hearing all the while.
+            if case .failed = state {
+                self.queue.asyncAfter(deadline: .now() + 1) { [weak self, weak o] in
+                    if let self, let o, self.out === o { self.connect() }
+                }
+            }
+        }
+        o.viabilityUpdateHandler = { [weak self, weak o] now in
+            guard let self, let o, self.out === o else { return }
+            self.viable = now
+        }
+        o.start(queue: queue)
     }
 
     private func listen() {
@@ -69,7 +98,11 @@ final class Link: @unchecked Sendable {
     }
 
     func send(_ args: [OSCValue]) {
-        out?.send(content: OSC.encode("/cutit", args), completion: .idempotent)
+        let data = OSC.encode("/cutit", args)
+        queue.async { [self] in
+            guard ready, viable else { return }
+            out?.send(content: data, completion: .idempotent)
+        }
     }
 }
 

@@ -25,17 +25,18 @@ state bus and the song's draft, which u_song writes. Nothing inside c_steps is r
   mute and solo  a track muted and then soloed over OSC: its notes stop and
                  start, the others' do the opposite, the Launchpad dims the
                  pads that won't play, and both are put with the pattern
-  a character    a track's distortion made fold over OSC: put with the pattern
-  the reverb     its type made gigaverb over OSC: put with the pattern, last, and
+  a character    a track's distortion made fold over OSC: put with the song's kit,
+                 and told to c_kit
+  the reverb     its type made gigaverb over OSC: put with the song's kit, and
                  told to c_kit
-                 after the mutes and solos, and told to c_kit
   its tails      a repeat pad's replay, and its release, told to c_kit
   the 500 BPM    pad-35: the tempo bus at 500 and back, nothing put in the section,
                  knob 1 held at each, the last step repeating, its lamp, and the
                  pattern going on from the step it was pressed on
   the saved      pad-38: the saved tempo restored over a draft's, put, and knob 1
   tempo          held there; its lamp, and save's
-  random pitch   a track's, over OSC: put last, rolled hits told their pitch, and
+  random pitch   a track's, over OSC: put with the song's kit, rolled hits told
+                 their pitch, and
                  back at the set pitch when nothing is rolled
   the disk       the pattern reaches the song's draft as one line, section 1's drums
 
@@ -84,11 +85,10 @@ NOTE = re.compile(r"^KITOUT:\s+(-?[\d.]+)\s+(-?[\d.]+)$")
 CELLS = 16 * 32                 # then the 16 tracks' own last steps, their randomness, volumes
 FXLESS = CELLS + 16 * 4 + 5     # and pitches, the time signature, the drunkenness, the swing
                                 # and the global last step: 581
-LINE = FXLESS + 8 * 16 + 2      # then each track's eight effects and the reverb's two: 711
-FLAGGED = LINE + 2 * 16         # then each track's mute and each track's solo: 743
-CHARRED = FLAGGED + 16          # then each track's character: 759
-TYPED = CHARRED + 1             # then the reverb's type, once it is not the plate: 760
-ROLLED = TYPED + 16             # then each track's random pitch, once any is on: 776
+LINE = FXLESS + 8 * 16 + 2      # then, in a line from before each song had a kit, as the seed
+                                # is, each track's eight effects and the reverb's two: 711
+FLAGGED = LINE + 2 * 16         # then each track's mute and each track's solo: 743. c_steps
+                                # writes the 581 and the 743, and reads the longer lines
 NUM, DRUNK, SWING, LAST = FXLESS - 5, FXLESS - 3, FXLESS - 2, FXLESS - 1   # NUM, then the bottom
 RAND, VOL, PITCH = CELLS + 16, CELLS + 32, CELLS + 48    # where each track's are, track 1 first
 LEVEL_VELS = [round(127 * n / 8 + 1e-9) for n in range(1, 9)]   # 16 32 48 64 79 95 111 127

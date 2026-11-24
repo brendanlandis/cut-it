@@ -269,9 +269,9 @@ def main():
     first = song(os.path.join(opt.legacy, "cut-it-song.txt"))
     fdraft = song(os.path.join(opt.legacy, "cut-it-song-draft.txt"))
     one = first[0][2] if first and len(first) == 1 else {}
-    A.check("⛔ the pattern the auto file held is section 1's drums, the swing and the global last "
-            "step in force after it: 579 and 50 and 16",
-            one.get("drums") == legacy[1:] + ["50", "16"],
+    A.check("⛔ the pattern the auto file held is section 1's drums, put as it came: its 579 "
+            "numbers, which the sequencer reads as any section's from before today's line",
+            one.get("drums") == legacy[1:] and len(legacy) == 580,
             "section 1's drums: %s" % (len(one.get("drums") or []) or one.get("drums")))
     A.check("... and the synth choice and the velocity switch it held: strings, off",
             one.get("synth") == ["strings"] and one.get("velocity") == ["off"],

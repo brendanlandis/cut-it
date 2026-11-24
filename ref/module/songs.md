@@ -19,7 +19,7 @@ its voices ([voices.md](voices.md)).
 as `u_state` knows nothing ([state.md](state.md)). A part stores itself per section by putting
 `put section <key> <atoms…>` on the `state` bus, which lands in the section playing, and a section
 starting sends every part it holds back as `restore <key> <atoms…>`, which the part takes as it
-takes any restore, and puts back only what differs from what it holds. A part added later is per section from its first version
+takes any restore, and needn't put back: the store keeps it. A part added later is per section from its first version
 with no change here.
 
 **The whole song is one draft** (Brendan, 2026-11-04). Edits play at once and stay with their
@@ -41,7 +41,7 @@ there, save and revert lit.
 |-----------|---------|---------|----------|
 | a part → `u_song` | `put section <key> <atoms…>` | The part as it is now, into the section playing. The same atoms again change nothing | unknown |
 | `u_song` → all | `restore <key> <atoms…>` | A section starting: every part it holds, in the keys' order, each once | unknown |
-| a part → `u_song` | `put section <key> <atoms…>` | The part put back during the restore if it differs, a line in an older shape, say: it lands in the section now starting | unknown |
+| a part → `u_song` | `put section <key> <atoms…>` | A part put back during its restore, as `u_tempo` puts the tempo: it lands in the section now starting | unknown |
 | a part → `u_song` | `put song <key> <atoms…>` | The part as it is now, into the song itself: every section shares it. It shows as unsaved, and save and revert keep it, as they do a section's. Restored as `restore <key> <atoms…>` when the song loads or reverts | unknown |
 | a part → `u_song` | `put seed <key> <atoms…>` | What a song that holds none starts as: into the song and what's saved of it together, so it shows as nothing unsaved | unknown |
 
@@ -52,7 +52,7 @@ Each part puts at load and on every change, and takes its restore.
 | Key | Part | Atoms | Evidence |
 |-----|------|-------|----------|
 | `perform` | `u_perform` | The controls in play: each one's physical control, destination, arg, row and value, five atoms ([voices.md](voices.md)). A section with none is told so, `restore perform` with nothing after it, first of all, or the last section's would stay | unknown |
-| `drums` | `c_steps` | The pattern, 581 numbers: 512 velocities, each track's own last step, randomness, volume and pitch, the time signature, the drunkenness, the swing and the global last step ([sequencer.md](sequencer.md)) | unknown |
+| `drums` | `c_steps` | The pattern, 581 numbers, 743 with a track muted or soloed: 512 velocities, each track's own last step and randomness, the time signature, the drunkenness, the swing and the global last step ([sequencer.md](sequencer.md), *The pattern in a section*). The kit's sound is the song's, `put song kit` | unknown |
 | `melody`, `melody-2` | `c_melody`, each engine's | The generator, `R.save`'s numbers: its controls, the 32 steps, the 8 chords and the fields added later ([synths.md](synths.md), *The generator*). Its restore waits for step 1, as the tempo's and the programs' do | unknown |
 | `programs` | `c_synth` | The FM-1's program, then the Streichfett's: 0 to 127, or `none` ([synths.md](synths.md)) | unknown |
 | `synth` | `c_synth` | `fm` or `strings` | unknown |
@@ -318,7 +318,8 @@ section holds `none none` until its file says otherwise.
 ### The auto keys before sections are read once
 
 `c_steps` and `c_synth` still route `restore section-1-drums`, `synth` and `velocity` from
-`u_state`'s auto file and put them as the section's; `u_state` then drops the old lines at its next
+`u_state`'s auto file and put them as the section's, the drums' line as it came
+([sequencer.md](sequencer.md), *One part of a section*); `u_state` then drops the old lines at its next
 flush, since nothing puts them. So the pattern and the synth a rig had before sections become
 section 1's at the first load after the update.
 

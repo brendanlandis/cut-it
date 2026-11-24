@@ -485,7 +485,7 @@ at full drunkenness at most 60 of 96 sixteenths hold exactly one step. Then trac
 then soloed as well, over OSC: muted, it is silent while track 2 plays, soloed, it plays though
 muted while track 2 is silent, each is put as a 743-number line, and the Launchpad shows the pads
 that won't play dim, pink or the selected red at a quarter. Then track 4's distortion is made fold,
-over OSC: it is put as a 759-number line, its character after the mutes and solos, and `c_kit`'s
+over OSC: it is put with the song's kit, the section's line keeping its mute and solo, and `c_kit`'s
 stand-in hears `char 4 3` and nothing else; the song's draft ends with all three.
 
 ⚠️ **The layout table is read, not restated**, so a frame is decoded with the same table the patch

@@ -12,8 +12,9 @@
 -- sync, snap, select, vol, pitch, randomness, set-track-last, num, den, drunk, set-swing and
 -- set-last, its effects, drive, tone, dist, char, delay-note, delay-feel, feedback, delay, send,
 -- size, damping and verb-type, and each track's mute, solo and rnd-pitch, from u_net.
--- inlet 2: c_steps.pd's own -- tick <bpm>, start, stop, restore <the saved line>, init, and sync
--- off the state bus: put the pattern now if it is being held.
+-- inlet 2: c_steps.pd's own -- tick <bpm>, start, stop, restore <the saved line>, restore-old <the
+-- line the auto key held before sections>, init, and sync off the state bus: put the pattern now if
+-- it is being held.
 -- outlet 1: pad <pad> <velocity>, and a track's vol <pad> <dB> and pitch <pad> <semitones> and
 -- its effects, drive, tone, dist, char, delay-time, feedback, delay and send <pad> <value>, and the
 -- reverb's size and damping <value> and verb-type <0-2>, and a held repeat's tape <span> <units>
@@ -54,8 +55,8 @@ function StepsLua:initialize(_, atoms)
   return true
 end
 
--- The pattern to save is 581 numbers, 711 once an effect is set, 743 once a track is muted or
--- soloed, 759 once a track's distortion is not soft and 776 once a track's random pitch is on, and carrying the 581 to u_song and storing them cost about 2.5 ms on the Organelle, so
+-- The pattern to save is 581 numbers, 743 once a track is muted or soloed, and carrying the 581 to
+-- u_song and storing them cost about 2.5 ms on the Organelle, so
 -- a drag on the phone, a change 30 or 60 times a second, made the audio crackle (2026-11-05: Pd
 -- runs with a 6 ms audio buffer, and WiFi hands over two messages at once). So the pattern goes
 -- at most once every SAVE_EVERY ms: the first change starts the clock, later ones only mark it
@@ -73,8 +74,8 @@ function StepsLua:finalize()
 end
 
 -- lua-face.lua's hold: a press's or the phone's save is kept back; the patch's own messages'
--- (a restore's, which is put straight back as u_song expects, ref/module/state.md, and init's)
--- go at once. A bar first puts whatever is held.
+-- (init's, and restore-old's, the auto key's line put as the section's) go at once. A bar first
+-- puts whatever is held.
 function StepsLua:hold(e)
   if e[1] == "save" and self.holding then
     if not self.save_held then
@@ -141,13 +142,13 @@ end
 
 function StepsLua:in_2(sel, atoms)
   if sel == "sync" then return self:save_now() end
-  if sel == "restore" then
+  if sel == "restore" or sel == "restore-old" then
     -- the pattern is replaced: what was held is the old one's, and u_song's sync put it already
     self.save_held = false
     self.save_clock:unset()
   end
   self:internal(sel, atoms)
-  if sel == "restore" or sel == "restore-kit" then self:kit_check() end
+  if sel == "restore" or sel == "restore-old" or sel == "restore-kit" then self:kit_check() end
   -- After the step's hits and whatever waited for the 1, the same step to c_melody.
   if sel == "tick" and self.state.last_count then
     local st = self.state

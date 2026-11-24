@@ -17,7 +17,7 @@
 --   "rush-off" {} and "tape-run" {1 or 0}                     to c_kit: rush's loop (R.rush)
 --   {"page", "steps" | "play" | "vel" | "track" | "last" | "bar" | "rep" | "quiet" | "fast"
 --    | "recall", {...}}                                       to g_grid's third inlet
---   {"save", "list", {581, 711, 743, 759, 760 or 776 numbers, R.save}}
+--   {"save", "list", {581 or 743 numbers, R.save}}
 --                                                             to the state bus, put section <part>
 --   {"clock", "restart", {}}                                 to the start bus, the saved tempo's press
 --   {"clock", "swing" | "rate", {x}}                          to c_steps.pd's step clock
@@ -107,9 +107,10 @@ R.FX = { { "drive", 0, 100, 50 }, { "tone", 0, 100, 100 }, { "dist", 0, 100, 0 }
          { "note", 1, 5, 3 }, { "feel", 1, 3, 1 }, { "feedback", 0, 100, 40 },
          { "delay", 0, 100, 0 }, { "send", 0, 100, 0 }, { "char", 1, 4, 1 } }
 R.VERB = { { "size", 0, 100, 50 }, { "damping", 0, 100, 50 } }
--- R.save writes the first R.FX_BLOCK of them after the pattern's 581 numbers, as it did before
--- the distortion had a character; the rest, the character, after the mutes and solos, so a line
--- saved before it loads as it was, every track soft.
+-- A line that held them, as a section's did until each song had a kit (2026-11-06), holds the
+-- first R.FX_BLOCK of them after the pattern's 581 numbers, as it did before the distortion had a
+-- character; the rest, the character, after the mutes and solos, so a line saved before it loads
+-- as it was, every track soft.
 R.FX_BLOCK = 8
 -- The distortion's characters (Brendan, 2026-11-05): e_drive's curve at char 1 to 4. The phone
 -- shows their names.
@@ -124,11 +125,15 @@ R.NOTES = { 8, 4, 2, 1, 0.5 }
 R.NOTE_NAMES = { "1/2", "1/4", "1/8", "1/16", "1/32" }
 R.FEELS = { 1, 2 / 3, 3 / 2 }
 R.FEEL_NAMES = { "straight", "triplet", "dotted" }
--- What R.save writes, in order, with each track's character; what it writes with the mutes and
--- solos, with the effects, and with none of them; what it wrote until the song
--- store, without the swing and the global last step, which a section holds since
--- (cut-it/songs-and-sections); and what it wrote until 2026-11-05, when each track had a skip and
--- a move chance where its randomness and its volume are now, and no pitch.
+-- Where a saved line holds what, each the length of a line that ends there. R.save writes two of
+-- them: R.SAVED_FXLESS, the pattern and its settings, and R.SAVED_FLAGS, with the mutes and solos
+-- after 130 numbers where a line once held the effects. The rest are read and no longer written
+-- (R.restore): R.SAVED_FX, with the effects; R.SAVED, with each track's character;
+-- R.SAVED_TYPED, with the reverb's type; R.SAVED_ROLLED, with each track's random pitch;
+-- R.SAVED_SECTIONLESS, from before the song store, without the swing and the global last step,
+-- which a section holds since (cut-it/songs-and-sections); and R.SAVED_CHANCES, from before
+-- 2026-11-05, when each track had a skip and a move chance where its randomness and its volume
+-- were, and no pitch.
 R.SAVED_FXLESS = R.TRACKS * R.STEPS + 4 * R.TRACKS + 5
 R.SAVED_FX = R.SAVED_FXLESS + R.FX_BLOCK * R.TRACKS + #R.VERB
 R.SAVED_FLAGS = R.SAVED_FX + 2 * R.TRACKS
@@ -263,86 +268,34 @@ function R.cell_step(st, n)
   return r * R.row(st) + c + 1
 end
 
--- The whole pattern, zeros included: 512 velocities, then the 16 tracks' own last steps, 0 for
--- one that follows the global last step, then their randomness, 0 to 100, their volumes in dB and
--- their pitches in semitones, then the time signature, the drunkenness, 0 to 100, the swing, 50 to
--- 75, and the global last step, 581 numbers; then, once any effect is off its starting point,
--- each of R.FX's first R.FX_BLOCK for every track, track 1 first, and the reverb's size and
--- damping: 711; then, once any track is muted or soloed, the sixteen mutes and the sixteen solos,
--- 1 or 0, the effects written as they stand whether moved or not: 743; then, once any track's
--- distortion is not soft, the sixteen characters, 1 to 4, the effects, the mutes and the solos
--- written as they stand: 759; then, once the reverb's type is not the plate, the type, 0 to 2,
--- everything before it written as it stands: 760; then, once any track's random pitch is on, the
--- sixteen flags, 1 or 0, everything before them written as it stands: 776.
--- While every effect is at its starting point and nothing is muted or soloed, the line stays 581,
--- as it was saved before the effects, so a song saved before them restores and is put back as it
--- was, not as a change to save, and an unused effect costs the put nothing; while nothing is
--- muted or soloed, 711 or 581, so a song saved before mute and solo does the same; and while every
--- track is soft, 743, 711 or 581, as a song saved before the characters. What a section holds of
--- the drums and the arrangement page (Brendan, 2026-11-04), its effects with them, and its mutes
--- and solos and its characters (2026-11-05), put as the section's <part> (ref/module/songs.md).
+-- What a section holds of the drums and the arrangement page (Brendan, 2026-11-04), put as the
+-- section's <part> (ref/module/songs.md): the whole pattern, zeros included, 512 velocities, then the
+-- 16 tracks' own last steps, 0 for one that follows the global last step, then their randomness, 0 to
+-- 100, then 32 zeros, where a line once held their volumes and pitches, then the time signature, the
+-- drunkenness, 0 to 100, the swing, 50 to 75, and the global last step: 581 numbers. Once any track is
+-- muted or soloed (2026-11-05), 130 more, each an effect's starting point, where a line once held the
+-- effects, then the sixteen mutes and the sixteen solos, 1 or 0: 743.
+-- This is the one shape written. The kit's sound is its song's (R.kit_line, 2026-11-06), so a line
+-- holds none; the lines that did, of 711, 759, 760 and 776 numbers, are still read (R.restore).
 function R.save(st)
   local all, cells = {}, R.TRACKS * R.STEPS
   for i = 1, cells do all[i] = st.pattern[i] end
   for t = 1, R.TRACKS do
     all[cells + t] = st.own[t]
     all[cells + R.TRACKS + t] = st.randomness[t]
-    all[cells + 2 * R.TRACKS + t] = st.vol[t]
-    all[cells + 3 * R.TRACKS + t] = st.pitch[t]
+    all[cells + 2 * R.TRACKS + t], all[cells + 3 * R.TRACKS + t] = 0, 0
   end
   local n = cells + 4 * R.TRACKS
   all[n + 1], all[n + 2], all[n + 3] = st.num, st.den, st.drunk
   all[n + 4], all[n + 5] = st.swing, st.last
-  -- The kit's sound is the song's (R.kit_line), so a section's line holds its pattern, and a mute or solo.
-  if st.kit_on then
-    for t = 1, R.TRACKS do
-      all[cells + 2 * R.TRACKS + t], all[cells + 3 * R.TRACKS + t] = 0, 0
-    end
-    if not R.flagged(st) then return { "save", "list", all } end
-    local k = R.SAVED_FXLESS
-    for i = 1, R.FX_BLOCK do
-      for _ = 1, R.TRACKS do k = k + 1; all[k] = R.FX[i][4] end
-    end
-    for _, f in ipairs(R.VERB) do k = k + 1; all[k] = f[4] end
-    for t = 1, R.TRACKS do all[k + t], all[k + R.TRACKS + t] = st.mute[t], st.solo[t] end
-    return { "save", "list", all }
-  end
-  local rolled = R.any_rolled(st)
-  local flagged, late, typed = R.flagged(st), R.late_moved(st), st.verb_type ~= 0 or rolled
-  if not flagged and not typed and not R.fx_moved(st) then return { "save", "list", all } end
+  if not R.flagged(st) then return { "save", "list", all } end
   local k = R.SAVED_FXLESS
   for i = 1, R.FX_BLOCK do
-    for t = 1, R.TRACKS do k = k + 1; all[k] = st.fx[R.FX[i][1]][t] end
+    for _ = 1, R.TRACKS do k = k + 1; all[k] = R.FX[i][4] end
   end
-  for _, f in ipairs(R.VERB) do k = k + 1; all[k] = st.verb[f[1]] end
-  if not flagged and not late and not typed then return { "save", "list", all } end
+  for _, f in ipairs(R.VERB) do k = k + 1; all[k] = f[4] end
   for t = 1, R.TRACKS do all[k + t], all[k + R.TRACKS + t] = st.mute[t], st.solo[t] end
-  if not late and not typed then return { "save", "list", all } end
-  k = R.SAVED_FLAGS
-  for i = R.FX_BLOCK + 1, #R.FX do
-    for t = 1, R.TRACKS do k = k + 1; all[k] = st.fx[R.FX[i][1]][t] end
-  end
-  if not typed then return { "save", "list", all } end
-  all[R.SAVED_TYPED] = st.verb_type
-  if not rolled then return { "save", "list", all } end
-  for t = 1, R.TRACKS do all[R.SAVED_TYPED + t] = st.rolled[t] end
   return { "save", "list", all }
-end
-
--- Whether any track's random pitch is on.
-function R.any_rolled(st)
-  for t = 1, R.TRACKS do if st.rolled[t] ~= 0 then return true end end
-  return false
-end
-
--- Whether any of the effects saved after the mutes and solos, the characters, is off its
--- starting point.
-function R.late_moved(st)
-  for i = R.FX_BLOCK + 1, #R.FX do
-    local f = R.FX[i]
-    for t = 1, R.TRACKS do if st.fx[f[1]][t] ~= f[4] then return true end end
-  end
-  return false
 end
 
 -- Whether any track is muted or soloed.
@@ -383,15 +336,6 @@ local function tell_quiet(st, out)
   if key == st.quiet_told then return end
   st.quiet_told = key
   out[#out + 1] = e
-end
-
--- Whether any effect, a track's or the reverb's, is off its starting point.
-function R.fx_moved(st)
-  for _, f in ipairs(R.FX) do
-    for t = 1, R.TRACKS do if st.fx[f[1]][t] ~= f[4] then return true end end
-  end
-  for _, f in ipairs(R.VERB) do if st.verb[f[1]] ~= f[4] then return true end end
-  return false
 end
 
 -- At load: the page's selection, before anything is pressed, and the step clock straight; the
@@ -1330,14 +1274,17 @@ local function restore_flags(st, values)
   end
 end
 
--- A section's restore of <part>, from the song store, or u_state's of section-1-<part>, the auto
--- key the pattern had before sections, once, then put straight back (ref/module/state.md), which
--- also repairs a short or malformed line; and every track's volume and pitch to c_kit, and
--- whichever effects changed (R.tell_fx), a line of fewer than 711 bringing them back off and one
--- of fewer than 759 every track back soft and one of fewer than 760 the reverb back to the plate;
--- a line of fewer than 776 every track's random pitch off;
--- and last, the page's quiet pads when they changed, a line of fewer than 743 bringing every
--- track back unmuted and unsoloed. A line of
+-- A section's restore of <part>, from the song store: its pattern and settings, and last, the
+-- page's quiet pads when they changed, a line of fewer than 743 bringing every track back unmuted
+-- and unsoloed. Nothing is put back: a line of any older shape stays as it is in the store until
+-- its section is next changed, when R.save writes it.
+-- The sound a line holds, each track's volume and pitch, its effects, the reverb's type and each
+-- track's random pitch, is read only for a song with no kit of its own yet (R.restore_kit), which
+-- takes its first section's as its kit, and before any song has loaded (R.restore_old); a song
+-- with a kit keeps its own. Read, it goes to c_kit, every track's volume and pitch and whichever
+-- effects changed (R.tell_fx), a line of fewer than 711 bringing the effects back off, one of
+-- fewer than 759 every track back soft, one of fewer than 760 the reverb back to the plate and one
+-- of fewer than 776 every track's random pitch off. A line of
 -- exactly 256 is the 16-step pattern this replaced, track by track: its steps go to each track's
 -- first sixteen. A line of exactly 563 is from before the randomness (2026-11-05): its skip
 -- chances come back as each track's randomness, which took their place, its move chances are
@@ -1467,20 +1414,11 @@ function R.restore(st, values)
     end
   end
   -- A section change happens on the beat, and a burst of messages there stalls the audio: Pd runs
-  -- with a 6 ms buffer, and the beat dropped around a section's 1 (Brendan, 2026-11-05). So a line
-  -- that says what the sequencer would save isn't put back, since the store already holds it; one
-  -- saved before today's shape, or clipped here, is. And c_kit hears only the volumes and pitches
-  -- that differ from what it was last told.
-  local out, saved = {}, R.save(st)
-  local same = #saved[3] == #values
-  for i = 1, same and #values or 0 do
-    if saved[3][i] ~= values[i] then
-      same = false
-      break
-    end
-  end
-  -- A section's line holds no sound once the song has a kit, and one from before that is left as it is.
-  local put = not same and not st.kit_on and saved or nil
+  -- with a 6 ms buffer, and the beat dropped around a section's 1 (Brendan, 2026-11-05). So nothing
+  -- is put back: the store already holds the line, and one from before today's shape is left as it
+  -- is until the section is next changed. And c_kit hears only the volumes and pitches that differ
+  -- from what it was last told.
+  local out = {}
   for _, e in ipairs({ R.page_last(st), R.steps(st), R.page_bar(st),
                        { "clock", "swing", { st.swing / 100 } } }) do
     out[#out + 1] = e
@@ -1498,9 +1436,18 @@ function R.restore(st, values)
   if st.playing then
     st.on_one = st.on_one or {}
     for _, e in ipairs(out) do st.on_one[#st.on_one + 1] = e end
-    return put and { put } or {}
+    return {}
   end
-  if put then table.insert(out, 1, put) end
+  return out
+end
+
+-- u_state's restore of section-1-<part>, the auto key the pattern had before sections, at the
+-- first load after that update (ref/module/songs.md, *The auto keys before sections are read
+-- once*): taken as a section's line is, and put as the section's, as it came, its sound still in
+-- it, so the song it becomes takes that sound as its kit when it first loads.
+function R.restore_old(st, values)
+  local out = R.restore(st, values)
+  table.insert(out, 1, { "save", "list", values })
   return out
 end
 
@@ -1601,6 +1548,7 @@ R.internal = {
   start = function(st) return R.start(st) end,
   stop = function(st) return R.stop(st) end,
   restore = function(st, a) return R.restore(st, a) end,
+  ["restore-old"] = function(st, a) return R.restore_old(st, a) end,
   init = function(st) return R.boot(st) end,
 }
 

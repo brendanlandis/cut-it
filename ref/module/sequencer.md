@@ -123,24 +123,20 @@ each track's distortion and delay and the reverb they share (2026-11-05). *The k
 | | | Evidence |
 |---|---|---|
 | Key | `<part>`, `drums`: a part of the section playing, put with the section policy, which `u_song` keeps ([songs.md](songs.md)) | unknown |
-| Line | The key, 512 velocities, track 1's 32 steps first, then the sixteen tracks' own last steps, 0 for one that follows the global one, their randomness, their volumes, their pitches, the time signature's two numbers, the drunkenness, the swing and the global last step: 582 atoms, zeros included. Once any effect is off its starting point, each track's eight effects follow, `R.FX`'s order, drive, tone, mix, note, feel, feedback, level and send, sixteen of each, then the reverb's size and damping: 712 (Brendan, 2026-11-05: saved per section, with the pattern). While none is, the line stays 582, so a song saved before the effects is put back as it was and nothing about it reads as a change to save. Once any track is muted or soloed, the sixteen mutes and the sixteen solos, 1 or 0, follow the effects, written whether any effect moved or not: 744 (Brendan, 2026-11-05: saved per section, with the pattern). Once any track's distortion is not soft, the sixteen characters, 1 to 4, follow the mutes and solos, written whether anything before them moved or not: 760 (Brendan, 2026-11-05: saved per section). Once the reverb's type is not the plate, it follows the characters, 0 to 2, everything before it written as it stands: 761 (Brendan, 2026-11-05: saved per section, as its size and damping are). Once any track's random pitch is on, the sixteen flags, 1 or 0, follow the type, everything before them written as they stand: 777 (Brendan, 2026-11-05: saved per section). Knob 3's last step is the selected track's own, in the line; knobs 2 and 4 are the global last step and the swing | verified |
-| Written | `put section` at load and at once after the patch's own messages (a restore, init); after a press or the phone, **held up to 100 ms**: the first change sets a clock, later ones only mark it held, and the clock puts the pattern as it then stands. `bar`, and `sync` from `u_song` before it saves, reverts, copies or starts a section, put it at once. A put carries 581 numbers, and every change sending one, a drag on the phone 30 to 60 a second, cost 4 to 6 ms each on the Organelle and crackled the audio, which runs with a 6 ms buffer (2026-11-05): held, a drag costs 2 ms a change, the put ten times a second. `u_song` writes the song's draft within 2 s | verified |
-| Restored | When its section starts, the first at ~3.5 s; put back only if it differs from what the sequencer would save | unknown |
-| A line without the effects | Of 581 numbers, or any length below 711 the Lua takes: every effect comes back off, at its starting point, and `c_kit` is told whichever changed. So an old section's drums play dry | verified |
+| Line | The key, 512 velocities, track 1's 32 steps first, then the sixteen tracks' own last steps, 0 for one that follows the global one, their randomness, 32 zeros where a line once held the tracks' volumes and pitches, the time signature's two numbers, the drunkenness, the swing and the global last step: 582 atoms. Once any track is muted or soloed, 130 numbers follow where a line once held the effects and the reverb's size and damping, each at its starting point, then the sixteen mutes and the sixteen solos, 1 or 0: 744 (Brendan, 2026-11-05: saved per section, with the pattern). It has no other shape. Knob 3's last step is the selected track's own, in the line; knobs 2 and 4 are the global last step and the swing | verified |
+| The kit's sound | Not in the line: it is the song's, `put song kit`, 195 numbers, each track's volume and pitch, then its eight effects and its distortion's character, `R.FX`'s order, sixteen of each, the reverb's size, damping and type, and each track's random pitch. Put beside a put of the line when it has changed since it last went, and restored as `restore kit` when the song loads or reverts ([voices.md](voices.md), *Machines and patches*) | verified |
+| Written | `put section` at load; after a press or the phone, **held up to 100 ms**: the first change sets a clock, later ones only mark it held, and the clock puts the pattern as it then stands. `bar`, and `sync` from `u_song` before it saves, reverts, copies or starts a section, put it at once. A put carries 581 numbers, and every change sending one, a drag on the phone 30 to 60 a second, cost 4 to 6 ms each on the Organelle and crackled the audio, which runs with a 6 ms buffer (2026-11-05): held, a drag costs 2 ms a change, the put ten times a second. `u_song` writes the song's draft within 2 s | verified |
+| Restored | When its section starts, the first at ~3.5 s. Nothing is put back: the store holds the line already, and one in an older shape stays as it is until the section is next changed (*One part of a section*, below) | verified |
+| An older line's sound | A line saved before the kit's sound was the song's holds the tracks' volumes and pitches where the zeros are now and, as far as it goes, the effects after the last step, the characters after the solos, the reverb's type and the random pitches: 712, 760, 761 and 777 atoms. A song with a kit ignores all of it. A song with none takes the sound of the first section it starts as its kit, `put seed kit`, which is no change to it, and whatever that line doesn't reach comes back at its starting point: no effect, soft, the plate, no random pitch | verified |
 | A line without mute and solo | Of 711 numbers or fewer, any length the Lua takes: every track comes back unmuted and unsoloed, and the page is told when that changes its pads. So an old section plays every track | verified |
-| A line without the characters | Of 743 numbers or fewer, any length the Lua takes: every track comes back soft, and `c_kit` is told whichever changed. So an old section's distortion is soft. Its tone stays as it was saved: a section saved with an effect moved before the tone opened holds tone 60 | verified |
-| A line without the type | Of 759 numbers or fewer, any length the Lua takes: the reverb comes back as the plate, and `c_kit` is told when that changes it. So an old section plays the plate | verified |
-| A line without the random pitches | Of 775 numbers or fewer, any length the Lua takes: every track's comes back off. So an old section rolls no pitches | verified |
-| A line of exactly 579 | Saved before sections, without the swing and the global last step: those in force stay, and the put after it writes the new line | verified |
-| `section-1-<part>` | The `auto` key the pattern had before sections: a restore of it from `u_state`, at the first load after the update, is taken the same way and put as the section's, and the auto file drops it at its next flush | verified |
-| A line of exactly 256 | The 16-step pattern this replaced: each track's sixteen go to its first sixteen steps, and the put after it writes the new line | verified |
-| A line of exactly 563 | Saved before 2026-11-05, with a skip and a move chance per track where the randomness and the volumes are now: its skip chances come back as each track's randomness, which took their place, its move chances are dropped, and its time signature and drunkenness are read from where it kept them. The put after it writes the new line | verified |
-| A short or long line | The Lua takes what the line holds, as far as the drunkenness, a symbol as 0, and leaves the rest as they were; the put after it writes all of it. A line of 528, from before the drum screen's settings, comes back at 4/4, sober, with no randomness and every track at 0 dB and its own pitch | verified |
-| A 760-atom line | The sequencer gate makes track 4's distortion fold over OSC, as the phone sends it: it is put at once, its character after the mutes and solos, `c_kit` is told `char 4 3`, and the final pattern reaches the song's draft whole | verified |
-| A 777-atom line | The sequencer gate turns track 1's random pitch on over OSC, as the phone sends it, after the type: it is put at once, the flags last, and the final pattern reaches the song's draft whole | verified |
-| A 761-atom line | The sequencer gate makes the reverb gigaverb over OSC, as the phone sends it, after the character: it is put at once, the type last, `c_kit` is told `verb-type 1`, and the final pattern reaches the song's draft whole | verified |
+| A line of exactly 579 | Saved before sections, without the swing and the global last step: those in force stay | verified |
+| `section-1-<part>` | The `auto` key the pattern had before sections: a restore of it from `u_state`, at the first load after the update, reaches the Lua as `restore-old`, is taken as a section's line is and put as the section's as it came, its sound still in it, which the song it becomes takes as its kit. The auto file drops it at its next flush | verified |
+| A line of exactly 256 | The 16-step pattern this replaced: each track's sixteen go to its first sixteen steps | verified |
+| A line of exactly 563 | Saved before 2026-11-05, with a skip and a move chance per track where the randomness and the volumes are now: its skip chances come back as each track's randomness, which took their place, its move chances are dropped, and its time signature and drunkenness are read from where it kept them | verified |
+| A short or long line | The Lua takes what the line holds, as far as the drunkenness, a symbol as 0, and leaves the rest as they were. A line of 528, from before the drum screen's settings, comes back at 4/4, sober, with no randomness | verified |
+| The kit from the phone | The sequencer gate makes track 4's distortion fold, the reverb gigaverb and track 1's random pitch on over OSC, as the phone sends them: each is put with the song's kit, the section's line keeping its mute and solo, `c_kit` is told `char 4 3` and `verb-type 1` and nothing else, and the kit reaches the song's draft beside the line | verified |
 | A 744-atom line | The sequencer gate mutes and then solos track 1 over OSC, as the phone sends them: each is put at once, the final pattern reaches the song's draft whole, track 1 muted and soloed, and its notes stop and start as the rules say | verified |
-| A 712-atom line | Written and read whole by `u_song`'s Lua; the sequencer gate's seed, a song of one section, holds a last step of its own, a volume, a pitch, 7/8 and four tracks' effects and the reverb's size, which come back, and `c_kit` is told the effects that moved since load and no others, and the final pattern reaches the song's draft | verified |
+| A 712-atom line | The sequencer gate's seed, a song of one section and no kit: a last step of its own, a volume, a pitch, 7/8 and four tracks' effects and the reverb's size, which come back, as the song's kit. The line isn't put back, `c_kit` is told every volume and pitch and the effects that moved since load and no others, and the final pattern reaches the song's draft with the kit beside it | verified |
 
 ## Traps
 
@@ -360,13 +356,28 @@ it would play straight through the silence the panic made; the pattern is kept.
 an auto key named for a section from the first version, so that songs would make it each section's
 without rewriting this file, and they did. Dense, zeros and all, so a restore fills the pattern in
 one pass and the line is the same shape every time. The Lua answers what to save and takes the
-restore; `c_steps.pd` names the part and puts it with the section policy. **A restore is put back only
-if it differs from what the sequencer would save**: a line in an older shape, or short or malformed,
-is repaired that way, while one the store already holds isn't sent again. Unlike `u_state`'s keys
-([state.md](state.md), *A contributor must put back what it restores*), the song store keeps a part
-whether or not it is put back. A section change happens just before the beat, and work there stalls
-the audio: Pd runs with a 6 ms buffer, and the beat dropped around a section's 1 (Brendan, 2026-11-05).
-So `c_kit` also hears only the volumes and pitches that differ.
+restore; `c_steps.pd` names the part and puts it with the section policy. **A restore is never put
+back.** Unlike `u_state`'s keys ([state.md](state.md), *A contributor must put back what it
+restores*), the song store keeps a part whether or not it is put back, so a line in an older shape,
+or short or malformed, stays as it is until the section is next changed, and the put then writes
+today's. A section change happens just before the beat, and work there stalls the audio: Pd runs
+with a 6 ms buffer, and the beat dropped around a section's 1 (Brendan, 2026-11-05). So `c_kit`
+also hears only the volumes and pitches that differ.
+
+**The one line that is put as it arrives is `section-1-drums`**, the auto key from before sections
+([songs.md](songs.md), *The auto keys before sections are read once*): nothing else would make it
+the section's. `c_steps.pd` sends it to the Lua as `restore-old`, and it is put as it came, not as
+the sequencer would save it, since its volumes and pitches are the only copy of that rig's sound
+and the song it becomes has no kit until it first loads.
+
+**The line has one shape, because the kit's sound left it.** Volume, pitch, the effects, the
+characters, the reverb and the random pitches were each added to the line as they came, and each
+made it longer only once it was used, so that a song saved before it read as nothing to save: six
+lengths written, and a restore that compared them. They are the song's now (Brendan, 2026-11-06;
+[voices.md](voices.md), *Machines and patches*), so the line writes zeros and starting points
+where they were, which keeps the mutes and solos where every line saved since 2026-11-05 has
+them, and the older lengths are only read. Before any song has loaded, in the patch standing
+alone, a line's sound is still read, and written nowhere.
 
 **The arrangement page's settings ride in the pattern's line**: the time signature and the
 drunkenness from the first, the swing and the global last step since sections (Brendan,
@@ -387,7 +398,7 @@ loop's place means nothing in a loop of another length.
 Brendan's (2026-11-05): a distortion and a delay on each track, so different drums can have
 different delays, and a send from each to one reverb, since sixteen reverbs are more than the
 Organelle can afford. The phone's drum screen sets them for the selected track
-([phone.md](../device/phone.md)), `c_steps` keeps and saves them with the pattern, as it does a
+([phone.md](../device/phone.md)), `c_steps` keeps them and saves them with the song's kit, as it does a
 track's volume and pitch, and `c_kit` plays them. Measured on the Organelle 1's one core, each in a
 second Pd beside the live one (its Reference page, *Cut It's drum effects*). The S2 plays the whole
 patch at 8.8 % of one of its cores against the Organelle 1's 39–44 % ([device-os.md](../device-os.md)),
@@ -471,18 +482,17 @@ its starting point instead. A restore tells `c_kit` only the effects that change
 message out of the Lua costs about 0.025 ms on the Organelle and there are 130 of them: a
 section's restore lands on a step.
 
-**The line grows only when an effect is used.** It stays the 581 numbers it was while every effect
-is at its starting point, so a song saved before the effects restores, isn't put back, and reads
-as nothing to save; once one moves, the line is 711. The characters came after
-mute and solo, so they are saved after them, 759 once any track is not soft, and a line saved
-before them loads every track soft.
+**The effects are saved with the song's kit**, the characters after the eight they joined (*The
+pattern in a section*, above). A line from before that holds them after its last step, 711
+numbers, and the characters after the mutes and solos, which came between: 759. One saved before
+the characters loads every track soft.
 
 ### Three reverbs behind the same controls
 
 The reverb that was, four of Freeverb's combs and two of its allpasses, "sounds very cheap and
 unnatural" (Brendan, 2026-11-05), and renders of his drums through the candidates left him unable
 to choose between three, so **the phone chooses**: a third control beside size and damping, its
-type, saved per section as they are. Each type is an engine of its own inside `e_verb`:
+type, saved with the song's kit as they are. Each type is an engine of its own inside `e_verb`:
 
 - **The plate**, `e_plate`: Dattorro's plate (*Effect Design Part 1*, JAES 1997, figure 1) in
   vanilla boxes, the research's sketch as he heard it, modulated tank and all, its two sides' seven
@@ -732,10 +742,9 @@ the last solo goes: the usual mixing-desk rule, so a solo is a look at a few tra
 mutes as they were. The page is told which pads won't play, `quiet`, only when that changes, so a
 mute under a solo and a restore that changes nothing send it nothing.
 
-**The line grows only when they are used**, as it did for the effects: 581 numbers with neither,
-711 with an effect moved, 743 once a track is muted or soloed, 759 once a track's distortion is not
-soft, 760 once the reverb is not the plate and 776 once a track's random pitch is on, so an old section
-loads and is put back as it was, with nothing muted.
+**The line grows only when they are used**: 581 numbers with neither, 743 once a track is muted
+or soloed, so a section with neither isn't changed by their being there, and an old one loads with
+nothing muted.
 
 ## Open
 

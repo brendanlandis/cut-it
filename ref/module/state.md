@@ -198,7 +198,8 @@ nothing loses its key at the next flush — which any other key's change trigger
 fine until the boot after.
 
 **Fix:** put the restored value straight back. `u_map` does it by re-storing every `mode` that
-reaches the bus; `c_steps` puts its pattern back the moment it is restored.
+reaches the bus. A section's part needn't: the song store keeps it either way
+([songs.md](songs.md)).
 
 ### Two files, because they have different lifecycles
 

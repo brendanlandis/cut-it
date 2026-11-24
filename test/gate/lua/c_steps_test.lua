@@ -58,9 +58,12 @@ end
 -- sixteen solos, the effects before them whether given or not: 743; then, when x gives any track
 -- a character, the sixteen characters, everything before them whether given or not: 759; then,
 -- when x gives the reverb a type other than the plate, 0, the type, everything before it as it
--- stands: 760; then, when x turns any track's random pitch on, the sixteen flags: 776. x holds what differs from a new sequencer's: randomness, vol and pitch by track,
--- num, den, drunk, swing, last, fx (fx.char among them) and verb, mute and solo by track, type,
--- and rolled by track.
+-- stands: 760; then, when x turns any track's random pitch on, the sixteen flags: 776. x holds
+-- what differs from a new sequencer's: randomness, vol and pitch by track, num, den, drunk, swing,
+-- last, fx (fx.char among them) and verb, mute and solo by track, type, and rolled by track.
+-- R.save writes two of these: the 581 with no vol or pitch, and the 743 with no fx or verb, so
+-- line() given only randomness, num, den, drunk, swing, last, mute and solo is what is written.
+-- Every other shape is a line a section held before each song had a kit, which R.restore reads.
 local function line(pat, own, x)
   x = x or {}
   local l = {}
@@ -457,8 +460,34 @@ long[CELLS + 3] = 40
 R.internal.restore(st, long)
 equal("a long line stops at the settings, each last step clipped to 0..32",
       { #st.pattern, st.own[3], #st.own }, { CELLS, 32, 16 })
-equal("an empty restore changes nothing and still puts the pattern back",
-      R.internal.restore(R.new(1), {})[1], { "save", "list", line(zeros(CELLS)) })
+equal("⛔ an empty restore changes nothing and puts nothing back",
+      R.internal.restore(R.new(1), {})[1], { "page", "last", { 16 } })
+-- How many of what a rule answered are a line to put.
+local function puts(out)
+  local n = 0
+  for _, e in ipairs(out) do if e[1] == "save" then n = n + 1 end end
+  return n
+end
+equal("⛔ no restore puts a line back, whatever its shape: 581, 579, 563, 256, 711, 776 or 3 numbers",
+      (function()
+        local got = {}
+        for _, l in ipairs({ line(pat, own), sectionless(pat, own), old_line(pat, own), zeros(256),
+                             line(pat, own, { fx = { dist = { [2] = 60 } } }),
+                             line(pat, own, { rolled = { [3] = 1 } }), { 1, 2, "x" } }) do
+          got[#got + 1] = puts(R.internal.restore(R.new(1), l))
+        end
+        return got
+      end)(), { 0, 0, 0, 0, 0, 0, 0 })
+equal("⛔ restore-old, the auto key's line from before sections: put as the section's as it came, "
+      .. "its volumes still in it, then taken as a section's is",
+      (function()
+        local q = R.new(1)
+        local l = sectionless(pat, own, { vol = { [5] = -12 } })
+        local out = R.internal["restore-old"](q, l)
+        return { out[1], out[2], puts(out), q.pattern, q.vol[5] }
+      end)(),
+      { { "save", "list", sectionless(pat, own, { vol = { [5] = -12 } }) }, { "page", "last", { 16 } },
+        1, pat, -12 })
 
 print("\n--- releases ---")
 st = R.new(1)
@@ -742,16 +771,19 @@ equal("drunkenness, 0 to 100, rounded and saved",
       { R.presses.drunk(st, { 33.4 }), R.presses.drunk(st, { 140 })[1][3][CELLS + 67] },
       { { { "save", "list", line(zeros(CELLS), nil, x("drunk", 33)) } }, 100 })
 st = R.new(1)
-equal("⛔ a pad's volume is ITS track's, not the selected one's: saved, and to c_kit for its pad",
-      R.presses.vol(st, { 3, -6 }), { { "save", "list", line(zeros(CELLS), nil, { vol = { [3] = -6 } }) },
+equal("⛔ a pad's volume is ITS track's, not the selected one's: to c_kit for its pad, and a save, "
+      .. "the section's line holding no volume, since it is the kit's",
+      R.presses.vol(st, { 3, -6 }), { { "save", "list", line(zeros(CELLS)) },
                                       { "note", "vol", { 3, -6 } } })
+equal("⛔ ... the kit's line holds it", R.kit_line(st)[3], -6)
 equal("... -30 to +6 dB, in whole dB",
       { R.presses.vol(st, { 3, -50 })[2], R.presses.vol(st, { 3, 9 })[2],
         R.presses.vol(st, { 3, 2.4 })[2] },
       { { "note", "vol", { 3, -30 } }, { "note", "vol", { 3, 6 } }, { "note", "vol", { 3, 2 } } })
-equal("⛔ a pad's pitch: saved, and to c_kit", R.presses.pitch(st, { 5, 7 }),
-      { { "save", "list", line(zeros(CELLS), nil, { vol = { [3] = 2 }, pitch = { [5] = 7 } }) },
-        { "note", "pitch", { 5, 7 } } })
+equal("⛔ a pad's pitch: to c_kit, and a save, the section's line holding no pitch",
+      R.presses.pitch(st, { 5, 7 }),
+      { { "save", "list", line(zeros(CELLS)) }, { "note", "pitch", { 5, 7 } } })
+equal("⛔ ... the kit's line holds it, after the sixteen volumes", R.kit_line(st)[16 + 5], 7)
 equal("... -12 to +12 semitones, whole",
       { R.presses.pitch(st, { 5, -20 })[2], R.presses.pitch(st, { 5, 13 })[2],
         R.presses.pitch(st, { 5, -3.6 })[2] },
@@ -759,8 +791,7 @@ equal("... -12 to +12 semitones, whole",
         { "note", "pitch", { 5, -4 } } })
 equal("⛔ a pad's randomness, 0 to 100: saved, and nothing for c_kit",
       R.presses.randomness(st, { 2, 40.4 }),
-      { { "save", "list", line(zeros(CELLS), nil, { randomness = { [2] = 40 }, vol = { [3] = 2 },
-                                                    pitch = { [5] = -4 } }) } })
+      { { "save", "list", line(zeros(CELLS), nil, { randomness = { [2] = 40 } }) } })
 equal("... clipped to 0 and 100", { (R.presses.randomness(st, { 2, -5 }) and st.randomness[2]),
                                     (R.presses.randomness(st, { 2, 150 }) and st.randomness[2]) },
       { 0, 100 })
@@ -1298,13 +1329,14 @@ st.rand = dice(0, 0.1, 0.99)
 equal("off: a rolled hit plays at its set pitch, and rolls three dice", pitched(R.internal.tick(st, {})),
       "pad 1 127")
 equal("⛔ off, the next die is untouched: no fourth was rolled", st.rand(), 0.5)
-equal("rnd-pitch on is saved, 776 numbers, and tells c_kit nothing",
+equal("rnd-pitch on is a save, the section's line as it was, 581 numbers, and tells c_kit nothing",
       R.presses["rnd-pitch"](st, { 1, 1 }),
       { { "save", "list", line((function()
         local z = zeros(CELLS)
         for k = 1, 8 do z[k] = 95 end
         return z
-      end)(), nil, { randomness = { [1] = 50 }, last = 4, rolled = { [1] = 1 } }) } })
+      end)(), nil, { randomness = { [1] = 50 }, last = 4 }) } })
+equal("⛔ ... the kit's line holds it, in its last sixteen", R.kit_line(st)[R.KIT - 16 + 1], 1)
 equal("the same again does nothing", R.presses["rnd-pitch"](st, { 1, 1 }), {})
 equal("a message with no number does nothing", R.presses["rnd-pitch"](st, { 1 }), {})
 st.rand = dice(0, 0.1, 0.99, 1 / 25 * 19.5, 0.123)
@@ -1358,22 +1390,24 @@ equal("⛔ a repeat replays them exactly, the pitch with the hit, every pass, ro
         pitched(R.internal.tick(st, {})), st.rand() },
       { "pitch 1 6, pad 1 127", "pitch 1 0, pad 1 95", "pitch 1 6, pad 1 127", 0.123 })
 R.presses.rep(st, { 2, 0 })
--- A section's restore: the line round trip, and older lines off.
+-- A section's restore: a line that held the flags is read, and older lines bring them back off.
 local saved = line(zeros(CELLS), nil, { rolled = { [3] = 1, [16] = 1 } })
 equal("⛔ a line of 776 numbers restores each track's random pitch, in the phone's last 16",
       (function()
         R.internal.restore(st, saved)
         local p = R.phone(st)
-        return { #saved, p[132 + 3], p[132 + 16], p[132 + 1], R.save(st)[3][776] }
-      end)(), { 776, 1, 1, 0, 1 })
-equal("⛔ ... and goes back out as it came", R.save(st)[3], saved)
-equal("⛔ a line of 760, older, loads every track's off, and is put back the 760 it was",
+        return { #saved, p[132 + 3], p[132 + 16], p[132 + 1] }
+      end)(), { 776, 1, 1, 0 })
+equal("⛔ ... which the kit's line holds from then, and the section's, written again, doesn't: 581",
+      { R.kit_line(st)[R.KIT - 16 + 3], R.kit_line(st)[R.KIT - 16 + 16], #R.save(st)[3] },
+      { 1, 1, 581 })
+equal("⛔ a line of 760, older, loads every track's off",
       (function()
         local older = line(zeros(CELLS), nil, { type = 1 })
         R.internal.restore(st, older)
         local p = R.phone(st)
-        return { p[132 + 3], p[132 + 16], #R.save(st)[3], #older }
-      end)(), { 0, 0, 760, 760 })
+        return { p[132 + 3], p[132 + 16], #older }
+      end)(), { 0, 0, 760 })
 equal("a line of 581 the same", (function()
   R.internal.restore(st, first(saved, 581))
   return { R.phone(st)[132 + 3], #R.save(st)[3] }
@@ -1420,8 +1454,9 @@ st.swing, st.last = 70, 20
 back = R.internal.restore(st, sectionless(zeros(CELLS), nil, { num = 3 }))
 equal("⛔ a line of 579, from before sections, keeps the swing and the global last step in force",
       { st.num, st.swing, st.last }, { 3, 70, 20 })
-equal("... and is put straight back as the line of 581", back[1],
-      { "save", "list", line(zeros(CELLS), nil, { num = 3, swing = 70, last = 20 }) })
+equal("⛔ ... and isn't put back: the store keeps its 579 until the section is next changed, when "
+      .. "it is written as the line of 581", { back[1][1], R.save(st)[3] },
+      { "page", line(zeros(CELLS), nil, { num = 3, swing = 70, last = 20 }) })
 st = R.new(1)
 back = R.internal.restore(st, old_line(zeros(CELLS), { [16] = 24 },
                                        { skip = { [2] = 30 }, move = { [5] = 60 }, num = 7, den = 8,
@@ -1432,9 +1467,10 @@ equal("⛔ a line of 563, saved before the randomness, still loads: its last ste
 equal("⛔ ... its skip chances come back as the randomness, which took their place, and its move "
       .. "chances go, not read as volumes", { st.randomness[2], st.randomness[5], st.vol[5] },
       { 30, 0, 0 })
-equal("⛔ ... and it is put straight back as the line of 581", back[1],
-      { "save", "list", line(zeros(CELLS), { [16] = 24 }, { randomness = { [2] = 30 }, num = 7,
-                                                           den = 8, drunk = 25 }) })
+equal("⛔ ... and it isn't put back, and is written as the line of 581 at the next change",
+      { back[1][1], R.save(st)[3] },
+      { "page", line(zeros(CELLS), { [16] = 24 }, { randomness = { [2] = 30 }, num = 7, den = 8,
+                                                    drunk = 25 }) })
 st = R.new(1)
 local old528 = {}
 for i = 1, 528 do old528[i] = full[i] end
@@ -1452,20 +1488,20 @@ equal("a volume or a pitch out of its range is clipped: -30 to +6 dB, -12 to +12
 
 print("\n--- the effects ---")
 -- Each track's distortion, delay and send, and the one reverb's size and damping (Brendan,
--- 2026-11-05): saved with the pattern, told to c_kit, and on the phone for the selected track.
+-- 2026-11-05): the kit's (2026-11-06), told to c_kit, and on the phone for the selected track.
 st = R.new(1)
 equal("a new sequencer has every effect at its starting point, and every mix, level and send at 0, "
       .. "off", { st.fx.drive[1], st.fx.tone[16], st.fx.dist[5], st.fx.note[2], st.fx.feel[2],
                   st.fx.feedback[9], st.fx.delay[3], st.fx.send[16], st.verb.size,
                   st.verb.damping, st.fx.char[4] }, { 50, 100, 0, 3, 1, 40, 0, 0, 50, 50, 1 })
-equal("⛔ the line is 711 numbers with the effects, after the 581 it held before them, 743 "
-      .. "with the mutes and solos after them, and 759 with the characters after those",
+equal("⛔ a line that held the effects is 711 numbers, after the 581 before them, 743 with the "
+      .. "mutes and solos after them, and 759 with the characters after those",
       { R.SAVED_FX, R.SAVED_FLAGS, R.SAVED }, { 711, 743, 759 })
 R.internal.init(st, {})
-equal("⛔ a track's distortion mix from the drum screen, its own track's: saved, and to c_kit",
+equal("⛔ a track's distortion mix from the drum screen, its own track's: to c_kit, and a save, "
+      .. "the section's line holding no effect",
       R.presses.dist(st, { 3, 40 }),
-      { { "save", "list", line(zeros(CELLS), nil, { fx = { dist = { [3] = 40 } } }) },
-        { "note", "dist", { 3, 40 } } })
+      { { "save", "list", line(zeros(CELLS)) }, { "note", "dist", { 3, 40 } } })
 equal("... the same value again does nothing", R.presses.dist(st, { 3, 40 }), {})
 equal("... nor does one with no track or no number",
       { R.presses.dist(st, { 3 }), R.presses.dist(st, {}), R.presses.drive(st, { "x", 20 }) },
@@ -1494,13 +1530,15 @@ equal("... and the notes run 1 to 5 and the feels 1 to 3, clipped", (function()
   R.presses["delay-feel"](st, { 8, 0 })
   return { st.fx.note[8], st.fx.feel[8], st.told["delay-time 8"] }
 end)(), { 5, 1, 0.5 })
-equal("⛔ the reverb's size and damping are the kit's, one each: saved, and to c_kit with no pad",
+equal("⛔ the reverb's size and damping are the kit's, one each: to c_kit with no pad, and a save",
       { R.presses.size(st, { 80 }), R.presses.damping(st, { 20 })[2], R.presses.size(st, {}) },
-      { { { "save", "list", line(zeros(CELLS), nil, {
-            fx = { dist = { [3] = 40 }, drive = { [1] = 100 }, tone = { [2] = 10 },
-                   feedback = { [4] = 70 }, delay = { [5] = 30 }, note = { [7] = 1, [8] = 5 },
-                   feel = { [7] = 2 } }, verb = { size = 80 } }) },
-          { "note", "size", { 80 } } }, { "note", "damping", { 20 } }, {} })
+      { { { "save", "list", line(zeros(CELLS)) }, { "note", "size", { 80 } } },
+        { "note", "damping", { 20 } }, {} })
+equal("⛔ the kit's line holds every effect, after the volumes and pitches, in R.FX's order, then "
+      .. "the reverb's two: track 3's mix, track 7's half note, the size and the damping",
+      { #R.kit_line(st), R.kit_line(st)[32 + 2 * 16 + 3], R.kit_line(st)[32 + 3 * 16 + 7],
+        R.kit_line(st)[32 + 9 * 16 + 1], R.kit_line(st)[32 + 9 * 16 + 2] },
+      { R.KIT, 40, 1, 80, 20 })
 local P = 4 + 32 + 4 + 48
 equal("⛔ the phone hears the selected track's effects and the reverb's, after the rest",
       { R.phone(st)[P + 1], R.phone(st)[P + 3], R.phone(st)[P + 10], R.phone(st)[P + 11],
@@ -1536,9 +1574,8 @@ equal("⛔ a line of 581, saved before the effects, brings every one back off, a
 equal("⛔ ... and isn't put back, so a song saved before the effects is no change to save",
       back[1][1], "page")
 st.fx.drive[4] = 51
-equal("⛔ the line is 711 once any effect is off its starting point, a drive among them, and 581 "
-      .. "again once none is", { #R.save(st)[3], (function() st.fx.drive[4] = 50
-                                                    return #R.save(st)[3] end)() }, { 711, 581 })
+equal("⛔ an effect off its starting point adds nothing to the line written: 581", #R.save(st)[3], 581)
+st.fx.drive[4] = 50
 R.internal.restore(st, fxl)
 R.internal.restore(st, sectionless(zeros(CELLS)))
 equal("⛔ so does a line of 579, and the old lines of 563 and 256", (function()
@@ -1636,10 +1673,11 @@ equal("⛔ the phone hears each track's mute, then each track's solo, after the 
 st = R.new(1)
 R.presses.dist(st, { 4, 30 })
 R.presses.solo(st, { 6, 1 })
-equal("⛔ the line is 743 while any track is muted or soloed, 711 again with an effect moved once "
-      .. "none is, and 581 with neither",
-      { #R.save(st)[3], (function() R.presses.solo(st, { 6, 0 }) return #R.save(st)[3] end)(),
-        (function() R.presses.dist(st, { 4, 0 }) return #R.save(st)[3] end)() }, { 743, 711, 581 })
+equal("⛔ the line is 743 while any track is muted or soloed, the 130 numbers before the mutes "
+      .. "each an effect's starting point whatever the effects are, track 4's mix of 30 written 0; "
+      .. "and 581 again once none is",
+      { #R.save(st)[3], R.save(st)[3][581 + 2 * 16 + 4], R.save(st)[3][711 + 16 + 6],
+        (function() R.presses.solo(st, { 6, 0 }) return #R.save(st)[3] end)() }, { 743, 0, 1, 581 })
 
 print("\n--- mute and solo in the restore ---")
 st = R.new(1)
@@ -1654,9 +1692,9 @@ equal("⛔ ... and tells the page its quiet pads last, after c_kit", { #back, ba
 equal("⛔ the same line again tells the page nothing", #R.internal.restore(st, msl), 4)
 back = R.internal.restore(st, first(msl, 711))
 equal("⛔ a line of 711, saved before mute and solo, brings every track back unmuted and "
-      .. "unsoloed, tells the page, and is put back as the 581 it is",
-      { st.mute, st.solo, back[#back], back[1] },
-      { zeros(16), zeros(16), quiet(), { "save", "list", first(msl, 581) } })
+      .. "unsoloed, tells the page, and isn't put back",
+      { st.mute, st.solo, back[#back], back[1][1] },
+      { zeros(16), zeros(16), quiet(), "page" })
 equal("⛔ so do lines of 581, 579, 563 and 256", (function()
   local got = {}
   for _, old in ipairs({ first(msl, 581), sectionless(zeros(CELLS)), old_line(zeros(CELLS)),
@@ -1674,17 +1712,16 @@ equal("a mute or a solo is 1 or 0: a value over 1 is 1, a symbol or a value belo
       { st.mute[1], st.mute[2], st.solo[3] }, { 1, 0, 0 })
 
 print("\n--- the distortion's character ---")
--- Each track's distortion is soft, hard, fold or crush, 1 to 4 (Brendan, 2026-11-05): saved per
--- section after the mutes and solos, told to c_kit, and on the phone after the track's send.
+-- Each track's distortion is soft, hard, fold or crush, 1 to 4 (Brendan, 2026-11-05): the kit's
+-- (2026-11-06), told to c_kit, and on the phone after the track's send.
 st = R.new(1)
 R.internal.init(st, {})
 equal("a new sequencer has every track soft, and the phone's names are the four, in order",
       { st.fx.char, R.CHARS }, { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
                                  { "soft", "hard", "fold", "crush" } })
-equal("⛔ char 3 2 from the drum screen: saved, the line 759 with track 3 hard, and to c_kit",
+equal("⛔ char 3 2 from the drum screen: to c_kit, and a save, the section's line holding none",
       R.presses.char(st, { 3, 2 }),
-      { { "save", "list", line(zeros(CELLS), nil, { fx = { char = { [3] = 2 } } }) },
-        { "note", "char", { 3, 2 } } })
+      { { "save", "list", line(zeros(CELLS)) }, { "note", "char", { 3, 2 } } })
 equal("... the same value again does nothing, nor one with no track or no number",
       { R.presses.char(st, { 3, 2 }), R.presses.char(st, { 3 }), R.presses.char(st, {}),
         R.presses.char(st, { "x", 4 }) }, { {}, {}, {}, {} })
@@ -1692,19 +1729,10 @@ equal("⛔ it is clipped to 1 to 4 and rounded: 9 is crush, 0 soft, 2.4 hard",
       { R.presses.char(st, { 5, 9 })[2], R.presses.char(st, { 6, 0 }),
         R.presses.char(st, { 6, 2.4 })[2] },
       { { "note", "char", { 5, 4 } }, {}, { "note", "char", { 6, 2 } } })
-equal("⛔ the line is 759 while any track is not soft, the effects, mutes and solos before the "
-      .. "characters as they stand; 743 once every track is soft again with one muted, 711 with an "
-      .. "effect moved, 581 with neither",
-      { #R.save(st)[3], R.save(st)[3][743 + 3], R.save(st)[3][743 + 5], R.save(st)[3][711 + 1],
-        (function()
-          R.presses.mute(st, { 1, 1 })
-          for _, t in ipairs({ 3, 5, 6 }) do R.presses.char(st, { t, 1 }) end
-          return #R.save(st)[3]
-        end)(),
-        (function() R.presses.mute(st, { 1, 0 }) R.presses.dist(st, { 2, 30 })
-          return #R.save(st)[3] end)(),
-        (function() R.presses.dist(st, { 2, 0 }) return #R.save(st)[3] end)() },
-      { 759, 2, 4, 0, 743, 711, 581 })
+equal("⛔ the characters are the kit's: its line holds them, the last of the effects, tracks 3 and "
+      .. "5 as they stand, and the line written stays 581",
+      { R.kit_line(st)[32 + 8 * 16 + 3], R.kit_line(st)[32 + 8 * 16 + 5], #R.save(st)[3] },
+      { 2, 4, 581 })
 R.presses.char(st, { 8, 3 })
 R.select(st, 8)
 local Q = 4 + 32 + 4 + 48
@@ -1728,21 +1756,20 @@ equal("⛔ ... and tells c_kit the ones that changed, in the order the rest are 
         { "note", "char", { 16, 4 } } })
 back = R.internal.restore(st, first(chl, 743))
 equal("⛔ a line of 743, saved before the characters, brings every track back soft, tells c_kit "
-      .. "so, and is put back as the line it is",
-      { st.fx.char, st.fx.drive[2], #back, back[5 + 1], back[5 + 2], back[1] },
-      { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, 80, 5 + 2,
-        { "note", "char", { 2, 1 } }, { "note", "char", { 16, 1 } },
-        { "save", "list", first(chl, 711) } })
+      .. "so, and isn't put back",
+      { st.fx.char, st.fx.drive[2], #back, back[4 + 1], back[4 + 2], back[1][1] },
+      { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, 80, 4 + 2,
+        { "note", "char", { 2, 1 } }, { "note", "char", { 16, 1 } }, "page" })
 equal("⛔ so do lines of 711, 581, 579, 563 and 256", (function()
   local got = {}
   for _, old in ipairs({ first(chl, 711), first(chl, 581), sectionless(zeros(CELLS)),
                          old_line(zeros(CELLS)), zeros(256) }) do
     R.internal.restore(st, chl)
     R.internal.restore(st, old)
-    got[#got + 1] = R.late_moved(st)
+    got[#got + 1] = st.fx.char[2] + st.fx.char[16]
   end
   return got
-end)(), { false, false, false, false, false })
+end)(), { 2, 2, 2, 2, 2 })
 local oddch = line(zeros(CELLS), nil, { fx = { char = { [1] = 2 } } })
 oddch[744], oddch[745], oddch[746] = 7, "x", -3
 R.internal.restore(st, oddch)
@@ -1751,18 +1778,17 @@ equal("a character is 1 to 4: a value over 4 is crush, a symbol or a value below
 
 print("\n--- the reverb's type ---")
 -- Which of the reverb's three engines plays, the kit's (Brendan, 2026-11-05): 0 plate, 1
--- gigaverb, 2 freeverb, saved per section at the end of the line, after the characters, the
--- plate when not.
+-- gigaverb, 2 freeverb, the kit's (2026-11-06); a section's line that held it had it last, after
+-- the characters, the plate when not.
 st = R.new(1)
 equal("a new sequencer is on the plate, the first of three", { st.verb_type, R.VERB_TYPES },
       { 0, { "plate", "gigaverb", "freeverb" } })
-equal("⛔ the line is 760 with the type, after the 759", R.SAVED_TYPED, 760)
+equal("⛔ a line that held the type is 760, after the 759", R.SAVED_TYPED, 760)
 R.internal.init(st, {})
-equal("⛔ verb-type 2 from the drum screen: saved, the line 760 ending in the type, the effects, "
-      .. "mutes, solos and characters before it as they stand, and to c_kit with no pad",
+equal("⛔ verb-type 2 from the drum screen: to c_kit with no pad, and a save, the section's line "
+      .. "holding none",
       R.presses["verb-type"](st, { 2 }),
-      { { "save", "list", line(zeros(CELLS), nil, { type = 2 }) },
-        { "note", "verb-type", { 2 } } })
+      { { "save", "list", line(zeros(CELLS)) }, { "note", "verb-type", { 2 } } })
 equal("... the same type again does nothing, nor does one with no number",
       { R.presses["verb-type"](st, { 2 }), R.presses["verb-type"](st, {}),
         R.presses["verb-type"](st, { "x" }) }, { {}, {}, {} })
@@ -1770,13 +1796,13 @@ equal("⛔ a type is 0 to 2, clipped and rounded", { R.presses["verb-type"](st, 
                                                    R.presses["verb-type"](st, { 0.6 })[2],
                                                    R.presses["verb-type"](st, { -4 })[2] },
       { {}, { "note", "verb-type", { 1 } }, { "note", "verb-type", { 0 } } })
-equal("⛔ back on the plate the line is 581 again, with nothing else moved", #R.save(st)[3], 581)
 R.presses["verb-type"](st, { 1 })
 R.presses.size(st, { 30 })
 R.presses.mute(st, { 4, 1 })
-equal("⛔ ... and with a type and an effect and a mute, all of them in the 760",
-      R.save(st)[3], line(zeros(CELLS), nil, { verb = { size = 30 }, mute = { [4] = 1 },
-                                               type = 1 }))
+equal("⛔ with a type and an effect and a mute, the line written is the 743 with the mute alone",
+      R.save(st)[3], line(zeros(CELLS), nil, { mute = { [4] = 1 } }))
+equal("⛔ ... and the kit's line holds the size and, after the reverb's two, the type",
+      { R.kit_line(st)[32 + 9 * 16 + 1], R.kit_line(st)[32 + 9 * 16 + 3] }, { 30, 1 })
 equal("⛔ the phone hears the type before the random pitches, its 132nd number",
       { #R.phone(st), R.phone(st)[132] }, { 148, 1 })
 
@@ -1791,10 +1817,10 @@ equal("⛔ ... and tells c_kit the type, the one effect that changed", { #back, 
       { 4 + 32 + 1, { "note", "verb-type", { 2 } } })
 equal("⛔ the same line again tells c_kit nothing", #R.internal.restore(st, tyl), 4)
 back = R.internal.restore(st, first(tyl, 759))
-equal("⛔ a line of 759, saved before the type, brings the plate back, tells c_kit so, and is put "
-      .. "back as the 581 it is",
-      { st.verb_type, back[#back], back[1] },
-      { 0, { "note", "verb-type", { 0 } }, { "save", "list", first(tyl, 581) } })
+equal("⛔ a line of 759, saved before the type, brings the plate back, tells c_kit so, and isn't "
+      .. "put back",
+      { st.verb_type, back[#back], back[1][1] },
+      { 0, { "note", "verb-type", { 0 } }, "page" })
 equal("⛔ so do lines of 743, 711, 581, 579, 563 and 256", (function()
   local got = {}
   for _, old in ipairs({ first(tyl, 743), first(tyl, 711), first(tyl, 581),
@@ -1831,16 +1857,19 @@ print("\n--- the kit's sound is the song's ---")
 do
   local st = R.new(1)
   equal("a song with no kit yet says so", R.restore_kit(st, {}), {})
-  st.vol[3] = -6
-  R.restore(st, R.save(st)[3])
-  equal("⛔ the first section gives it one, and is then its pattern alone", { st.kit_on, R.save(st)[3][R.TRACKS * R.STEPS + 2 * R.TRACKS + 3] },
-        { true, 0 })
+  R.restore(st, line(zeros(CELLS), nil, { vol = { [3] = -6 }, fx = { dist = { [2] = 60 } },
+                                          type = 2 }))
+  equal("⛔ the first section gives it one, the sound its line held, and is then written as its "
+        .. "pattern alone",
+        { st.kit_on, st.vol[3], st.fx.dist[2], st.verb_type, #R.save(st)[3],
+          R.save(st)[3][R.TRACKS * R.STEPS + 2 * R.TRACKS + 3] }, { true, -6, 60, 2, 581, 0 })
   equal("... a kit is this long", #R.kit_line(st), R.KIT)
-  local line = R.kit_line(st)
+  local kept = R.kit_line(st)
   st.vol[3] = 2
-  local again = R.save(st)
-  R.restore(st, again[3])
-  equal("⛔ a section's line changes nothing in the kit", st.vol[3], 2)
+  R.restore(st, line(zeros(CELLS), nil, { vol = { [3] = -20 }, fx = { dist = { [2] = 5 } },
+                                          type = 1, rolled = { [4] = 1 } }))
+  equal("⛔ a section's line changes nothing in the kit, whatever sound it holds",
+        { st.vol[3], st.fx.dist[2], st.verb_type, st.rolled[4] }, { 2, 60, 2, 0 })
   local out = R.restore_tweaks(st, 1)
   equal("⛔ carry on leaves a tweak", { out, st.vol[3] }, { {}, 2 })
   R.restore_tweaks(st, 0)
@@ -1849,7 +1878,7 @@ do
   R.internal["kit-save"](st)
   R.restore_tweaks(st, 0)
   equal("⛔ saved, that is what it snaps back to", st.vol[3], 1)
-  R.restore_kit(st, line)
+  R.restore_kit(st, kept)
   equal("⛔ a song's kit restored", st.vol[3], -6)
 end
 
@@ -1891,12 +1920,24 @@ for _ = 1, 2 do T.send(o, 1, "step", { 1, 0 }); T.send(o, 1, "step", { 1, 100 })
 equal("⛔ sync off the state bus puts a held pattern at once, and stops the clock",
       { T.send(o, 2, "sync", {}), o.save_clock.armed }, { { { 3, "list", line(want) } }, nil })
 equal("... and with nothing held, sync sends nothing", T.send(o, 2, "sync", {}), {})
-equal("a restore: the pattern on outlet 3, the page on outlet 2, and every track's volume and pitch "
-      .. "on outlet 1, for c_kit", (function()
+-- How many of what an object sent left by an outlet.
+local function left(sent, outlet)
+  local n = 0
+  for _, e in ipairs(sent) do if e[1] == outlet then n = n + 1 end end
+  return n
+end
+equal("⛔ a restore: the page on outlet 2, every track's volume and pitch on outlet 1, for c_kit, "
+      .. "and nothing on outlet 3, since no line is put back", (function()
   local got = T.send(T.new(class, { 1 }), 2, "restore", line(zeros(CELLS), nil, { vol = { [4] = -9 } }))
-  return { got[4], got[5], got[4 + 4], got[4 + 32] }
+  return { got[4], got[5], got[4 + 4], got[4 + 32], left(got, 3) }
 end)(), { { 8, "swing", { 0.5 } }, { 1, "vol", { 1, 0 } }, { 1, "vol", { 4, -9 } },
-          { 1, "pitch", { 16, 0 } } })
+          { 1, "pitch", { 16, 0 } }, 0 })
+equal("⛔ restore-old, the auto key's line: on outlet 3 at once, as it came, then the page",
+      (function()
+        local l = sectionless(zeros(CELLS), nil, { vol = { [4] = -9 } })
+        local got = T.send(T.new(class, { 1 }), 2, "restore-old", l)
+        return { got[1], left(got, 3), got[2][1], #l }
+      end)(), { { 3, "list", sectionless(zeros(CELLS), nil, { vol = { [4] = -9 } }) }, 1, 2, 579 })
 equal("a pad's volume from the drum screen: the volume on outlet 1, the phone's state, and the "
       .. "pattern on outlet 3 when its clock comes", (function()
   local q = T.new(class, { 1 })
@@ -1916,8 +1957,8 @@ equal("⛔ a mute from the drum screen: the page's quiet pads on outlet 2 and th
         return { got[1], got[2][1], got[2][3][99 + 4], armed, #saved[1][3], saved[1][3][711 + 4] }
       end)(), { { 2, "quiet", quiet(4)[3] }, 7, 1, 100, 743, 1 })
 equal("⛔ a character from the drum screen, its track selected: char to c_kit on outlet 1 and the "
-      .. "phone's state on outlet 7, its put held as any press's, and the line its clock puts holds "
-      .. "track 4 fold",
+      .. "phone's state on outlet 7, its put held as any press's, and the line its clock puts is the "
+      .. "section's 581",
       (function()
         local q = T.new(class, { 1 })
         T.send(q, 2, "init", {})
@@ -1925,8 +1966,19 @@ equal("⛔ a character from the drum screen, its track selected: char to c_kit o
         local got = T.send(q, 1, "char", { 4, 3 })
         local armed = q.save_clock.armed
         local saved = T.fire(q, q.save_clock)
-        return { got[1], got[2][1], armed, #saved[1][3], saved[1][3][743 + 4] }
-      end)(), { { 1, "char", { 4, 3 } }, 7, 100, 759, 3 })
+        return { got[1], got[2][1], armed, #saved, #saved[1][3] }
+      end)(), { { 1, "char", { 4, 3 } }, 7, 100, 1, 581 })
+equal("⛔ in a song with a kit, the same press's clock puts the section's line on outlet 3, then the "
+      .. "kit's on outlet 12, as song, track 4 fold in it",
+      (function()
+        local q = T.new(class, { 1 })
+        T.send(q, 2, "init", {})
+        T.send(q, 2, "restore-kit", R.kit_line(R.new(1)))
+        T.send(q, 1, "char", { 4, 3 })
+        local saved = T.fire(q, q.save_clock)
+        return { #saved, saved[1][1], #saved[1][3], saved[2][1], saved[2][2], #saved[2][3],
+                 saved[2][3][32 + 8 * 16 + 4] }
+      end)(), { 2, 3, 581, 12, "song", R.KIT, 3 })
 equal("the global last step moved: its new value on outlet 11, for c_melody", (function()
   local q = T.new(class, { 1 })
   T.send(q, 2, "init", {})
@@ -1993,7 +2045,7 @@ equal("a report is one symbol of 21 characters or fewer",
 
 print("\n--- a section change stays small ---")
 -- The beat dropped around a section's 1 (Brendan, 2026-11-05): a burst of messages there stalls
--- the audio. A line in today's shape isn't put back, and c_kit hears only what differs.
+-- the audio. No line is put back, and c_kit hears only what differs.
 st = R.new(1)
 R.internal.init(st, {})
 local now = R.save(st)[3]
@@ -2015,7 +2067,7 @@ equal("⛔ a volume changed by hand since is told again when a section brings it
       R.internal.restore(st, louder)[5], { "note", "vol", { 3, -6 } })
 local older = {}
 for i = 1, #now - 1 do older[i] = now[i] end
-equal("⛔ a line saved in an older shape is put back, as today's", R.internal.restore(st, older)[1][1], "save")
+equal("⛔ nor is a line in an older shape put back", R.internal.restore(st, older)[1][1], "page")
 
 print("\n--- a section starts on the 1 ---")
 -- bar comes on the old section's last step; all that can be heard or seen of the new one waits for

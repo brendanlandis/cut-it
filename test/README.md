@@ -386,7 +386,7 @@ the rig.
 
 | Piece | |
 |---|---|
-| `phone-assert-drive-gen.py` | generates the driver into the scratch directory on every run — it instantiates `u_net`, feeds its four inlets as `u_root`'s cords would, taps its three outlets, and puts the OLED's traffic on `disp` to prove `u_net` ignores it. **Edit this**; no driver is committed |
+| `phone-assert-drive-gen.py` | generates the driver into the scratch directory on every run — it instantiates `u_net`, feeds its five inlets as `u_root`'s cords would, taps six of its eight outlets, and puts the OLED's traffic on `disp` to prove `u_net` ignores it. **Edit this**; no driver is committed |
 | `phone-assert.py` | binds the port, launches Pd, decodes OSC, does the reasoning |
 
 ⚠️ **The analyzer owns the lifecycle, and that is not tidiness.** It binds the socket *before*

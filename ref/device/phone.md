@@ -86,7 +86,7 @@ Organelle -> phone
 /cutit/voices    <page> <kind> <row> <24 atoms>     u_voices' page and voices, the same
 /cutit/perform   <113 atoms>                        u_perform's controls in play, the same
 /cutit/sound     <R.phone's atoms>                  u_sound's sounds, the same
-/cutit/here      <step>                             the chord loop's place, -1 stopped, each step of 40 ms or more
+/cutit/here      <step> <melody step>               the chord loop's place and the melody's, -1 stopped, each step of 40 ms or more
 /cutit/once      <seq>                              the answer to a press (A press, once)
 /cutit/ack       result                             the answer to a line check's verdict
 

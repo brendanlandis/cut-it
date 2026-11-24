@@ -48,7 +48,7 @@ were false.
 | `phone-assert.sh` | `device/phone` — `u_net`, the patch's end |
 | `app-assert.sh` | `device/phone` — the app's commands, read against the patch's |
 | `inject-assert.sh` | `test/checklists/README.md`, *Send lines* — `u_inject` |
-| `volca-assert.sh` | `device/volca` |
+| `fm1-assert.sh` | `device/fm1` |
 | `debug-assert.sh` | `module/debug` — the SECOND deployable |
 | `sequencer-assert.sh` | `module/sequencer` |
 | `kit-assert.sh` | `module/sequencer` — the kit and its effects, the reverb's three types among them, as a signal |
@@ -83,7 +83,7 @@ asserts on messages, which is what made the audio path invisible for as long as 
 
 **`midi-emitters-assert.sh` belongs to no device on purpose.** Its only claim is structural — *these
 are all the MIDI objects in the patch* — and a new `[noteout]` in some future `e_` stage is not the
-Volca's business, but very much the instrument's. It needs no Pd and takes ~200 ms.
+FM-1's business, but very much the instrument's. It needs no Pd and takes ~200 ms.
 
 ### The shared machinery
 
@@ -134,7 +134,7 @@ Layout and graph structure, the documentation, all three entry points loading in
 inventory, and one gate per module — the boot sequence, the audio path, the error bus, the display
 arbiter, the OLED, the aux LED, the tempo reference, the clock, the map, panic's second tier, the
 data store, the songs, the voices, the Launchpad, the nanoKONTROL, the Organelle's own panel, the phone, the
-Volca and the debug patch. **Mac
+FM-1 and the debug patch. **Mac
 only — it touches no device**, so it is safe to run at any time, including with the Organelle
 switched off.
 
@@ -261,11 +261,11 @@ on, 100; a pad on the drum page, cell 21, sets nothing; and **the phone's tempo*
 datagram into `u_net`'s port, 133 to the bus, knob 1 held at it too, 900 clamped to 600, and a word
 refused as `bad-tempo`.
 
-## `map-assert.sh` and `volca-assert.sh` — the map and the output device
+## `map-assert.sh` and `fm1-assert.sh` — the map and the output device
 
 ```sh
 ./test/gate/map-assert.sh            103 + 86 checks, ~19 s — u_map's rules in Lua, then the lookup and the static lint
-./test/gate/volca-assert.sh          10 checks, ~5 s — four destinations, one channel
+./test/gate/fm1-assert.sh          11 checks, ~5 s — four destinations, two channels, panic
 ```
 
 Each takes `-v` for the detail behind every check and `--keep` to leave the scratch directory and
@@ -275,7 +275,7 @@ split reconciles upward: 28 checks became 34, because each gate could then say t
 had no window for. The third, `sp404-assert`, went with the SP-404 when it left the rig
 (Brendan, 2026-11-04), and so did `map-assert`'s `404-pad` row.
 
-⚠️ **`map-assert` uses `volca-cc` and asserts nothing about the Volca.** A lookup has to land
+⚠️ **`map-assert` uses `fm1-cc` and asserts nothing about the FM-1.** A lookup has to land
 somewhere; what the destination then does with the value is the device gate's business.
 
 **`map-assert` runs the map's Lua tests first**: `test/gate/lua/u_map_test.lua`, with lua.org's Lua
@@ -298,7 +298,7 @@ one, which draws nothing since 2026-11-04 (item 317). That half runs without Pd 
 
 The other half of each gate rewrites the MIDI object boxes in a scratch copy — **all seven classes, from the one
 `MIDI_EXPECT` in `test/gate/lib_scratch.py`**, shared with every other gate that makes a copy. ⛔
-**`[midiout]` alone was never enough**: `m_volca` emits through `noteout` / `ctlout` / `pgmout`, as
+**`[midiout]` alone was never enough**: `m_fm1` emits through `noteout` / `ctlout` / `pgmout`, as
 `m_404` did, so a rewrite of `midiout` only finds nothing in it and every assertion about it passes
 **vacuously**. ⛔ **And the two input stubs are not optional**: every *output* path can be driven from
 a bus, but the Launchpad's pads sit behind `[notein]` and `m_nano`'s *entire surface* sits behind
@@ -327,7 +327,7 @@ rate limit tested again needs two events a real millisecond or two apart.
 
 **One row per control** (item 317) was made to fail against the `m_nano`, `m_404` and `m_launchpad`
 that still posted their own rows: four red in `nano-assert` — an unmapped slider drawn twice, a
-mapped one drawn as `slider-1` beside `volca-cc41`, the 404's CTRL knob and a Launchpad ring button —
+mapped one drawn as `slider-1` beside `fm1-cc41`, the 404's CTRL knob and a Launchpad ring button —
 two in `sp404-assert`, and the static count; the file-set check went red on a stray `m_` file, and
 again with `m_404.pd` put back after the SP-404 left the rig (2026-11-04).
 **The pressure exemption** (item 318) went red against the `u_map` without it, with the key and
@@ -339,7 +339,7 @@ unchecked, Pd was handed a file that did not exist, and the `; pd quit` that liv
 never fired. **A gate that hangs is worse than one that fails.** The generator's status and the
 driver's existence are checked now, behind a 40 s watchdog.
 
-Each driver is an OUTPUT, generated into the scratch directory on every run — edit `map-assert-drive-gen.py` or `volca-assert-drive-gen.py`. None is committed.
+Each driver is an OUTPUT, generated into the scratch directory on every run — edit `map-assert-drive-gen.py` or `fm1-assert-drive-gen.py`. None is committed.
 
 ## `state-assert.sh` — the data store, and the cheapest oracle in the suite
 
@@ -513,7 +513,7 @@ into `u_net`'s own port, from a socket the driver builds with `lib_drive`'s `ext
 
 **It checks:** the saved choice and switch restored and put back, the first key on the
 Streichfett's channel alone, at 127, the phone's `velocity on` and `off` put, a voice's button choosing its machine and putting nothing, any channel of the nanoKEY's port playing, a key held through the
-phone's switch releasing on the Volca, only a press choosing (two buttons held), notes on four other
+phone's switch releasing on the FM-1, only a press choosing (two buttons held), notes on four other
 ports playing nothing, the choice holding on the performance page, `bad-synth` from
 the phone, and `bad-velocity`, a soft key at 127 with the switch off and its release at 0, panic's
 CC 123 on channel 33, nothing on another channel, nothing else on `err`, and `synth strings` and
@@ -601,11 +601,11 @@ scratch copy — see that gate below.
 | `t_pgmout.pd` | `[pgmout]` — prints `program channel`. ⚠️ **It cannot answer the 0-based/1-based question** (item 228): it prints what Pd was *given*, not the byte on the wire |
 | `t_notein.pd` | ⛔ **a SOURCE, not a sink** — the only way to test a receive path. Drive it with `; t-notein <pitch> <velocity> <channel>` |
 
-⛔ **`m_volca` emits through `noteout`/`ctlout`/`pgmout`, not `midiout`**, as `m_404` did, so
+⛔ **`m_fm1` emits through `noteout`/`ctlout`/`pgmout`, not `midiout`**, as `m_404` did, so
 `display-assert.sh`'s rewrite finds nothing in it and every assertion about it would pass
 **vacuously**. ⚠️ **And phase 6's regex is anchored so the class name must END the line** — it
-silently skips any box carrying creation arguments, of which the patch has one: `m_volca`'s
-`[ctlout 123]`. A phase 9 rewriter has to take a trailing argument list, and the stubs
+silently skips any box carrying creation arguments, of which the patch has two: `m_fm1`'s
+`[ctlout 64]` and `m_streich`'s `[ctlout 123]`. A phase 9 rewriter has to take a trailing argument list, and the stubs
 therefore read creation args too.
 
 ⛔ **`t_notein` exists because the receive side is otherwise untestable.** Every *output* path can

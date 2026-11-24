@@ -204,7 +204,7 @@ neither: a voice's machine chooses the synth (`voices`).
 
 | Synth | Is | Evidence | Item |
 |-------|----|----------|------|
-| `fm` | The Volca FM ([volca.md](volca.md)) | unknown | — |
+| `fm` | The M-VAVE FM-1 ([fm1.md](fm1.md)) | unknown | — |
 | `strings` | The Waldorf Streichfett ([streichfett.md](streichfett.md)) | unknown | — |
 
 What the keys page's velocity button sends after `velocity`, each acknowledged by `u_net`.

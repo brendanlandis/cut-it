@@ -31,7 +31,7 @@ FIVE = ["gate-a", "gate-b", "gate-c", "gate-d", "gate-e"]
 # invisible on the diag screen, and m_404's line went with the SP-404
 # (2026-11-04). Six since m_nanokey registered, passive (2026-11-04), the six
 # rows the layer holds. presence-assert.sh asserts the same six.
-DIAG_SOURCES = ["m_launchpad", "m_nano", "m_organelle", "m_volca", "m_streich", "m_nanokey"]
+DIAG_SOURCES = ["m_launchpad", "m_nano", "m_organelle", "m_fm1", "m_streich", "m_nanokey"]
 
 # The two passive layers: never polled, so `never` until they first speak.
 PASSIVE = ["m_organelle", "m_nanokey"]
@@ -318,8 +318,8 @@ def run_asserts(cap):
                 "vanished one are identical -- telling them apart is the whole "
                 "point of this screen" % state("DIAG"))
         A.check("...and a device nothing can ever check reads `unchecked`",
-                state("DIAG").get("m_volca") == "unchecked",
-                "drew %s. m_volca registers `none`: it is never polled and can "
+                state("DIAG").get("m_fm1") == "unchecked",
+                "drew %s. m_fm1 registers `none`: it is never polled and can "
                 "never be lost, so drawing it as healthy would be a claim "
                 "nothing has ever tested" % state("DIAG"))
 
@@ -338,7 +338,7 @@ def run_asserts(cap):
                 "reply carries the nanoKONTROL's byte, so a key is all that says it is "
                 "there" % state("DIAG-SEEN"))
         A.check("...and no other row moved with it",
-                [state("DIAG-SEEN").get(s) for s in ("m_launchpad", "m_volca", "m_streich")]
+                [state("DIAG-SEEN").get(s) for s in ("m_launchpad", "m_fm1", "m_streich")]
                 == ["never", "unchecked", "never"],
                 "drew %s" % state("DIAG-SEEN"))
 

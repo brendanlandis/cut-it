@@ -50,7 +50,7 @@ session means opening one.
 | [phone](phone.md) | 16 | the phone and the Launchpad turning each other's page, the tempo, last step and swing set on the phone, the tap button, the link dropping and coming back, Setup and test mode, the drum screen's pads and its effect controls |
 | [state](state.md) | 5 | the front-panel Save, a power cycle, the page surviving it |
 | [recover](recover.md) | 7 | panic's second tier: the reload, and a reload that cannot land |
-| [midi](midi.md) | 10 | the map by page, the Volca by ear, hot-swap |
+| [midi](midi.md) | 10 | the map by page, the FM-1 by ear, hot-swap |
 | [debug](debug.md) | 9 | the debug patch, with the instrument stopped |
 | [sequencer](sequencer.md) | 55 | the drum page and the drums it plays, the time signature's rows, each drum's distortion, delay and reverb send, each drum's mute and solo, its distortion's drive and four characters, and the reverb's three types |
 | [sections](sections.md) | 12 | the song's sections: the Launchpad's top row, a queue landing as the pattern comes round, a length handing over, save and revert and their lamps, a power cut, the phone's sections, on its songs page, and naming one |

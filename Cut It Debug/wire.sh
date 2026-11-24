@@ -30,13 +30,14 @@ aconnect "Pure Data":5 "nanoKONTROL":0       2>/dev/null || true  # device inqui
 aconnect "Streichfett":0 "Pure Data":2       2>/dev/null || true  # -> Pd ch 33-48
 aconnect "Pure Data":6 "Streichfett":0       2>/dev/null || true  # notes, CC, SysEx out
 
-# The USB->DIN interface is one bidirectional port. The Volca behind it only
-# receives; the input is for whatever the interface's DIN IN may carry later.
-aconnect "USB Uno MIDI Interface":0 "Pure Data":3 2>/dev/null || true  # -> Pd ch 49-64
-aconnect "Pure Data":7 "USB Uno MIDI Interface":0 2>/dev/null || true  # notes + CC to the Volca
-# The nanoKEY shares Midi-In 4, whose DIN IN carries nothing: its keys arrive
-# on Pd ch 49-64. Address it by client name and port number: its port's name
-# ends in two spaces (Reference, korg-nanokey).
+# Pd's port 4 goes out to the M-VAVE FM-1 (2026-11-24; the Volca FM's, through
+# a USB->DIN interface, until then): notes, program changes and its effects'
+# CCs. Nothing comes back from it: the FM-1 sends its own keys, and on Midi-In 4
+# they would read as the nanoKEY's (ref/device/fm1.md).
+aconnect "Pure Data":7 "FM-1":0              2>/dev/null || true  # notes, PC, CC out
+# The nanoKEY has Midi-In 4 to itself: its keys arrive on Pd ch 49-64. Address
+# it by client name and port number: its port's name ends in two spaces
+# (Reference, korg-nanokey).
 aconnect "nanoKEY":0 "Pure Data":3           2>/dev/null || true  # -> Pd ch 49-64
 
 # Undo mother's own autoconnect, which puts the lowest-numbered client on Pd's
@@ -46,7 +47,7 @@ aconnect "nanoKEY":0 "Pure Data":3           2>/dev/null || true  # -> Pd ch 49-
 aconnect -d "nanoKONTROL":0 "Pure Data":0    2>/dev/null || true
 aconnect -d "Streichfett":0 "Pure Data":0    2>/dev/null || true
 aconnect -d "nanoKEY":0 "Pure Data":0        2>/dev/null || true
-aconnect -d "USB Uno MIDI Interface":0 "Pure Data":0 2>/dev/null || true
+aconnect -d "FM-1":0 "Pure Data":0           2>/dev/null || true
 
 # Report what actually connected, for the run-it-by-hand console.
 echo "wire.sh: $(aconnect -l | grep -c "Connecting To") connections"

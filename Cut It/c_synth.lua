@@ -18,7 +18,7 @@
 
 local R = {}
 
--- The synths, in the order their outlets sit: fm is the Volca FM, strings the Waldorf
+-- The synths, in the order their outlets sit: fm is the M-VAVE FM-1, strings the Waldorf
 -- Streichfett. fm until something says otherwise (Brendan, 2026-11-04).
 R.SYNTHS = { "fm", "strings" }
 R.BOOT = "fm"
@@ -180,7 +180,7 @@ function R.restore_velocity(st, atoms)
   return tell_velocity(st)
 end
 
--- The programs as a section holds them: the Volca's, then the Streichfett's, in R.SYNTHS' order.
+-- The programs as a section holds them: the FM-1's, then the Streichfett's, in R.SYNTHS' order.
 local function tell_programs(st)
   local p = {}
   for i, s in ipairs(R.SYNTHS) do p[i] = st.programs[s] end
@@ -193,8 +193,8 @@ local function program(x)
   return math.floor(x + 0.5)
 end
 
--- A section's restore of programs, <volca> <streichfett>, as it starts (Brendan, 2026-11-04):
--- each synth with a program is sent it, the Volca first, and the two are put straight back. None
+-- A section's restore of programs, <fm> <streichfett>, as it starts (Brendan, 2026-11-04):
+-- each synth with a program is sent it, the FM-1 first, and the two are put straight back. None
 -- sends nothing, and leaves the synth on whatever sound it has.
 function R.restore_programs(st, atoms)
   local out = {}

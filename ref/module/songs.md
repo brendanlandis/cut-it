@@ -54,7 +54,7 @@ Each part puts at load and on every change, and takes its restore.
 | `perform` | `u_perform` | The controls in play: each one's physical control, destination, arg, row and value, five atoms ([voices.md](voices.md)). A section with none is told so, `restore perform` with nothing after it, first of all, or the last section's would stay | unknown |
 | `drums` | `c_steps` | The pattern, 581 numbers: 512 velocities, each track's own last step, randomness, volume and pitch, the time signature, the drunkenness, the swing and the global last step ([sequencer.md](sequencer.md)) | unknown |
 | `melody`, `melody-2` | `c_melody`, each engine's | The generator, `R.save`'s numbers: its controls, the 32 steps, the 8 chords and the fields added later ([synths.md](synths.md), *The generator*). Its restore waits for step 1, as the tempo's and the programs' do | unknown |
-| `programs` | `c_synth` | The Volca's program, then the Streichfett's: 0 to 127, or `none` ([synths.md](synths.md)) | unknown |
+| `programs` | `c_synth` | The FM-1's program, then the Streichfett's: 0 to 127, or `none` ([synths.md](synths.md)) | unknown |
 | `synth` | `c_synth` | `fm` or `strings` | unknown |
 | `tempo` | `u_tempo` | The BPM, as the tempo bus carries it ([tempo.md](tempo.md)) | unknown |
 | A part asked back | `recall <key>` on the third inlet, from `c_steps`, `pad-38`'s `recall tempo` (Brendan, 2026-11-05): the part as the saved song holds it in the section playing, or for a section never saved, or a part its save didn't hold, the draft's, back out as `restore <key> <atoms...>`, the way a section starting sends it. It still knows nothing of what a key means. The part puts back what it restores, so the draft takes it like any change. A part nobody holds sends nothing | verified |

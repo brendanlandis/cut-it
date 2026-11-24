@@ -63,11 +63,11 @@ stays present even if one reply is dropped. The inquiry leaves on **port 2**, de
 `(17-1)/16+1` from the channel block this file already takes as its one argument rather than passed
 in separately. See [presence.md](../module/presence.md).
 
-### The CC numbers collide with the Volca's parameter range
+### The CC numbers collide with other devices' controllers
 
-The nano's transport row is CC 41–46; the Volca's parameters are CC 40–50.
+The nano's transport row is CC 41–46, and its faders and knobs take numbers the synths use too.
 
-**Fix:** nothing to do — harmless. The Volca is device 4 on channel 49+, the nano is device 2, and
+**Fix:** nothing to do — harmless. The FM-1 is device 4 on channel 49+, the nano is device 2, and
 Pd separates by channel long before a CC number is examined. Recorded so the collision is not
 mistaken for a bug.
 

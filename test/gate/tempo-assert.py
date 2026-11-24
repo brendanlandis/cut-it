@@ -136,7 +136,7 @@ def main():
     # ⛔ PANIC REACHES ONE MORE PORT THAN THE TRANSPORT DOES, and the pair of
     # checks below is the whole of that claim -- one of them alone would pass
     # over the bug in either direction. Item 279 measured realtime-out feeding
-    # ports 1 and 3 only, so the Volca on port 4 kept sequencing through a panic
+    # ports 1 and 3 only, so a synth on port 4 kept sequencing through a panic
     # and nothing said so. It is fed now, from its own receive, by the panic
     # branch alone. ⚠️ EXACT PORT SETS, never "at least one": a fan-out that
     # accidentally handed the CLOCK to port 4 as well would satisfy any
@@ -144,7 +144,7 @@ def main():
     # Port 3 is in neither set: it was the SP-404's.
     panic_ports = sorted({v[1] for v in rt(W("PANIC"), byte=STOP)})
     A.check("⛔ panic's STOP reaches ports 1 AND 4, and not 3", panic_ports == [1, 4],
-            "saw ports %s -- port 4 is the Volca's DIN interface, item 279"
+            "saw ports %s -- port 4 is the FM-1's, item 279"
             % panic_ports)
     stop_ports = sorted({v[1] for v in rt(W("STOP"), byte=STOP)})
     A.check("⛔ ...and the plain transport STOP still reaches ONLY port 1",

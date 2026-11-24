@@ -113,7 +113,7 @@ def run_asserts(cap):
     # draws (Brendan, 2026-11-04). Rows are counted by name, exactly: g_oled
     # redraws a row in place by name, so a duplicate is invisible on screen. Two
     # lean on the map: slider-3 has nothing in play, and the gate's own row makes
-    # slider-1 volca-cc 41.
+    # slider-1 fm1-cc 41.
     print("\n--- param only, and ONE row per control ---")
     rows = lambda k, *names: [d for d in disp(k) if d[:1] and d[0] in names]
     kinds = [k for k, _ in W("SLIDER")]
@@ -126,12 +126,12 @@ def run_asserts(cap):
             "rows for slider-3: %s. One is u_map drawing an unmapped control's raw "
             "row again; two, an m_ layer posting its own as well (item 317)"
             % rows("SLIDER", "slider-3"))
-    A.check("⛔ a MAPPED fader draws ONE row, the destination's -- volca-cc41 64 and no slider-1",
-            rows("EARLY", "slider-1", "volca-cc41") == [["volca-cc41", "64"]],
-            "rows for slider-1 and volca-cc41 at 300 ms: %s. A slider-1 row is the "
-            "double row this gate exists to keep out; no volca-cc41 row means the "
-            "gate's own slider-1 volca-cc 41 row didn't land"
-            % rows("EARLY", "slider-1", "volca-cc41"))
+    A.check("⛔ a MAPPED fader draws ONE row, the destination's -- fm1-cc41 64 and no slider-1",
+            rows("EARLY", "slider-1", "fm1-cc41") == [["fm1-cc41", "64"]],
+            "rows for slider-1 and fm1-cc41 at 300 ms: %s. A slider-1 row is the "
+            "double row this gate exists to keep out; no fm1-cc41 row means the "
+            "gate's own slider-1 fm1-cc 41 row didn't land"
+            % rows("EARLY", "slider-1", "fm1-cc41"))
 
     # The other [ctlin] layer, through the same stub.
     A.check("⛔ ... and neither does a Launchpad ring button, unmapped -- no lp-cc-99",

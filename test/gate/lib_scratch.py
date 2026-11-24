@@ -59,7 +59,7 @@ LUA = (os.environ.get("LUA") or shutil.which("lua5.4") or shutil.which("lua")
 # announcement a tap on Setup makes (launchpad-assert drives it). m_404's five
 # (notein, ctlin, noteout, ctlout and its inquiry's midiout) went with the
 # SP-404 (2026-11-04). The synths added six (2026-11-04): m_streich's noteout, its two
-# ctlout (cc and panic's CC 123), its pgmout and its inquiry's midiout, as m_volca has them
+# ctlout (cc and panic's), its pgmout and its inquiry's midiout, as m_fm1 has them
 # plus the inquiry, and m_nanokey's notein. c_devid 62, the Streichfett's, is the same
 # sysexin box as the others'.
 MIDI_EXPECT = {"midiout": 9, "noteout": 2, "ctlout": 4, "pgmout": 2,
@@ -72,7 +72,7 @@ MIDI_INVENTORY = {"polytouchin": 1}
 
 # The debug patch is a second deployable, and the counts above are scoped to
 # "Cut It", so it needs its own. Three is all it takes: notein and ctlin are
-# omni, and noteout's channel picks the port, so one reaches the Volca, and
+# omni, and noteout's channel picks the port, so one reaches the FM-1, and
 # reached the SP-404 too until it left the rig.
 MIDI_DEBUG_EXPECT = {"notein": 1, "ctlin": 1, "noteout": 1}
 
@@ -82,8 +82,8 @@ MIDI_ALL_CLASSES = ("notein ctlin pgmin bendin touchin polytouchin midiin sysexi
                     "polytouchout midiout").split()
 
 # An object box and its class. The class ends at a space, the `;`, or the `,`
-# before a box width (`midiout, f 12;`), so a box with arguments ([ctlout 123] in
-# m_volca) is not skipped; and negative coordinates count.
+# before a box width (`midiout, f 12;`), so a box with arguments ([ctlout 64] in
+# m_fm1) is not skipped; and negative coordinates count.
 _OBJ = re.compile(r"^(#X obj -?\d+ -?\d+ )([^\s;,]+)(?=[\s;,])")
 
 

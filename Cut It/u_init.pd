@@ -80,7 +80,7 @@
 #X text 2000 680 Restore at the last stage \, 3.5 s in \, the earliest moment every m_ layer and u_map can receive it \, and first of the three so the screen settles after the state., f 44;
 #X text 2000 1060 Outlets are numbered by x position (Reference \, pure-data) \, so this one stays right of the Launchpad outlet., f 44;
 #N canvas 40 40 1400 1250 recover 0;
-#X text 20 20 Panic's second tier: recover reloads the patch \, which re-enumerates every device. That is the only recovery for a device nothing can detect \, like the Volca (item 275) \, and for a wedged patch., f 62;
+#X text 20 20 Panic's second tier: recover reloads the patch \, which re-enumerates every device. That is the only recovery for a device nothing can detect \, like the FM-1 (item 275) \, and for a wedged patch., f 62;
 #X obj 20 300 r recover;
 #X obj 20 350 t b b b b;
 #X obj 900 350 realtime;

@@ -145,7 +145,7 @@ is visible on the surface itself.
 
 | Gesture | Raises | What happens |
 |---------|--------|--------------|
-| **Short press** | `panic` | All Notes Off to the Volca; the drums stop; realtime STOP on ports 1 and 4; the aux LED goes red; the whole grid flashes red for a second. Nothing on the OLED: panic is the LED's and the grid's to show (2026-11-04) |
+| **Short press** | `panic` | Every note off on the FM-1 and All Notes Off to the Streichfett; the drums stop; realtime STOP on ports 1 and 4; the aux LED goes red; the whole grid flashes red for a second. Nothing on the OLED: panic is the LED's and the grid's to show (2026-11-04) |
 | **Held 2000 ms** | `recover` | `panic` again, then the patch **reloads** — every device re-enumerated and `wire.sh` run fresh |
 
 ⛔ **`panic` fires on the PRESS, not the release, and that is what makes the hold length free.** You
@@ -154,9 +154,9 @@ accident. A hold therefore raises `panic` twice — once from `u_map`, once from
 reload — deliberately, so `recover` is self-contained whatever reaches it.
 
 ⚠️ **For a device nothing can detect, this and the re-wire heartbeat are the only recoveries.**
-`m_volca` registers `none`, so it can never be polled or declared lost, and the bounded recovery
+`m_fm1` registers `none`, so it can never be polled or declared lost, and the bounded recovery
 reaches it only if a detectable device fails beside it (item 275). See
-[presence.md](../module/presence.md) and [volca.md](volca.md).
+[presence.md](../module/presence.md) and [fm1.md](fm1.md).
 
 ⛔ **The map row names `recover` and never `panic`.** A control bound to `panic` in the table would
 let a finger on a fader silence the instrument mid-set, and `map-assert.py` refuses one; the tiers

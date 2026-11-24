@@ -669,8 +669,8 @@ struct DiagView: View {
                 Pad(title: "test mode", width: 130, color: Theme.blue) { cut.press("perform", "ctl", 0, "test-mode", 0, 1) }
             }
             HStack(spacing: 12) {
-                Pad(title: "Volca voice 1", width: 130) { cut.press("sound", "vox", 1) }
-                Pad(title: "Volca voice 2", width: 130) { cut.press("sound", "vox", 2) }
+                Pad(title: "FM voice 1", width: 130) { cut.press("sound", "vox", 1) }
+                Pad(title: "FM voice 2", width: 130) { cut.press("sound", "vox", 2) }
             }
             Spacer()
         }

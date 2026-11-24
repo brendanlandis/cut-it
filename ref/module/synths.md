@@ -6,7 +6,7 @@
 ## What it is
 
 **`c_synth` holds which synth the nanoKEY plays, and holds it on every page.** There are two:
-`fm`, the Volca FM, and `strings`, the Waldorf Streichfett, and `fm` at a first load (Brendan,
+`fm`, the M-VAVE FM-1, and `strings`, the Waldorf Streichfett, and `fm` at a first load (Brendan,
 2026-11-04). A voice's page chooses its machine, if that's one of these ([voices.md](voices.md)), and the
 phone with two buttons, and the choice stays put through a page with none, so the nanoKEY plays the chosen synth
 everywhere ([nanokey.md](../device/nanokey.md)).
@@ -20,7 +20,7 @@ off, every note-on goes out at 127, on either synth, and a release stays 0. The 
 flips it; the Launchpad has no control for it.
 
 **It holds each synth's sound for the section playing** (Brendan, 2026-11-04): a program number for
-the Volca and one for the Streichfett, sent to each as the section starts, or none, which sends
+the FM-1 and one for the Streichfett, sent to each as the section starts, or none, which sends
 nothing. The choice, the switch and the two programs are parts of every section of the song
 ([songs.md](songs.md)).
 
@@ -36,11 +36,11 @@ and which synth each held key went to, as plain Lua that runs on the Mac without
 | | Is | Evidence |
 |---|---|---|
 | Inlet | `<note> <velocity>` from `m_nanokey`, 0 a release; `machine <choice>` from `u_voices`, the voice on show's; `synth <choice>` from `u_net` (the phone's `/cutit synth <choice>`); `velocity <on or off>` from `u_net` (the phone's `/cutit velocity <on or off>`) | unknown |
-| Outlet 1 | `note <n> <v>` and `program <n>` to `m_volca` | unknown |
+| Outlet 1 | `note <n> <v>` and `program <n>` to `m_fm1` | unknown |
 | Outlet 2 | `note <n> <v>` and `program <n>` to `m_streich` | unknown |
 | Outlet 3 | `synth <choice>` to `u_net`'s third inlet, which sends `/cutit/synth <choice>` to the phone at once and on every heartbeat ([phone.md](../device/phone.md)) | unknown |
 | Outlet 4 | `velocity <on or off>` to `u_net`'s third inlet, which sends `/cutit/velocity` to the phone at once and on every heartbeat | unknown |
-| `state` | `put section synth <choice>`, `put section velocity <on or off>` and `put section programs <volca> <streichfett>` at load and on every change; `restore synth`, `restore velocity` and `restore programs` as a section starts, the first at ~3.5 s | unknown |
+| `state` | `put section synth <choice>`, `put section velocity <on or off>` and `put section programs <fm> <streichfett>` at load and on every change; `restore synth`, `restore velocity` and `restore programs` as a section starts, the first at ~3.5 s | unknown |
 | `err` | `fail c_synth bad-synth` for a choice it does not know, `bad-velocity` for a setting, `bad-selector` for a message, `lua-<selector>` for a throw, `no-lua` when the Lua never loaded (C-12) | unknown |
 
 Outlet 3 carries the choice, and outlet 4 the velocity switch, at load, at the restore and on
@@ -62,7 +62,7 @@ every change, never on a change that changes nothing.
 | At load | `fm` and velocity `on`, sent to the phone and the store | unknown |
 | The restore | The saved choice and switch come back at ~3.5 s and are put straight back; one that names no synth, or neither on nor off, keeps the one in force and is repaired by the same put ([state.md](state.md), *A contributor must put back what it restores*) | unknown |
 | Panic | Not heard here: each synth's layer sends its own All Notes Off, CC 123, on its own channel | unknown |
-| A section's programs | `restore programs <volca> <streichfett>`, each 0 to 127, the program change on the wire, or `none`: each synth with a program is sent `program <n>`, the Volca first, and both are put straight back. A number off 0 to 127, or a word, is `none`; `none` sends nothing and leaves the synth on whatever sound it has | unknown |
+| A section's programs | `restore programs <fm> <streichfett>`, each 0 to 127, the program change on the wire, or `none`: each synth with a program is sent `program <n>`, the FM-1 first, and both are put straight back. A number off 0 to 127, or a word, is `none`; `none` sends nothing and leaves the synth on whatever sound it has | unknown |
 | At load, the programs | `none none`, put, so the section playing holds them; no control chooses one yet (`cut-it/songs-and-sections`) | unknown |
 
 ### The generator
@@ -102,10 +102,10 @@ state bus, as `c_synth`'s are.
 | | Is | Evidence |
 |---|---|---|
 | Inlet | `step <count> <ms> <place>` and `last <step>` from `c_steps`; a control or a pad from `u_map`'s `melody` destination ([map.md](map.md)); `set`, `audition`, `move` and the pads from the phone ([phone.md](../device/phone.md)); the nanoKEY's keys, which mean nothing to it yet | unknown |
-| Outlets | 1 `note <n> <v>` to `m_volca`; 2 the same to `m_streich`; 3 `melody <R.phone's atoms>` and `here <step>` to `u_net`'s third inlet; 4 the Pd voices' signal to `u_root`, summed with the input, the mic, into the right output, the Fx channel, mixer channel 2 | unknown |
+| Outlets | 1 `note <n> <v>` to `m_fm1`; 2 the same to `m_streich`; 3 `melody <R.phone's atoms>` and `here <step>` to `u_net`'s third inlet; 4 the Pd voices' signal to `u_root`, summed with the input, the mic, into the right output, the Fx channel, mixer channel 2 | unknown |
 | `state` | `put section melody <R.save's numbers>` at most every 100 ms under a drag; what a roll drifts only on `sync`, so a loop drifting writes nothing to the card; `restore melody` on the step 1 a section starts ([songs.md](songs.md)) | unknown |
 | Voices | Each part's own: `fm`, `strings`, or the Pd voices `sine`, `saw` and `square` | unknown |
-| A chord | A stack from the mode's notes, weighed by two families of chord tension picks, how little its notes move (`smooth`), how it sits with the tonic (`home`) and how its root moves, modal or functional. On the Volca its lowest three, on a Pd voice each note a voice of its own, four at most; bass only, its root alone, low, on any voice | unknown |
+| A chord | A stack from the mode's notes, weighed by two families of chord tension picks, how little its notes move (`smooth`), how it sits with the tonic (`home`) and how its root moves, modal or functional. On a synth all of it, on a Pd voice each note a voice of its own, four at most; bass only, its root alone, low, on any voice | unknown |
 | Where a chord sounds | Its start on a grid `span` times the pattern's last step long, placed by dice or dragged on the phone; dropped on another's start, the two swap. It sounds until the next start, and before the first start the loop's last chord rings on. A new span or last step keeps each in the same place along the grid | unknown |
 | A melody note | A rest or a note, weighed by how it sits with the chord and mode (`fit`), how far it is from the one before (`leap`), and what the loop did a phrase back (`echo`) | unknown |
 | A lock | Each time round, a chord or step is rolled again with a chance of (1 − lock / 100)²: 100 keeps it and 0 rewrites it | unknown |
@@ -124,7 +124,7 @@ up through `c_melody` to `u_root`: everything Cut It sends out leaves there.
 | | Lives in | Evidence |
 |---|---|---|
 | The choice, which synth each held key went to, the velocity switch, the restores | `c_synth.lua`: a state table and a function per rule, each returning what leaves as `{outlet, selector, atoms}` | verified |
-| Turning messages into those calls and their answers into outlets | `c_synth-lua.pd_lua`, the class `c_synth-lua`: two inlets (keys, choices and the switch; `c_synth.pd`'s own `restore`, `restore-velocity` and `init`), seven outlets (the Volca, the Streichfett, the choice, the key and value to save, `err`, a bang on `init`, the switch for the phone) | verified |
+| Turning messages into those calls and their answers into outlets | `c_synth-lua.pd_lua`, the class `c_synth-lua`: two inlets (keys, choices and the switch; `c_synth.pd`'s own `restore`, `restore-velocity` and `init`), seven outlets (the FM-1, the Streichfett, the choice, the key and value to save, `err`, a bang on `init`, the switch for the phone) | verified |
 | The cords out, `put auto` under the key the Lua names, the restores off the `state` bus, the `no-lua` guard | `c_synth.pd` | verified |
 
 ### The choice, the switch and the programs in a section
@@ -145,7 +145,7 @@ press, and the old synth's note sounds until a panic. The two synths are on diff
 note-off on one is nothing on the other.
 
 **Fix:** the Lua remembers, per held key, the synth its press went to, and sends the release there.
-`synths-assert` holds a key on fm, switches from the phone and requires the release on the Volca's
+`synths-assert` holds a key on fm, switches from the phone and requires the release on the FM-1's
 channel.
 
 ### Only a press chooses
@@ -211,7 +211,7 @@ control for it for now (Brendan, 2026-11-04).
 The choice, the switch and the programs are put whenever they change, with the section policy, so
 each section of a song holds its own (`cut-it/songs-and-sections`). The programs are here because
 `c_synth` already reaches both synths' layers by cords, and a section starting is a restore the
-router takes like any other; each layer already takes `program <n>` from the map's `volca-prog`.
+router takes like any other; each layer already takes `program <n>` from the map's `fm1-prog`.
 
 ### `c_`, because there can be more than one
 

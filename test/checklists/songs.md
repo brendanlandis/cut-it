@@ -9,7 +9,7 @@ the phone's page under a finger, and the SD card across a real power cut.
 
 **Before you start:**
 
-- The drums audible through the PA, the Volca and the Streichfett on, and the phone showing Cut It.
+- The drums audible through the PA, the FM-1 and the Streichfett on, and the phone showing Cut It.
 - Two songs that sound different: on the songs page, aux on the Organelle, choose **all songs** from the dropdown
   atop its left column, tap **new** under the list, then **load**, and on the drum page change its drum pattern and
   on the songs page its tempo; then press save, the upper bottom row's rightmost button.

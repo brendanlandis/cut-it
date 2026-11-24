@@ -2,7 +2,7 @@
 #X text 20 20 Cut It Debug -- what otherwise needs a laptop and a network \, answered from the front panel: what MIDI is arriving and on what channel \, whether each output device answers \, the error log \, this Organelle's address \, and a re-wire by hand. A separate patch \, because the instrument's Pd is what has usually stopped answering. ref/module/debug.md, f 96;
 #X text 20 200 Selecting this stops the instrument: loading any patch restarts Pd. u_state's data survives \, outside both patch folders. A Launchpad left in Programmer Mode by a killed instrument needs tools/lp-live.sh \, which needs no Pd., f 96;
 #X text 20 380 It wires itself: loading a patch drops Pd's ALSA connections \, and an unwired debug patch would report silence. wire.sh is idempotent and connects by name (items 287 and 292). It must not ask the presence bus \, which lived in the Pd this load just killed., f 96;
-#X text 20 580 The keyboard is the menu \, from the lowest key: k1 leaves (goHome) \, k2 to k7 pick the six screens \, and k13 and k17 fire the Volca probe and a re-wire from any screen. k15 fired the SP-404's probe until the 404 left the rig (2026-11-04) \, and is unbound., f 96;
+#X text 20 580 The keyboard is the menu \, from the lowest key: k1 leaves (goHome) \, k2 to k7 pick the six screens \, and k13 and k17 fire the FM-1 probe and a re-wire from any screen. k15 fired the SP-404's probe until the 404 left the rig (2026-11-04) \, and is unbound., f 96;
 #X text 20 740 The encoder is not taken: enableSubMenu would take its click too \, the press that leaves a running patch (items 313 and 314)., f 96;
 #X text 20 920 Every line is one symbol \, dashes for spaces: whether the display joins arguments with spaces is not measured (ref/module/debug.md)., f 96;
 #X text 20 1100 err-tail.sh and net-probe.sh emit a fixed four and three lines \, routed to rows by position. The two share one shell and wire.sh has its own \, so a slow re-wire cannot interleave into the router., f 96;
@@ -39,7 +39,7 @@
 #X obj 2150 1680 f;
 #X obj 1500 1730 t b;
 #X obj 1500 1850 select 0 1 2 3;
-#X text 1500 1910 The port is the device \, by wire.sh's order: Launchpad 1-16 \, nanoKONTROL 17-32 \, port 3 33-48 \, the USB Uno 49-64 \, so (channel-1)/16 names the box. Port 3 was the SP-404's and is held for the Streichfett: its row reads zero until something is there. Both objects are omni and fire channel first \, so the port is stored before the value arrives., f 62;
+#X text 1500 1910 The port is the device \, by wire.sh's order: Launchpad 1-16 \, nanoKONTROL 17-32 \, port 3 33-48 \, port 4 \, the nanoKEY's \, 49-64 \, so (channel-1)/16 names the box. Port 3 was the SP-404's and is held for the Streichfett: its row reads zero until something is there. Both objects are omni and fire channel first \, so the port is stored before the value arrives., f 62;
 #X text 2150 1740 The raw channel is kept too \, for a device that sends on more than one., f 46;
 #X obj 1500 2080 f;
 #X obj 1500 2130 + 1;
@@ -57,14 +57,14 @@
 #X obj 2200 2240 f;
 #X obj 2200 2300 makefilename port3-%d;
 #X obj 2550 2240 makefilename ch-%d;
-#X text 1500 2440 The USB Uno gets no counter: the Volca behind it transmits nothing \, so the row would always read zero. Anything on its DIN IN shows in ch- as a channel from 49 to 64 instead., f 62;
+#X text 1500 2440 Port 4 gets no counter: the FM-1's own keys are left unwired (wire.sh) \, so its row would always read zero. The nanoKEY \, which has Midi-In 4 \, shows in ch- as a channel from 49 to 64 instead., f 62;
 #X msg 2900 1560 60 100 49;
 #X obj 2900 1610 unpack f f f;
 #X obj 3150 1560 del 200;
 #X msg 3150 1610 60 0 49;
 #X obj 3150 1660 unpack f f f;
 #X obj 2900 1960 noteout;
-#X text 2900 2020 The probe is the phone's (item 306): notes 60 100 200 to the Volca. noteout's channel encodes the port. unpack fires right to left \, so channel and velocity reach noteout before the pitch., f 62;
+#X text 2900 2020 The probe is the phone's (item 306): notes 60 100 200 to the FM-1. noteout's channel encodes the port. unpack fires right to left \, so channel and velocity reach noteout before the pitch., f 62;
 #X obj 2900 2340 f;
 #X obj 2900 2390 + 1;
 #X obj 2900 2440 t f f;
@@ -107,7 +107,7 @@
 #X msg 100 3360 symbol 1-MIDI-IN;
 #X obj 500 3300 t b b b b b;
 #X msg 500 3360 symbol 2-TEST-OUT;
-#X msg 620 3410 symbol k13-volca-n60;
+#X msg 620 3410 symbol k13-fm1-n60;
 #X msg 740 3460 symbol -;
 #X msg 860 3510 symbol -;
 #X obj 1200 3300 t b b b;
@@ -123,7 +123,7 @@
 #X msg 2500 3360 symbol 6-HELP;
 #X msg 2620 3410 symbol k1-exits-to-menu;
 #X msg 2740 3460 symbol k2-k7-pick-screen;
-#X msg 2860 3510 symbol k13-volca-probe;
+#X msg 2860 3510 symbol k13-fm1-probe;
 #X msg 2980 3560 symbol k17-re-wire;
 #X text 100 3760 One draw chain per screen \, and each writes every row it owns \, or a row would keep the previous screen's text. Screens 3 and 4 write their title and then fork., f 96;
 #X obj 2500 3620 s screenLine1;

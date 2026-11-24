@@ -21,10 +21,10 @@
 local R = {}
 
 R.STEPS, R.SLOTS, R.MAX_NOTES = 32, 8, 8
-R.VOLCA, R.STRINGS = 1, 2
+R.FM, R.STRINGS = 1, 2
 -- Where a part can sound: the two synths, or a basic Pd voice, c_mono, one note each. The melody has one
 -- c_mono, 3, and the chords four, 4 to 7, a note each (Brendan, 2026-11-05: a chord on a Pd voice plays
--- all of it). On the Volca, which plays three at once, a chord is its lowest three.
+-- all of it). The FM-1 plays twelve at once, so a chord on fm is all of it too.
 R.VOICES = { "fm", "strings", "sine", "saw", "square" }
 R.FIRST_PD = 3
 R.MONO_M = 3
@@ -505,7 +505,7 @@ local function playable(st, notes)
     return { into(root, R.MIDDLE - 15, R.MIDDLE - 4) }
   end
   local v = st["voice-h"]
-  local limit = v >= R.FIRST_PD and #R.MONO_H or v == R.VOLCA and 3 or #notes
+  local limit = v >= R.FIRST_PD and #R.MONO_H or #notes
   local sorted = {}
   for i, n in ipairs(notes) do sorted[i] = n end
   table.sort(sorted)

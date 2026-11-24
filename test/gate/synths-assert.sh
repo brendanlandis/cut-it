@@ -6,5 +6,5 @@
 #   ./test/gate/synths-assert.sh --keep   leave the scratch dir and capture behind
 #
 # The trap is a key held through a switch: its release must go to the synth that got
-# its press, or the Volca's note sounds until a panic.
+# its press, or the FM-1's note sounds until a panic.
 exec python3 "$(dirname "$0")/scratch-gates.py" synths "$@"

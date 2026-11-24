@@ -69,7 +69,7 @@ that a source which has answered nothing has published none.
 |---|---|---|---|---|---|---|
 | `active` | `m_launchpad` `m_nano` `m_streich` | yes | yes | yes | verified | 270 |
 | `passive` | `m_organelle` `m_nanokey` | no | **no** | no | verified | 270 |
-| `none` | `m_volca` | no | no | no | verified | 270 |
+| `none` | `m_fm1` | no | no | no | verified | 270 |
 
 **Self-registration is `state`'s shape** — a contributor names its own key and declares its own
 policy — and it is what lets an `m_` written long after `u_present` be covered with no change to
@@ -119,7 +119,7 @@ silently, because a matcher that matches nothing looks exactly like a device tha
 
 ⛔ **Everything above recovers a device that WAS here and went away, and every bit of it is gated on
 something being LOST.** A device registered `none` has no clock and can never be lost, so the
-bounded recovery never runs for it: plug the Volca's interface into a running instrument and it
+bounded recovery never runs for it: plug the FM-1 into a running instrument and it
 enumerates in under a second and sits **completely unsubscribed, forever** (item 285).
 
 `u_present` forks **`wire-watch.sh`** on its own interval, off the raw tick rather than through the
@@ -206,7 +206,7 @@ touch.** It is also an argument for the shared re-wire — the recovery is not o
 went missing.
 
 ⚠️ **The renumbering row is the phantom-control hazard NOT happening.** Wired by number, the SP-404
-would have landed on the Volca's channel block and the Volca on its. ⛔ **But a renumbering that happens while the
+would have landed on port 4's channel block and port 4's device on its. ⛔ **But a renumbering that happens while the
 bound is spent leaves the rig wired to nothing until something re-runs `wire.sh`** — the heartbeat
 hashes client *names*, which a renumbering does not change, so that something is a `presence
 re-wire` Send line or a reload.
@@ -331,7 +331,7 @@ instant available, because a device answering its inquiry is the signal that enu
 
 ⚠️ **It narrows the gap rather than closing it.** Unplug a `none` device *on its own* and nothing is
 lost, nothing forks, and nothing recovers — the trailing fork only helps when a detectable device
-went down alongside it. See [volca.md](../device/volca.md).
+went down alongside it. See [fm1.md](../device/fm1.md).
 
 **One bound, coalesced.** The counter runs while **any** source is lost and resets when **none** is,
 so the rig gets eight attempts whether one cable came out or several. Two devices unplugged together
@@ -374,7 +374,7 @@ paints the surface **red** for a second (item 296) — a state nothing could mis
 
 ## Open
 
-- ⬜ **The Volca cannot be tested alone.** It registers `none`, so pulling its interface loses
-  nothing, forks nothing and recovers nothing, and both its checklist steps unplug the interface and
+- ⬜ **The FM-1 cannot be tested alone.** It registers `none`, so pulling it loses
+  nothing, forks nothing and recovers nothing, and both its checklist steps unplug it and
   lean on a detectable device beside it. Permanent, for a device that can never be lost, so
   **NO PLAN OWNS THIS**.

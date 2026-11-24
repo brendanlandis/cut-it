@@ -16,11 +16,11 @@ local check, equal = T.check, T.equal
 local MAP = table.concat({
   "perform og-knob-1 tempo 0",
   "drums og-knob-1 tempo 0",
-  "perform og-knob-2 volca-cc 42",
-  "perform slider-1 volca-cc 41",
-  "drums slider-1 volca-note 48",
-  "perform og-key-60 volca-key 60",
-  "perform pad-13-at volca-cc 45",
+  "perform og-knob-2 fm1-cc 42",
+  "perform slider-1 fm1-cc 41",
+  "drums slider-1 fm1-note 48",
+  "perform og-key-60 fm1-key 60",
+  "perform pad-13-at fm1-cc 45",
   "perform gk-bad no-such-destination 0",
 }, "\n") .. "\n"
 
@@ -41,7 +41,7 @@ end
 print("\n--- the table ---")
 local map, rows = R.parse(MAP)
 equal("a row is <page> <control> <dest> <arg>, the arg a number",
-      map["perform"]["slider-1"], { dest = "volca-cc", arg = 41 })
+      map["perform"]["slider-1"], { dest = "fm1-cc", arg = 41 })
 equal("... and every row is counted, as [text size] counts lines", rows, 8)
 map, rows = R.parse("perform a tempo 0\nperform a stop 0\n")
 equal("a duplicate page and control: the FIRST row wins, as [text search] found it",
@@ -117,10 +117,10 @@ print("\n--- the lookup ---")
 local st = R.new(MAP)
 equal("the key's page is perform from the start, before any page arrives", st.mode, "perform")
 equal("a mapped control leaves for its destination: <dest> <arg> <value> <target> <live>",
-      control(st, "slider-1", { 64 }), route("volca-cc", 41, 64 / 127, 64 / 127, 1))
+      control(st, "slider-1", { 64 }), route("fm1-cc", 41, 64 / 127, 64 / 127, 1))
 R.mode(st, "drums", {})
-equal("the same control on another page means that page's row -- volca-note 48",
-      control(st, "slider-1", { 64 }), route("volca-note", 48, 64 / 127, 64 / 127, 1))
+equal("the same control on another page means that page's row -- fm1-note 48",
+      control(st, "slider-1", { 64 }), route("fm1-note", 48, 64 / 127, 64 / 127, 1))
 R.mode(st, "keys", {})
 equal("a page with no row for it: the control is unmapped, and leaves nothing -- no bus, no row",
       R.control(st, "slider-1", { 64 }), {})
@@ -144,7 +144,7 @@ R.mode(st, "drums", {})
 equal("... and on a page with no pad-* row a pad is unmapped", control(st, "pad-71", { 127 }), {})
 
 print("\n--- the divisor ---")
-st = R.new("perform og-knob-3 volca-cc 43\nperform og-aux volca-cc 44\nperform slider-2 volca-cc 45\n")
+st = R.new("perform og-knob-3 fm1-cc 43\nperform og-aux fm1-cc 44\nperform slider-2 fm1-cc 45\n")
 R.internal.live(st)
 equal("an Organelle knob is 0-1 already and passes as it is",
       R.control(st, "og-knob-3", { 0.5 })[1][3][3], 0.5)
@@ -198,7 +198,7 @@ fh = assert(io.open(DIR .. "u_map.pd"))
 equal("... which is the patch's own c_mapped", fh:read("a"):match("c_mapped bpm (%d+ %d+);"), "210 40")
 fh:close()
 equal("... and only the tempo has a curve: a mapped CC passes its knob's value as it is",
-      R.CURVES["volca-cc"], nil)
+      R.CURVES["fm1-cc"], nil)
 
 print("\n--- pickup ---")
 -- R.new(MAP) is a boot after a Save: there is a knobs.txt, and mother's push is a restore.
@@ -243,7 +243,7 @@ st = R.new(MAP)
 R.internal["window-shut"](st)
 control(st, "og-knob-2", { 0.5 })
 equal("a first value AFTER the window is a hand: never armed, the next passes too",
-      control(st, "og-knob-2", { 0.9 }), route("volca-cc", 42, 0.9, 0.5, 1))
+      control(st, "og-knob-2", { 0.9 }), route("fm1-cc", 42, 0.9, 0.5, 1))
 
 st = R.new(MAP)
 control(st, "og-knob-1", { 0.2 })
@@ -337,14 +337,14 @@ equal("... nor an unmapped key or its release", { control(st, "og-key-61", { 100
       control(st, "og-key-61", { 0 }) }, { {}, {} })
 equal("... nor unmapped pressure -- pad-11-at", control(st, "pad-11-at", { 64 }), {})
 equal("while a mapped key still leaves", control(st, "og-key-60", { 100 }),
-      route("volca-key", 60, 100 / 127, 100 / 127, 1))
+      route("fm1-key", 60, 100 / 127, 100 / 127, 1))
 equal("... and MAPPED pressure leaves for its destination", control(st, "pad-13-at", { 64 }),
-      route("volca-cc", 45, 64 / 127, 64 / 127, 1))
+      route("fm1-cc", 45, 64 / 127, 64 / 127, 1))
 equal("a control with no value is 0, as [f] reads it",
-      control(st, "slider-1", {}), route("volca-cc", 41, 0, 0, 1))
-equal("... a symbol value too", control(st, "slider-1", { "x" }), route("volca-cc", 41, 0, 0, 1))
+      control(st, "slider-1", {}), route("fm1-cc", 41, 0, 0, 1))
+equal("... a symbol value too", control(st, "slider-1", { "x" }), route("fm1-cc", 41, 0, 0, 1))
 equal("a list of name and value is the same control", control(st, "list", { "slider-1", 127 }),
-      route("volca-cc", 41, 1, 1, 1))
+      route("fm1-cc", 41, 1, 1, 1))
 equal("a message with nothing in it does nothing", control(st, "bang", {}), {})
 
 print("\n--- at load ---")
@@ -378,10 +378,10 @@ check("an object has four inlets and four outlets", o and o.inlets == 4 and o.ou
       o and (o.inlets .. " " .. o.outlets))
 equal("init: the bang on outlet 3 that says it loaded, and nothing else",
       T.send(o, 3, "init", {}), { { 3, "bang", {} } })
-equal("it read the table from its patch's folder: slider-1 is volca-cc 41, on outlet 1, and u_perform "
+equal("it read the table from its patch's folder: slider-1 is fm1-cc 41, on outlet 1, and u_perform "
       .. "hears of it on outlet 4",
-      T.send(o, 1, "slider-1", { 64 }), { { 1, "list", { "volca-cc", 41, 64 / 127, 64 / 127, 1 } },
-                                          { 4, "list", { "volca-cc", 41, 64 / 127 } } })
+      T.send(o, 1, "slider-1", { 64 }), { { 1, "list", { "fm1-cc", 41, 64 / 127, 64 / 127, 1 } },
+                                          { 4, "list", { "fm1-cc", 41, 64 / 127 } } })
 equal("an unmapped control leaves by no outlet at all", T.send(o, 1, "gk-x", { 64 }), {})
 equal("a page on inlet 2 leaves nothing, the key takes it", { T.send(o, 2, "keys", {}), o.state.mode },
       { {}, "keys" })
@@ -407,7 +407,7 @@ end
 equal("dispatch takes each inlet's messages to its method: a control, a mode, init, a tempo",
       { dispatched(1, "slider-1", { 127 })[1], dispatched(2, "perform", {}),
         dispatched(3, "init", {}), dispatched(4, "float", { 120 }) },
-      { { 1, "list", { "volca-cc", 41, 1, 1, 1 } }, {}, { { 3, "bang", {} } }, {} })
+      { { 1, "list", { "fm1-cc", 41, 1, 1, 1 } }, {}, { { 3, "bang", {} } }, {} })
 equal("a knobs.txt where its patch is: mother's first push is a restore, and passes",
       T.send(T.new(class, {}, tmp .. "-"), 1, "og-knob-1", { 0.0958 })[1],
       { 1, "list", { "tempo", 0, C(0.0958), C(0.0958), 1 } })
@@ -443,7 +443,7 @@ equal("... and the object carries on: a page still lands",
       { T.send(broken, 2, "drums", {}), broken.state.mode }, { {}, "drums" })
 
 print("\n--- a knob mapped to rush ---")
-local RUSHING = "perform og-knob-4 rush 0\nperform og-knob-1 tempo 0\nperform og-knob-2 volca-cc 42\n"
+local RUSHING = "perform og-knob-4 rush 0\nperform og-knob-1 tempo 0\nperform og-knob-2 fm1-cc 42\n"
 local AT_120 = R.rush_position(120)
 for _, unsaved in ipairs({ false, true }) do
   local q = R.new(RUSHING, unsaved)
@@ -479,6 +479,6 @@ check("⛔ a tempo from a tap, the phone, a section or a pad holds both", q.knob
 equal("⛔ a tempo below its 10 BPM holds it at its bottom, a hair off the rail, so a pot that stops short still reaches it",
       { R.rush_position(5), R.rush_position(10) }, { 0.01, 0.01 })
 equal("another destination on that knob is not held for it",
-      R.new("perform og-knob-4 volca-cc 44\n", true).knob[4].state, "live")
+      R.new("perform og-knob-4 fm1-cc 44\n", true).knob[4].state, "live")
 
 os.exit(T.report() == 0)

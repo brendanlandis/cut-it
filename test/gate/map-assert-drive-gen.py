@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generates the timed driver for the map gate, into the scratch path it is given.
 
-It pushes onto `param` and `mode` as the m_ layers would. volca-cc is only where
-a lookup lands; what the destination does with the value is volca-assert's.
+It pushes onto `param` and `mode` as the m_ layers would. fm1-cc is only where
+a lookup lands; what the destination does with the value is fm1-assert's.
 
 The first window is at 300 ms, before u_map reads its table, because mother
 pushes knobs.txt at boot (item 234). Windows timed from when the code reads the
@@ -93,13 +93,13 @@ SEQ = [
     (6800, "PERFORM", ["\\; param lp-setup 127", "\\; param og-aux 1", "\\; param lp-cc-70 127",
                        "\\; param lp-cc-70 0"], GAP),
     # Every value destination draws its mapped row. The shipped map reaches only
-    # tempo and volca-cc, so note and program go through gate rows
+    # tempo and fm1-cc, so note and program go through gate rows
     # (scratch-gates.py). 64 in is 64 out for a 0-127 control. 404-pad's window
     # went with the destination (2026-11-04), and the others kept their times.
     (7000, "ROW-CC", ["\\; param gk-cc 64"], GAP),
     (7200, "ROW-NOTE", ["\\; param gk-note 100"], GAP),
     (7600, "ROW-PROG", ["\\; param gk-prog 1"], GAP),
-    # volca-key draws nothing (item 293). gk-key is a gate row: the Organelle's
+    # fm1-key draws nothing (item 293). gk-key is a gate row: the Organelle's
     # own keys choose songs (Brendan, 2026-11-05) and play nothing, so og-key-60
     # beside it must add no note.
     (7800, "ROW-KEY", ["\\; param gk-key 100", "\\; param og-key-60 100"], GAP),
@@ -109,7 +109,7 @@ SEQ = [
     (8000, "PRESSURE", ["\\; param pad-11-at 64", "\\; param pad-36 100",
                         "\\; param gk-cc 64"], GAP),
     # Mapped pressure still draws its row: a gate row maps pad-13-at to
-    # volca-cc 45.
+    # fm1-cc 45.
     (8200, "PRESSURE-MAPPED", ["\\; param pad-13-at 64"], GAP),
 ]
 QUIT_MS = 8800

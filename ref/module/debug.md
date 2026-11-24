@@ -18,7 +18,7 @@ from the menu, which restarts Pd — so it starts from nothing, and nothing that
 previous instance can reach it.
 
 **Six screens, steered from the 25 keys.** The lowest key sends `goHome` and leaves. `k2`–`k7` pick
-a screen; `k13` and `k17` fire the Volca probe and a re-wire, and both work from any screen. `k15`
+a screen; `k13` and `k17` fire the FM-1 probe and a re-wire, and both work from any screen. `k15`
 fired the SP-404's probe until the 404 left the rig (Brendan, 2026-11-04), and is unbound.
 
 ## Facts
@@ -28,7 +28,7 @@ fired the SP-404's probe until the 404 left the rig (Brendan, 2026-11-04), and i
 | Key | Screen | Rows | Evidence | Item |
 |-----|--------|------|----------|------|
 | `k2` | `1-MIDI-IN` | `lp-` `nano-` `port3-` counts, and `ch-` — the last channel seen | verified | 315 |
-| `k3` | `2-TEST-OUT` | which key fires the Volca, and `sent-` | verified | 315 |
+| `k3` | `2-TEST-OUT` | which key fires the FM-1, and `sent-` | verified | 315 |
 | `k4` | `3-ERR-LOG` | the last four lines of `/sdcard/cut-it-err.log` | verified | 315 |
 | `k5` | `4-NETWORK` | `ip-` this Organelle's own address, `ap-`, `phone-` | verified | 315 |
 | `k6` | `5-RE-WIRE` | `links-` from `wire.sh`'s own report, and `runs-` | verified | 315 |
@@ -50,9 +50,9 @@ enumerates lowest on Pd's Midi-In 1 (Reference, `~/Sites/!reference/critter-guit
 When that is the nanoKONTROL, two devices really are both channel 1 and nothing in Pd can tell them
 apart. Item 274, and it is the fault this screen is most likely to be looking for.
 
-⚠️ **The USB Uno block has no counter row of its own.** The Volca behind it is receive-only, so a row
-there could only ever read zero; anything that does appear on the interface's DIN IN jack shows up in
-`ch-` as a channel between 49 and 64.
+⚠️ **Port 4's block has no counter row of its own.** The FM-1's own keys are left unwired, so a row
+for it could only ever read zero; the nanoKEY, which has Midi-In 4, shows up in `ch-` as a channel
+between 49 and 64.
 
 ⚠️ **Port 3's row reads zero for now, and stays.** It was `sp404-`, counting the SP-404, until the
 404 left the rig (Brendan, 2026-11-04); the port is the Streichfett's now, which transmits when its
@@ -64,7 +64,7 @@ keys are played, so the row is kept for it under the port's own name.
 |---|---|---|
 | **Selecting it stops the instrument.** Loading any patch restarts Pd | verified | — |
 | It forks `wire.sh` itself, ~1.5 s after load — `loadbang` fires before the ALSA connections exist | verified | 315 |
-| The probe is the one the phone's test-note sent until it went (2026-11-04): `notes 60 100 200` at the Volca, now this patch's alone. `k15` sends nothing, so nothing leaves for port 3 | verified | 306 |
+| The probe is the one the phone's test-note sent until it went (2026-11-04): `notes 60 100 200` at the FM-1, now this patch's alone. `k15` sends nothing, so nothing leaves for port 3 | verified | 306 |
 | What `u_state` wrote is untouched — it lives in `/sdcard/cut-it-state/`, outside both patch folders | verified | — |
 | It repaints the current screen at **3.3 Hz**, so the counters are live rather than frozen | verified | 315 |
 | `err-tail.sh` and `net-probe.sh` fork **once per selection**, never per repaint | verified | 315 |

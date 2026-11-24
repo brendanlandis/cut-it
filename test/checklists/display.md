@@ -70,7 +70,7 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
 
 - [ ] **16. The diag roster**
   - **Do:** Tap SETUP, the Launchpad's bottom left corner, then press the top row's first pad, which lights green. Look hardest at the longest line: m_launchpad unchecked is exactly as wide as a row gets, so that is where clipping would show first.
-  - **Pass if:** Six small lines naming m_launchpad m_nano m_organelle m_volca m_streich and m_nanokey — each with here or gone or never or unchecked beside it — under the info bar. Every line is readable at arm reach, the first clear of the info bar and the sixth of the bottom edge, and none is cut off at the right edge. About eight seconds later the roster goes on its own.
+  - **Pass if:** Six small lines naming m_launchpad m_nano m_organelle m_fm1 m_streich and m_nanokey — each with here or gone or never or unchecked beside it — under the info bar. Every line is readable at arm reach, the first clear of the info bar and the sixth of the bottom edge, and none is cut off at the right edge. About eight seconds later the roster goes on its own.
   - **Note:** `oled-assert` proves the roster's words, their order and where the rows are drawn; whether six 8px rows read at arm's length between the info bar and the bottom edge, and whether the 21-character `m_launchpad unchecked` line is clipped, is a person's call ([display](../../ref/module/display.md)). m_nanokey reads never until a key has been played since the load.
 
 - [ ] **17. The info bar's meters**

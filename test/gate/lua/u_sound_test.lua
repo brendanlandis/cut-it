@@ -87,7 +87,17 @@ st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
 R.rows(st, rows(4, { [4] = { "saw", 0, "-" } }))
 equal("⛔ its parameter goes to c_keys", R.param(st, "4:reverb", 0.5), { { "keys", "tone", { "reverb", 0.5 } } })
 
-print("\n--- the Volca's test voices ---")
+print("\n--- the FM-1's effects: a top, and a switch ---")
+st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+R.rows(st, rows(3, { [3] = { "fm", 1, "h" } }))
+equal("⛔ an effect's amount is scaled to its own top, 100, with its switch on before it",
+      R.param(st, "3:reverb", 1), { { "fm", "cc", { 4, 1 } }, { "fm", "cc", { 7, 100 } } })
+equal("⛔ ... and at nothing its switch goes off", R.param(st, "3:reverb", 0),
+      { { "fm", "cc", { 4, 0 } }, { "fm", "cc", { 7, 0 } } })
+equal("a top with no switch is the one CC, 0 to that top", R.param(st, "3:cutoff", 1),
+      { { "fm", "cc", { 2, 107 } } })
+
+print("\n--- the fm synth's test voices ---")
 for n, v in ipairs(R.TEST_VOICES) do
   local sum = 0
   for i = 7, 161 do sum = sum + v[i] end

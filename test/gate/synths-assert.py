@@ -8,7 +8,7 @@ key is held releases the key on the synth that started it; a voice's button and 
 command both switch; the phone's velocity switch, off, sends every note-on at 127 on either
 synth and leaves releases at 0; the choice and the switch come back from the song store, section 1's,
 and go into it; and panic reaches the Streichfett's channel. The run boots with strings and velocity
-off saved, so a default left in force by a restore that never landed would play the Volca at the
+off saved, so a default left in force by a restore that never landed would play the FM-1 at the
 key's own velocity and fail the first window.
 """
 import os
@@ -17,7 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                         # noqa: E402
 
-FM, STRINGS = 49, 33            # the Volca's and the Streichfett's Pd channels, args 5 and 4
+FM, STRINGS = 49, 33            # the FM-1's and the Streichfett's Pd channels, args 5 and 4
 WINDOWS = 19
 
 
@@ -64,7 +64,7 @@ def run_asserts(cap, state):
     A.check("⛔ a voice's button chooses its machine, and looking at its page changes nothing in the "
             "song: no put, and nothing said", not puts("VOICE-FM") and not errs("VOICE-FM"),
             "state %s err %s" % (puts("VOICE-FM"), errs("VOICE-FM")))
-    A.check("a key on any channel of the nanoKEY's port, 50, plays the Volca alone",
+    A.check("a key on any channel of the nanoKEY's port, 50, plays the FM-1 alone",
             notes("KEY-FM") == [(62, 100, FM)], notes("KEY-FM"))
     A.check("... and its release", notes("KEY-FM-OFF") == [(62, 0, FM)], notes("KEY-FM-OFF"))
 
@@ -77,7 +77,7 @@ def run_asserts(cap, state):
     A.check("⛔ the held key releases on the synth that started it, fm, not the one chosen now",
             notes("HOLD-OFF") == [(64, 0, FM)],
             "wanted noteout 64 0 %d alone, got %s -- a release sent to the synth chosen now "
-            "leaves the Volca's note sounding until a panic" % (FM, notes("HOLD-OFF")))
+            "leaves the FM-1's note sounding until a panic" % (FM, notes("HOLD-OFF")))
     A.check("a key pressed after the switch plays the Streichfett, and releases there",
             notes("KEY-STRINGS") == [(65, 100, STRINGS), (65, 0, STRINGS)], notes("KEY-STRINGS"))
 

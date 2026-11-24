@@ -68,7 +68,7 @@ GATES = [
     ("the phone link", "./test/gate/phone-assert.sh"),
     ("the app's commands, read against the patch's", "./test/gate/app-assert.sh"),
     ("the checklists' Send lines", "./test/gate/inject-assert.sh"),
-    ("the Volca", "./test/gate/volca-assert.sh"),
+    ("the FM-1", "./test/gate/fm1-assert.sh"),
     ("the sequencer and its drum page", "./test/gate/sequencer-assert.sh"),
     ("the drum kit, as a SIGNAL", "./test/gate/kit-assert.sh"),
     ("the synths: the nanoKEY, the choice and the Streichfett", "./test/gate/synths-assert.sh"),

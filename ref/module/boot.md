@@ -69,9 +69,8 @@ sequence is still bringing it up. See [presence.md](presence.md).
 | `Pure Data:5` | `nanoKONTROL:0` | The device inquiry, and nothing else | verified | 274 |
 | `Streichfett:0` | `Pure Data:2` | Its replies and its panel, Pd channels 33–48: `m_streich`'s `c_devid 62` reads its identity reply, and nothing reads its panel | unknown | — |
 | `Pure Data:6` | `Streichfett:0` | `m_streich`'s notes, panic's All Notes Off and the identity request, out to the Streichfett | unknown | — |
-| `USB Uno MIDI Interface:0` | `Pure Data:3` | Nothing today — the DIN IN jack, for a future device. Pd channels 49–64 | verified | — |
-| `Pure Data:7` | `USB Uno MIDI Interface:0` | Notes and CC out to the Volca | verified | — |
-| `nanoKEY:0` | `Pure Data:3` | Its keys, Pd channels 49–64, to `m_nanokey`, sharing Midi-In 4 with the DIN IN, which carries nothing | unknown | — |
+| `Pure Data:7` | `FM-1:0` | Notes, program changes and its effects' CCs out to the FM-1, Pd channels 49 and 50 ([fm1.md](../device/fm1.md)) | verified | — |
+| `nanoKEY:0` | `Pure Data:3` | Its keys, Pd channels 49–64, to `m_nanokey`: Midi-In 4 is the nanoKEY's alone, the FM-1's own keys left unwired | verified | — |
 
 **The port map, from `/home/music/.pdsettings` — four in, four out:**
 
@@ -100,7 +99,7 @@ plays from channel 33.
 | `nanoKONTROL:0` | `Pure Data:0` | verified | — |
 | `Streichfett:0` | `Pure Data:0` | ✅ needed: after the reboot of 2026-11-04 the Streichfett was the lowest client and sat on Midi-In 1, the Launchpad's channel block | — |
 | `nanoKEY:0` | `Pure Data:0` | unknown | — |
-| `USB Uno MIDI Interface:0` | `Pure Data:0` | verified | — |
+| `FM-1:0` | `Pure Data:0` | unknown | — |
 
 mother's autoconnect wires whichever device enumerates lowest to Pd's Midi-In 1
 (`~/Sites/!reference/critter-guitari-organelle-1.md`, *mother's autoconnect*), so this list undoes it
@@ -116,7 +115,7 @@ for every device that is not the Launchpad. See *Traps*.
 | 2 | The same for the Launchpad | `1` | `1` | verified | — |
 | 3 | `u_state`'s **data directory**, absolute, no trailing slash | `/sdcard/cut-it-state` | `/tmp` | verified | — |
 | 4 | The same for the Streichfett, the SP-404's until it left the rig (2026-11-04) | `33` | `33` | unknown | — |
-| 5 | The same for the Volca, and the first channel of the nanoKEY's port, which it shares | `49` | `49` | verified | — |
+| 5 | The same for the FM-1, and the first channel of the nanoKEY's port, the same number | `49` | `49` | verified | — |
 | 6 | `u_net`'s inbound UDP port | `9001` | `9002` | verified | 307 |
 
 ⚠️ **Argument 3 is a real platform difference** — there is no `/sdcard` on a Mac. **Argument 6
@@ -175,7 +174,7 @@ init to `u_state`.
 ### Positional creation arguments cannot be skipped, and Pd does not warn
 
 ⛔ Every position has to be passed, even one a device has left: omitting argument 4 would silently
-deliver the Volca's channel as arg 4. **Pd does not warn about a missing or extra creation argument at all**, 0.49 or
+deliver the FM-1's channel as arg 4. **Pd does not warn about a missing or extra creation argument at all**, 0.49 or
 0.57, so a clean syntax check proves nothing about arity.
 
 **Fix:** pass every position, even the unused ones, and say in the comment that it is unused.

@@ -10,5 +10,7 @@ square reed attack 0.12 release 0.3 bright 0.45 level 0.55
 strings wide registration 0.5 octaves 0.5 release 0.5 ensemble 0.8 reverb 0.5
 strings thin registration 0.1 octaves 0.2 release 0.15 ensemble 0.3 reverb 0.1
 strings solo balance 1 solo-tone 0.5 solo-attack 0.1 solo-decay 0.5 solo-sustain 0.6 tremolo 0.2 reverb 0.3
-fm slow-bloom mod-attack 0.8 mod-decay 0.7 car-attack 0.7 car-decay 0.8
-fm short mod-attack 0.1 mod-decay 0.2 car-attack 0 car-decay 0.15
+fm dry filter 0 reverb 0 delay 0 drive 0 chorus 0 phaser 0
+fm wide chorus 0.4 chorus-rate 0.3 chorus-depth 0.5 reverb 0.3 reverb-decay 0.5
+fm echo delay 0.4 delay-time 0.5 delay-feedback 0.4 reverb 0.2
+fm dark filter 1 filter-type 0 cutoff 0.45 resonance 0.2 reverb 0.3

@@ -1,6 +1,6 @@
 #N canvas 20 20 2000 1400 12;
 #X text 20 20 m_nanokey -- the Korg nanoKEY's input layer: its keys \, from any channel of its port \, out a cord as <note> <velocity> \, 0 for a release. It knows nothing about which synth a key plays: c_synth decides that. ref/device/nanokey.md, f 70;
-#X text 20 150 creation arg 1: the first Pd channel of the nanoKEY's port \, 49 on the device: Midi-In 4 \, which it shares with the Volca interface's DIN IN \, where nothing arrives. inlets: none. outlet 1: <note> <velocity> \, to c_synth. On presence \, passive: expect at load \, and seen with every key it passes., f 70;
+#X text 20 150 creation arg 1: the first Pd channel of the nanoKEY's port \, 49 on the device: Midi-In 4 \, which it has to itself: the FM-1 \, on Midi-Out 4 \, sends nothing in. inlets: none. outlet 1: <note> <velocity> \, to c_synth. On presence \, passive: expect at load \, and seen with every key it passes., f 70;
 #X obj 20 400 notein;
 #X obj 400 470 - \$1;
 #X obj 400 520 t f f;

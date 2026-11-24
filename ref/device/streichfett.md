@@ -4,7 +4,7 @@
 **Files:** `Cut It/m_streich.pd` · **Gate:** `test/gate/synths-assert.sh`, `test/gate/presence-assert.sh` · **Checklist:** `test/checklists/synths.md`
 
 The rig's string synthesizer, and one of the two synths the nanoKEY plays: `strings`, beside the
-Volca's `fm` ([synths.md](../module/synths.md)). What the Streichfett is, its MIDI channel, its
+FM-1's `fm` ([synths.md](../module/synths.md)). What the Streichfett is, its MIDI channel, its
 identity reply and its global dump are in Reference: `~/Sites/!reference/waldorf-streichfett.md`.
 This page is how Cut It drives it.
 
@@ -12,25 +12,25 @@ It reaches the Organelle over USB, on Pd's port 3: **Midi-In 3, channels 33–48
 the SP-404's slot until the 404 left the rig ([boot.md](../module/boot.md), *The ALSA wiring*). Its
 own channel 1 is Pd channel 33, `u_root`'s fourth argument.
 
-**The one decision this page turns on: it is told what to play, like the Volca, and polled for
-presence, unlike it.** `m_streich` takes the Volca's four selectors on one inlet and has no outlets;
+**The one decision this page turns on: it is told what to play, like the FM-1, and polled for
+presence, unlike it.** `m_streich` takes `m_fm1`'s first four selectors on one inlet and has no outlets;
 and since the Streichfett answers the identity request, it is an `active` source on the presence
 bus, as the Launchpad and the nano are.
 
 ## Design
 
-### The inlet is the Volca's
+### The inlet is `m_fm1`'s
 
 | Selector | Does | Evidence |
 |----------|------|----------|
-| `notes <n> <v> <d>` | A note of a fixed duration, through `[makenote]`, safe because the Streichfett has one channel ([volca.md](volca.md), *`makenote` is safe here, and only here*) | unknown |
+| `notes <n> <v> <d>` | A note of a fixed duration, through `[makenote]`, safe because the Streichfett has one channel ([fm1.md](fm1.md), *`makenote` is safe here, and only here*) | unknown |
 | `cc <c> <v>` | A control change, the controller held cold by `[t b f]` | unknown |
 | `program <n>` | A program change, `[+ 1]` before `[pgmout]`, so `n` is the wire number (Pure Data, in Reference) | unknown |
-| `note <n> <v>` | A held key: velocity 0 releases. Straight to the one `[noteout]`, as on the Volca | unknown |
+| `note <n> <v>` | A held key: velocity 0 releases. Straight to the one `[noteout]`, as on the FM-1 | unknown |
 | anything else | `fail m_streich bad-selector` on `err`: `c_synth` and this file disagree about the interface | unknown |
 
 **Only `note` has a caller today**, `c_synth`, for the nanoKEY's keys. `notes`, `cc` and `program`
-are there because the layer is the Volca's shape, so a map destination for the Streichfett
+are there because the layer is `m_fm1`'s shape, so a map destination for the Streichfett
 costs a `route` argument elsewhere and nothing here.
 
 ⛔ **Panic is All Notes Off, CC 123, on its channel.** The `note` path bypasses `makenote`, so a
@@ -66,7 +66,7 @@ directly, without Cut It.
 
 ### No clock and no transport
 
-`u_tempo`'s clock goes to port 1 alone ([volca.md](volca.md), *No MIDI clock reaches this device*),
+`u_tempo`'s clock goes to port 1 alone ([fm1.md](fm1.md), *No MIDI clock reaches this device*),
 and `tempo-assert` holds the clock and panic's STOPs off port 3. The Streichfett has no sequencer to
 stop, and its arpeggiator, if one is ever used, runs on its own clock.
 

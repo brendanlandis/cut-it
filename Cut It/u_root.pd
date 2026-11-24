@@ -1,6 +1,6 @@
 #N canvas 20 20 3000 2000 12;
 #X text 20 20 u_root -- the root of Cut It. main.pd (the device) and main-dev.pd (the Mac) both instantiate this and nothing else \, so the two entry points cannot drift., f 58;
-#X text 2300 20 creation args \, all six required: 1 the Pd channel the nanoKONTROL's own channel 1 lands on (17 on the device). 2 the same for the Launchpad (1). 3 u_state's data directory \, absolute \, no trailing slash. 4 the same as 1 for the Streichfett (33) \, the SP-404's until it left the rig (2026-11-04). 5 the same for the Volca (49) \, and the first channel of the nanoKEY's port \, Midi-In 4 \, which it shares with the Volca's interface. 6 u_net's inbound UDP port. What each is on the Mac \, why 3 and 6 differ there \, and why a wrong count loads in silence: ref/architecture.md \, Creation arguments. inlets: none. outlets: none., f 80;
+#X text 2300 20 creation args \, all six required: 1 the Pd channel the nanoKONTROL's own channel 1 lands on (17 on the device). 2 the same for the Launchpad (1). 3 u_state's data directory \, absolute \, no trailing slash. 4 the same as 1 for the Streichfett (33) \, the SP-404's until it left the rig (2026-11-04). 5 the same for the FM-1 (49) \, and the first channel of the nanoKEY's port \, Midi-In 4: the same number \, since both are port 4. 6 u_net's inbound UDP port. What each is on the Mac \, why 3 and 6 differ there \, and why a wrong count loads in silence: ref/architecture.md \, Creation arguments. inlets: none. outlets: none., f 80;
 #X obj 20 340 r~ inL;
 #X obj 20 620 throw~ outL;
 #X obj 330 340 r~ inR;
@@ -18,14 +18,14 @@
 #X obj 1700 860 u_map \$3;
 #X obj 2300 340 g_oled;
 #X obj 2300 600 g_led;
-#X text 900 1300 The columns are ref/architecture.md's diagram: the m_ layers \, then the buses and the map \, then the display owners. A file with cords sits by its cords instead: u_init's to m_launchpad \, u_state and \, after it through the trigger \, u_song (u_init owns when \, they own what) \, u_map's to the output devices \, m_volca and \, through c_synth \, m_streich (C-2: no bus carries a sounding note) \, u_map's test-mode to u_net \, g_grid's from m_launchpad (surface ownership) and c_clock (the beat) \, c_steps between u_map \, c_kit \, g_grid \, u_net and u_song (ref/module/sequencer.md) \, c_synth between m_nanokey \, u_voices and u_net and the two synths and u_net (ref/module/synths.md) \, u_tempo between u_map's tap and u_net's tempo \, and u_net and u_map \, which holds knob 1 at a tempo a tap or the phone set (ref/module/tempo.md) \, and u_song between u_map's top row \, save and revert \, u_net's sections page and c_steps' bar \, and g_grid and u_net (ref/module/songs.md) \, and u_voices and u_perform between u_map and u_net \, and g_grid \, u_net and the engines (ref/module/voices.md). c_kit's outlet~ joins the audio chain at the left., f 90;
+#X text 900 1300 The columns are ref/architecture.md's diagram: the m_ layers \, then the buses and the map \, then the display owners. A file with cords sits by its cords instead: u_init's to m_launchpad \, u_state and \, after it through the trigger \, u_song (u_init owns when \, they own what) \, u_map's to the output devices \, m_fm1 and \, through c_synth \, m_streich (C-2: no bus carries a sounding note) \, u_map's test-mode to u_net \, g_grid's from m_launchpad (surface ownership) and c_clock (the beat) \, c_steps between u_map \, c_kit \, g_grid \, u_net and u_song (ref/module/sequencer.md) \, c_synth between m_nanokey \, u_voices and u_net and the two synths and u_net (ref/module/synths.md) \, u_tempo between u_map's tap and u_net's tempo \, and u_net and u_map \, which holds knob 1 at a tempo a tap or the phone set (ref/module/tempo.md) \, and u_song between u_map's top row \, save and revert \, u_net's sections page and c_steps' bar \, and g_grid and u_net (ref/module/songs.md) \, and u_voices and u_perform between u_map and u_net \, and g_grid \, u_net and the engines (ref/module/voices.md). c_kit's outlet~ joins the audio chain at the left., f 90;
 #X obj 20 1200 c_clock 1 8;
 #X obj 20 1320 g_grid \$2;
 #X text 300 1200 The grid's own clock \, since nothing may assume the global clock is its own (poly-tempo \, ref/module/tempo.md). Ratio 1 and eight beats \, so its beat number indexes the grid's bottom row., f 58;
 #X obj 2300 1120 u_net 192.168.1.9 8001 \$6;
 #X text 2300 1170 192.168.1.9 is the phone at home \, reserved on the house router \; on the Organelle's own access point phone-ip.sh finds the phone itself (ref/device/phone.md)., f 58;
 #X obj 1450 180 u_state \$3;
-#X obj 1700 1150 m_volca \$5;
+#X obj 1700 1150 m_fm1 \$5;
 #X obj 1450 900 u_present 4000 2000 33 8;
 #X text 2600 900 4000: the first tick must come after u_init's last stage has run wire.sh \, the one number outside u_init coupled to its timings (ref/module/boot.md)., f 34;
 #X connect 16 0 26 0;

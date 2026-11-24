@@ -68,7 +68,7 @@ GONE = ["/cutit/param", "/cutit/status", "/cutit/alert"]
 DRUMS_QUIET = ["num", "den", "drunk", "vol", "pitch", "set-track-last", "randomness",
                "set-swing", "set-last", "char", "verb-type", "rnd-pitch"]
 WINDOWS = ["idle", "dispsweep", "dispother", "tempo", "tpsweep", "idle2", "cmdwire",
-           "cmdclear", "cmdvolca", "cmdbogus", "sendoff", "tmon", "sendon", "result",
+           "cmdclear", "cmdfm1", "cmdbogus", "sendoff", "tmon", "sendon", "result",
            "tmoff", "sendoff2", "tmtwice", "tmoff2", "cmdsync", "cmdsnap", "cmdselect",
            "cmdnum", "cmdden", "cmddrunk", "cmdvol", "cmdpitch", "cmdtracklast", "cmdrand",
            "cmdswing", "cmdlast", "cmdchar",
@@ -262,13 +262,13 @@ def main():
            "/cutit/ack"]
 
     for win, cmd in (("cmdwire", "re-wire"), ("cmdclear", "clear-alert"),
-                     ("cmdvolca", "test-note m_volca")):
+                     ("cmdfm1", "test-note m_fm1")):
         none_of(win, CMD, "⛔ %s, a remote-screen button no longer, REACHES NOTHING -- no ack, "
                 "no bus, no outlet (Brendan, 2026-11-04)" % cmd)
         A.check("%s: the link was LIVE while it was ignored" % win,
                 len(args(win, "/cutit/hb")) >= 2,
                 "%d heartbeats in that window" % len(args(win, "/cutit/hb")))
-    held = [g for w in ("cmdclear", "cmdvolca") for g in args(w, "/cutit/tempo")]
+    held = [g for w in ("cmdclear", "cmdfm1") for g in args(w, "/cutit/tempo")]
     A.check("the held state rides through them: the tempo still repeats 400",
             held and all(g == [400.0] for g in held), held[:3])
 

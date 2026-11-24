@@ -14,9 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lib_assert as A                                          # noqa: E402
 
 # The windows debug-assert-drive-gen.py fires, in order.
-WINDOWS = ["EARLY", "BOOTED", "LP-LOW", "LP-HIGH", "NANO", "PORT3", "UNO",
+WINDOWS = ["EARLY", "BOOTED", "LP-LOW", "LP-HIGH", "NANO", "PORT3", "PORT4",
            "HELP", "ERRLOG", "NETWORK", "REWIRE-SCREEN", "TESTOUT",
-           "VOLCA", "K15", "REWIRE-KEY", "REWIRE-VIEW", "UNBOUND",
+           "FM1", "K15", "REWIRE-KEY", "REWIRE-VIEW", "UNBOUND",
            "EXIT", "DONE"]
 
 
@@ -90,17 +90,17 @@ def main():
             drew(by, "PORT3", "SL4", "port3-1"),
             "SL4: %s" % rows(by, "PORT3", "SL4")[:2])
 
-    # The Uno block has no counter (its Volca is receive-only), so its traffic
+    # Port 4's block has no counter (nothing is wired back from the FM-1), so its traffic
     # must show on the channel row.
     A.check("port 4 traffic still shows up, as a channel",
-            drew(by, "UNO", "SL5", "ch-49"),
-            "SL5: %s" % rows(by, "UNO", "SL5")[:2])
+            drew(by, "PORT4", "SL5", "ch-49"),
+            "SL5: %s" % rows(by, "PORT4", "SL5")[:2])
     A.check("and it incremented no device counter",
-            drew(by, "UNO", "SL2", "lp-2") and drew(by, "UNO", "SL3", "nano-1")
-            and drew(by, "UNO", "SL4", "port3-1"),
-            "SL2 %s SL3 %s SL4 %s" % (rows(by, "UNO", "SL2")[:1],
-                                      rows(by, "UNO", "SL3")[:1],
-                                      rows(by, "UNO", "SL4")[:1]))
+            drew(by, "PORT4", "SL2", "lp-2") and drew(by, "PORT4", "SL3", "nano-1")
+            and drew(by, "PORT4", "SL4", "port3-1"),
+            "SL2 %s SL3 %s SL4 %s" % (rows(by, "PORT4", "SL2")[:1],
+                                      rows(by, "PORT4", "SL3")[:1],
+                                      rows(by, "PORT4", "SL4")[:1]))
 
     for win, title in (("HELP", "6-HELP"), ("ERRLOG", "3-ERR-LOG"),
                        ("NETWORK", "4-NETWORK"), ("REWIRE-SCREEN", "5-RE-WIRE"),
@@ -127,11 +127,11 @@ def main():
 
     # The probe is the phone's (item 306), and the notes are the assertion: a
     # probe with the wrong note is a noise nobody can identify.
-    volca = [v for k, v in by.get("VOLCA", []) if k == "NOTEOUT"]
-    A.check("k13 plays the Volca middle C on channel 49",
-            [60.0, 100.0, 49.0] in volca, "NOTEOUT: %s" % volca)
+    fm1 = [v for k, v in by.get("FM1", []) if k == "NOTEOUT"]
+    A.check("k13 plays the FM-1 middle C on channel 49",
+            [60.0, 100.0, 49.0] in fm1, "NOTEOUT: %s" % fm1)
     A.check("and it releases the note",
-            [60.0, 0.0, 49.0] in volca, "NOTEOUT: %s" % volca)
+            [60.0, 0.0, 49.0] in fm1, "NOTEOUT: %s" % fm1)
     # k15 fired the SP-404's pad A1 on channel 33 until the 404 left the rig
     # (2026-11-04). Port 3 is held for another device, which must not be sent a
     # probe meant for the 404.
@@ -145,7 +145,7 @@ def main():
     sent = rows(by, "K15", "SL4")
     A.check("one press fires one probe, not two -- sent-1, and k15 adds none",
             sent and all(r == "symbol sent-1" for r in sent),
-            "SL4 after the Volca's probe and k15: %s" % sorted(set(sent)))
+            "SL4 after the FM-1's probe and k15: %s" % sorted(set(sent)))
 
     # k17 does not change screen, so the count is read on screen 5 afterwards.
     A.check("k17 does not move you off the screen you were on",

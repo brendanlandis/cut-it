@@ -43,7 +43,7 @@ def grouped(pairs):
 
 
 MACHINE_NAMES = {
-    'fm': 'FM (Volca)',
+    'fm': 'FM (FM-1)',
     'strings': 'strings (Streichfett)',
     'sine': 'sine',
     'saw': 'saw',

@@ -115,6 +115,7 @@ depends on nothing after that. A song holds its patches (`put song patches`) and
 |---|---|---|
 | A parameter moved | `<row>:<param> <value>`, 0 to 1, by way of the map's route: from the phone (`perform ctl <row> machine <param> <value>`), the Launchpad's sound page or a control in play | unknown |
 | A machine taken up | A hardware synth is told nothing, so it keeps its own sound, and is told only what's then set; a Pd voice takes its defaults at once | unknown |
+| A control change's range | 0 to 127, or to the row's sixth word, its top, where a device's stops short (the FM-1's effects: 100, 107, 10 or 2). A seventh is a switch: that controller said first, 1 while the value is above 0 and 0 at 0, so one control brings an effect in and takes it out (`test/gate/lua/u_sound_test.lua`) | verified |
 | `sound patch <name>` | The song's patch, recalled | unknown |
 | `sound copy <name>` | A factory patch copied into the song, under a name of its own, and recalled | unknown |
 | `sound save` | What the voice sounds like now is what its patch holds; with no patch yet, a new one | unknown |
@@ -126,7 +127,7 @@ depends on nothing after that. A song holds its patches (`put song patches`) and
 
 | A Pd voice's effects | `e_line`, one a generator line and one for keys: `drive`, `drive-type`, `echo`, `echo-time`, `echo-fb`, `reverb` and `room`, each off until asked for, at its CPU cost then | unknown |
 | A keys voice on a Pd machine | `c_keys`, four notes at once, from `c_synth` | unknown |
-| The Volca's test | Pads 83 and 84 on the diagnostics page, or the phone's: a DX7 voice as a one-voice dump, a byte at a time, to hear whether it only changes the sound in use | unknown |
+| The fm synth's test | Pads 83 and 84 on the diagnostics page, or the phone's: a DX7 voice as a one-voice dump, a byte at a time. The FM-1 takes it in place of the voice it is on ([fm1.md](../device/fm1.md), *`byte` is a whole voice, and it takes a slot*) | verified |
 
 **The Launchpad's sound page:** the machine's first eight parameters as columns on rows 3 to 8, tapped to set; row 2 its
 song patches, tapped to recall; row 1 eight notes to hear it with.

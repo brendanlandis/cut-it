@@ -46,7 +46,7 @@ Clock is **24 PPQN** — 24 pulses per quarter note, one every 20.8 ms at 120 BP
 | `panic` | 252 on ports **1 and 4**, plus the aux LED. **Note-silencing is each device layer's own** | verified | 231, 295 |
 
 ⛔ **`panic` reaches one more port than the transport does, and that asymmetry is the point.** Port 4
-is the Volca's DIN interface, and item 279 measured it receiving nothing at all — so a Volca
+is the FM-1's, the Volca's before it, and item 279 measured it receiving nothing at all — so a synth
 sequencing through a panic kept sequencing. It is fed from `$0-rt4`, a receive the panic branch is
 the **sole writer of**, so no clock byte can reach it however this file is edited later.
 ⚠️ **Widening the CLOCK to more ports is a different question** and stays in

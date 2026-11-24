@@ -129,8 +129,8 @@ equal("a saved velocity naming neither keeps the one in force and puts that back
 
 print("\n--- each synth's program, a section's ---")
 st = R.new()
-equal("a section's programs, the Volca's 20 and the Streichfett's 5: each sent to its synth, the "
-      .. "Volca first, and put straight back", R.internal["restore-programs"](st, { 20, 5 }),
+equal("a section's programs, the FM-1's 20 and the Streichfett's 5: each sent to its synth, the "
+      .. "FM-1 first, and put straight back", R.internal["restore-programs"](st, { 20, 5 }),
       { { "fm", "program", { 20 } }, { "strings", "program", { 5 } },
         { "save", "programs", { 20, 5 } } })
 equal("⛔ none sends nothing, and is put back as none",
@@ -155,10 +155,10 @@ equal("init answers with the choice on outlets 3 and 4, the velocity switch on 7
       .. "programs on 4, then a bang on 6", T.send(o, 2, "init", {}),
       { { 3, "synth", { "fm" } }, { 4, "synth", { "fm" } }, { 7, "velocity", { "on" } },
         { 4, "velocity", { "on" } }, { 4, "programs", { "none", "none" } }, { 6, "bang", {} } })
-equal("a section's programs: the Volca's on outlet 1, the Streichfett's on 2, then the put on 4",
+equal("a section's programs: the FM-1's on outlet 1, the Streichfett's on 2, then the put on 4",
       T.send(o, 2, "restore-programs", { 9, 12 }),
       { { 1, "program", { 9 } }, { 2, "program", { 12 } }, { 4, "programs", { 9, 12 } } })
-equal("a key on inlet 1 leaves outlet 1, the Volca's, as note <n> <v>",
+equal("a key on inlet 1 leaves outlet 1, the FM-1's, as note <n> <v>",
       T.send(o, 1, "list", { 60, 100 }), { { 1, "note", { 60, 100 } } })
 equal("synth strings leaves outlets 3 and 4", T.send(o, 1, "synth", { "strings" }),
       { { 3, "synth", { "strings" } }, { 4, "synth", { "strings" } } })

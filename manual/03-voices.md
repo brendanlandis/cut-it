@@ -23,7 +23,7 @@ A patch is a machine's saved sound.
 - **Song patches** live with the song.
 - **Save to patch** makes what you hear what the patch holds. **Save as new** makes another.
 
-A synth is only told what you've actually set, so a voice taking up the Volca keeps whatever sound it has until you change
+A synth is only told what you've actually set, so a voice taking up the FM-1 keeps whatever sound it has until you change
 something. Its own knobs still work, but Cut It can't see them, so they can't be saved.
 
 ## Effects on a Pd voice

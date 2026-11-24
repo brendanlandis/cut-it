@@ -47,7 +47,7 @@ REWIRE_TRY = "info u_present rewire-try"
 REWIRE_LAST = "info u_present rewire-last"
 REWIRE_ASKED = "info u_present rewire-asked"
 
-# Every m_ registers, m_organelle and m_nanokey (passive) and m_volca (none)
+# Every m_ registers, m_organelle and m_nanokey (passive) and m_fm1 (none)
 # included, though none of them ages. The total is asserted because a layer that
 # stopped registering would stop being watched, and every "nothing was lost" check
 # would still pass; exactly, so m_404, gone with the SP-404 (2026-11-04), cannot
@@ -56,7 +56,7 @@ REWIRE_ASKED = "info u_present rewire-asked"
 ROSTER = 6
 # The layers that say their own kind in a message box, and the ones that hold a
 # c_presence, which says `active` for them and polls (ref/module/presence.md).
-KINDS = {"m_organelle": "passive", "m_nanokey": "passive", "m_volca": "none"}
+KINDS = {"m_organelle": "passive", "m_nanokey": "passive", "m_fm1": "none"}
 POLLED = ["m_launchpad", "m_nano", "m_streich"]
 ACTIVE = 3
 # The universal identity request, which every active layer sends on its own port.
@@ -312,7 +312,7 @@ def main_run(cap):
             % wire_in(by, "SETTLED"))
 
     # --- the heartbeat, item 285 -------------------------------------------
-    # A `none` device (the Volca) can never be lost, so the heartbeat must not
+    # A `none` device (the FM-1) can never be lost, so the heartbeat must not
     # share the recovery's gate. SETTLED decides it: nothing is lost there, so a
     # heartbeat in it is the only positive evidence. Not BEFORE-LOSS: nothing
     # answers on a Mac, so layers are lost by then, and a heartbeat gated behind
@@ -453,7 +453,7 @@ def main_run(cap):
                 kinds.setdefault(f[5], []).append(f[6])
             if rec.startswith("#X obj") and f[4:5] == ["c_presence"]:
                 polled.append(os.path.basename(path)[:-3])
-    A.check("⛔ the nanoKEY registers passive, as the Organelle, and the Volca none -- once each",
+    A.check("⛔ the nanoKEY registers passive, as the Organelle, and the FM-1 none -- once each",
             kinds == {k: [v] for k, v in KINDS.items()},
             "expect boxes in the m_ files: %s" % kinds)
     A.check("⛔ ...and only the three active layers hold a c_presence: the nanoKEY is never polled",

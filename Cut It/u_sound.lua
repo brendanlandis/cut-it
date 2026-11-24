@@ -12,7 +12,7 @@
 --   {"heard", "list", {"machine", param, value}}  u_perform: a parameter moved on the Launchpad
 --   {"kit", "bang", {}}                           c_steps: the kit's sound as it stands is what it snaps back to
 --   {"keys", "tone" | "list", {...}}              c_keys: a keys voice on a Pd machine
---   {"fm", "byte", {b}}                           m_volca: a whole voice a byte at a time, the diagnostics page's test
+--   {"fm", "byte", {b}}                           m_fm1: a whole voice a byte at a time, the diagnostics page's test
 --   {"err", "warn" | "fail", {"u_sound", text}}   err (C-12)
 -- The phone's state (R.phone) is worked out by the face, and sent when it changes.
 
@@ -31,16 +31,18 @@ local function report(level, text)
 end
 function R.fail(text) return report("fail", text) end
 
--- cut-it-machines.txt: { machine = { list = {params in order}, by = {param = {how, n, default}} } }.
+-- cut-it-machines.txt: { machine = { list = {params in order}, by = {param = {how, n, default, top, switch}} } }.
 function R.parse_machines(text)
   local t = {}
   for line in (text or ""):gmatch("[^\r\n]+") do
     if not line:match("^%s*#") then
-      local m, p, how, n, d = line:match("^(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
+      local m, p, how, n, d, top, switch =
+        line:match("^(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s+(%S+)%s*(%S*)%s*(%S*)")
       if m then
         t[m] = t[m] or { list = {}, by = {} }
         t[m].list[#t[m].list + 1] = p
-        t[m].by[p] = { how = how, n = tonumber(n) or 0, default = tonumber(d) or 0 }
+        t[m].by[p] = { how = how, n = tonumber(n) or 0, default = tonumber(d) or 0,
+                       top = tonumber(top), switch = tonumber(switch) }
       end
     end
   end
@@ -94,7 +96,11 @@ local function say(st, r, row, param, value, out)
   local p = m and m.by[param]
   if not p then return out end
   if p.how == "cc" then
-    out[#out + 1] = { row.machine, "cc", { p.n, math.floor(value * 127 + 0.5) } }
+    -- A controller's own top (the FM-1's effects stop at 100, 107, 10 or 2), and its effect's on-off
+    -- first: on above nothing, so one control both brings an effect in and takes it away.
+    local v = math.floor(value * (p.top or 127) + 0.5)
+    if p.switch then out[#out + 1] = { row.machine, "cc", { p.switch, v > 0 and 1 or 0 } } end
+    out[#out + 1] = { row.machine, "cc", { p.n, v } }
   elseif p.how == "pc" then
     out[#out + 1] = { row.machine, "program", { math.min(p.n - 1, math.floor(value * p.n)) } }
   elseif p.how == "pd" and row.engine and row.engine > 0 then
@@ -423,10 +429,11 @@ function R.mapped(st, sel, value)
   return R.param(st, sel, value)
 end
 
--- A DX7 voice for the Volca (Brendan, 2026-11-06), to hear whether a one-voice dump only changes the sound in
--- use: the one thing that decides whether its patches can be DX7 voices held in Pd. It has no MIDI out, so
--- only ears can say. Six operators, OP6 first, 21 bytes each; then the pitch EG, the algorithm and the rest,
--- and the name: 155 bytes, in a format 0 dump on MIDI channel 1, F0 43 00 00 01 1B <155> <checksum> F7.
+-- A DX7 voice for the fm synth (Brendan, 2026-11-06), a one-voice dump a byte at a time: the diagnostics
+-- page's test of whether its patches can be DX7 voices held in Pd. The FM-1 takes it in place of the voice
+-- it is on, and keeps it there through program changes (Reference, m-vave-fm-1). Six operators, OP6 first,
+-- 21 bytes each; then the pitch EG, the algorithm and the rest, and the name: 155 bytes, in a format 0 dump
+-- on MIDI channel 1, F0 43 00 00 01 1B <155> <checksum> F7.
 local function operator(level, coarse, fine, decay, sustain)
   return { 99, decay, 40, 50,           -- EG rates
            99, sustain, sustain // 2, 0,  -- EG levels

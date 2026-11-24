@@ -8,7 +8,7 @@ Organelle is as a *computer* — SSH, paths, deploying, wifi — is in
 
 The Organelle is the brains: it runs the patch, **plays the drums** (`c_kit`,
 [module/sequencer.md](module/sequencer.md)), hosts every controller over USB, sends the nanoKEY's
-keys to whichever synth is chosen, the Volca or the Streichfett
+keys to whichever synth is chosen, the FM-1 or the Streichfett
 ([module/synths.md](module/synths.md)), and is **clock master** for the whole rig. **The mic goes straight into its one input jack**, on the tip, with no
 preamp (2026-11-04). **The SP-404MK2 has left the rig** (Brendan, 2026-11-04) — see below.
 
@@ -32,7 +32,7 @@ preamp (2026-11-04). **The SP-404MK2 has left the rig** (Brendan, 2026-11-04) �
                     │  XENYX Q802USB                   │
                     │   ch1  Organelle L (drums)       │
                     │   ch2  Organelle R (mic, voices) │
-                    │   ch3/4  Volca FM                │
+                    │   ch3/4  M-VAVE FM-1             │
                     │   ch5/6  Waldorf Streichfett     │
                     └────────────────┬─────────────────┘
                                      ▼  MAIN OUT
@@ -76,17 +76,17 @@ number out.
                      ◄─── (port 2 out: the device inquiry only)
     Streichfett ◄─────► Pd port 3   Midi-In 3, ch 33–48  notes and panic out; its reply in
     nanoKEY ───────────► Pd Midi-In 4, ch 49–64          its keys, to c_synth
-    USB Uno interface ─► Pd Midi-In 4 too (its DIN IN: nothing on it)
-                     ◄─── Pd Midi-Out 4 ──DIN──► Volca FM: notes, fader 1's CC, panic
+    M-VAVE FM-1 ◄─────── Pd Midi-Out 4, ch 49 and 50     notes, programs, its effects' CCs, panic
 
-  nanoKEY ─► m_nanokey ─► c_synth ─┬─► m_volca   ─► port 4 ─► Volca FM      (fm)
+  nanoKEY ─► m_nanokey ─► c_synth ─┬─► m_fm1   ─► port 4 ─► FM-1          (fm)
                                    └─► m_streich ─► port 3 ─► Streichfett  (strings)
 ```
 
-**Both synths are on their own channel 1**, each on its own port: Pd channel 49 for the Volca and
+**Both synths are on their own channel 1**, each on its own port: Pd channel 49 for the FM-1 and
 33 for the Streichfett, `u_root`'s fifth and fourth arguments ([architecture.md](architecture.md),
-*Creation arguments*). The nanoKEY shares Midi-In 4 with the Volca's interface, whose DIN IN carries
-nothing. Which device is on which port is `wire.sh`'s, by name ([module/boot.md](module/boot.md),
+*Creation arguments*). The FM-1's effects take their controllers on its channel 2, Pd channel 50
+([device/fm1.md](device/fm1.md)). The nanoKEY has Midi-In 4 to itself: nothing is wired back from
+the FM-1. Which device is on which port is `wire.sh`'s, by name ([module/boot.md](module/boot.md),
 *The ALSA wiring*).
 
 ## Signal flow — power
@@ -100,8 +100,8 @@ nothing. Which device is on which port is `wire.sh`'s, by name ([module/boot.md]
     │     ├── nanoKONTROL
     │     ├── nanoKEY ........ bus powered
     │     ├── Waldorf Streichfett (its MIDI; its power is under Open)
-    │     └── USB→DIN MIDI interface
-    └── VOLCA FM ......... Korg KA-350 9V (or 6×AA)
+    │     └── M-VAVE FM-1 .... bus powered (it has a battery too)
+    └── (nothing else: the Volca FM and its 9V supply left on 2026-11-24)
 ```
 
 ### There is no shared rail for a brownout to happen on — items 5 and 95
@@ -151,13 +151,14 @@ patch is the OLED.
 | Organelle (original) | Brains — Pd, USB MIDI host, clock master |
 | Powered USB hub | Connects the controllers, on its own supply (`~/Sites/!reference/powered-usb-hub.md`) |
 | Behringer Xenyx Q802USB | Mixer, and free session recording over USB (`~/Sites/!reference/behringer-xenyx-q802usb.md`) |
-| Korg Volca FM | Pitched voice (DIN MIDI in only): `fm`, played from the nanoKEY ([device/volca.md](device/volca.md)) |
+| M-VAVE FM-1 | FM synth, USB MIDI: `fm`, played from the nanoKEY, to mixer channels 3 and 4 ([device/fm1.md](device/fm1.md)) |
 | Waldorf Streichfett | String synth, USB MIDI: `strings`, played from the nanoKEY, to mixer channels 5 and 6 ([device/streichfett.md](device/streichfett.md)) |
 | Korg nanoKEY (mk1) | 25 keys that play whichever synth is chosen, on every page ([device/nanokey.md](device/nanokey.md)) |
 | Korg nanoKONTROL (mk1) | Continuous control — 9 faders, 9 knobs, 18 buttons, transport |
 | Novation Launchpad Pro MK3 | Cut It interface (Programmer Mode): the pages, and the drum page's sequencing |
 | MeeBlip cubit (original) | Kept, unused — see below |
 | Roland SP-404MK2 | **Left the rig on 2026-11-04** — see below |
+| Korg Volca FM | **Left the rig on 2026-11-24**: the FM-1 took its place, and its USB→DIN interface went with it |
 | Arturia BeatStep | **Retired from the plan** — see below |
 
 ### The original cubit does not work here
@@ -166,8 +167,8 @@ It is a thru box only with no USB data (Reference: `~/Sites/!reference/meeblip-c
 act as a USB MIDI interface for the Organelle.
 
 **Keep it.** It becomes useful the moment a second or third DIN-only synth arrives — put it
-downstream of the MIDI interface and fan out to four destinations. Today only the Volca needs DIN
-(the Streichfett is on USB), so a 1×1 interface is enough.
+downstream of the MIDI interface and fan out to four destinations. Today nothing needs DIN (the
+FM-1 and the Streichfett are on USB), so the rig has no MIDI interface either.
 
 ### The SP-404 has left the rig
 
@@ -203,7 +204,8 @@ are all covered.
 | Cable | Connects |
 |---|---|
 | **⅛" TRS male → 2× 1/4" TS male** | Organelle headphone jack → mixer ch1 (tip: the drums) and ch2 (ring: the mic and the Pd voices). Not the 1/4" outs: see above |
-| **3.5mm TRS → 2× 1/4" TS** | Volca FM → mixer ch3/4. ⚠️ Its output runs hot — start with channel gain low |
+| **3.5mm TRS → 2× 1/4" TS** | FM-1 → mixer ch3/4, the Volca's cable. ⚠️ Its output runs hot — start with channel gain low |
+| **USB-C, one that carries data** | FM-1 → the hub. ⛔ The cable in its box only charges it: nothing enumerates (`~/Sites/!reference/m-vave-fm-1.md`) |
 | **XLR female → 1/4" TS** | The SM58 → the Organelle's input, on the tip. Unbalanced, so keep it short |
 | **2× 1/4" TS** | Mixer MAIN OUT → PA |
 
@@ -213,6 +215,10 @@ Launchpad's cables and adapters, the nanoKONTROL's own cable.
 ⚠️ **Label the cables.** With this many identical 1/4" jacks it is worth the ten minutes.
 
 ## Open
+
+- ⬜ **Whether the FM-1's audio is in mixer channels 3 and 4**, on the Volca's cable, is not
+  recorded: it was measured over its USB audio on 2026-11-24, not heard through the mixer.
+  NO PLAN OWNS THIS.
 
 - ⬜ **How the Streichfett is powered**, its own supply or the hub's bus, is not recorded, nor its
   draw: its Reference page, `~/Sites/!reference/waldorf-streichfett.md`, has no `MaxPower`.

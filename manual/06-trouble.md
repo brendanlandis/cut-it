@@ -13,8 +13,8 @@
   while the songs page is open.
 - **A warning or failure** draws on the Organelle's screen, on every page.
 
-## Trying a whole voice on the Volca
+## Trying a whole voice on the FM-1
 
-The diagnostics page has two amber pads, and the phone has two buttons, that each send the Volca a whole DX7 voice: a glassy
-bell and a growling bass. Play the nanoKEY on an FM voice after each. If the sound changes, and the Volca's stored patches
-are as they were, Volca patches can be DX7 voices held in Cut It.
+The diagnostics page has two amber pads, and the phone has two buttons, that each send the FM-1 a whole DX7 voice: a glassy
+bell and a growling bass. Play the nanoKEY on an FM voice after each. The voice takes the place of the one the FM-1 is on,
+and stays there through program changes. Don't hold SAVE on the FM-1 afterwards, unless you want it kept in that slot.

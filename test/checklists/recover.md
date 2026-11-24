@@ -11,11 +11,11 @@ Steps 1 and 2 are the short press, step 3 the hold, step 4 the breadcrumb consum
   - **Do:** Start the transport so the drums play, then tap the top left corner button on the Launchpad once and let go straight away.
   - **Pass if:** The drums stop the instant the button goes down — not when you let go — and no new hit sounds after it. The whole Launchpad flashes red and clears itself about a second later. The aux LED is red; the OLED keeps to its meters. The patch is still running: the grid comes back and the page still walks.
 
-- [ ] **2. Short press — the Volca stops too**
-  - **Need:** The Volca powered and its own sequencer running. The Volca's MIDI Clock src set to Auto. Set to Internal it ignores Start and Stop entirely and this step cannot pass.
-  - **Do:** Set the Volca sequencing on its own, then tap the top left corner button once.
-  - **Pass if:** The Volca stops sequencing. Before this was built its transport never heard anything at all — it kept running through a panic and the mixer could only mute it.
-  - **Note:** The Volca honors Start and Stop only with MIDI Clock src on Auto — Korg's documentation, not measured ([volca](../../ref/device/volca.md)). Only panic's stop reaches port 4, never the clock (items 279, 295).
+- [ ] **2. Short press — the FM-1 stops too**
+  - **Need:** The FM-1 on, with a pattern in its sequencer.
+  - **Do:** Set the FM-1's sequencer playing on its own, then tap the top left corner button once.
+  - **Pass if:** The FM-1 stops sequencing. Before this was built its transport never heard anything at all — it kept running through a panic and the mixer could only mute it.
+  - **Note:** Stop is in M-VAVE's MIDI table for its sequencer and arpeggiator, not watched here ([fm1](../../ref/device/fm1.md)). If it keeps running, try again with its sequencer's Sync on, and say which. Only panic's stop reaches port 4, never the clock (items 279, 295).
 
 - [ ] **3. Hold — the patch reloads and comes back whole**
   - **Need:** A Save done at some point, so knobs.txt exists. Without one nothing would be held on an ordinary boot either and the last sentence proves nothing.

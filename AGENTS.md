@@ -65,8 +65,8 @@ printed by `robot fetch page <slug>`; `robot` is `~/Sites/app.regularnotebook.co
 | How the Pd is written — rules `C-1`…`C-14`, cited by ID from patch comments | [ref/conventions.md](ref/conventions.md) |
 | How the loop is run — deploy, the SSH console, how a phase runs | [ref/workflow.md](ref/workflow.md) |
 | How the modules compose — the diagram, the buses, `u_err`, the `m_` boundary | [ref/architecture.md](ref/architecture.md) |
-| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `korg-nanokey` `critter-guitari-organelle-s2` `critter-guitari-organelle-1` `korg-volca-fm` `waldorf-streichfett` `pure-data` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `behringer-xenyx-q802usb`). List Cut It's with `robot pages --used-by cut-it` |
-| How Cut It **uses** one physical device | [ref/device/](ref/device/) — `launchpad` `nanokey` `nanokontrol` `organelle` `phone` `streichfett` `volca` |
+| What a device **is** — its MIDI, specs, behavior, measured quirks | **Reference**, not this repo — `novation-launchpad-pro-mk3` `korg-nanokontrol-mk1` `korg-nanokey` `critter-guitari-organelle-s2` `critter-guitari-organelle-1` `m-vave-fm-1` `waldorf-streichfett` `pure-data` (and `meeblip-cubit` `arturia-beatstep` `roland-sp-404mkii` `korg-volca-fm` `behringer-xenyx-q802usb`). List Cut It's with `robot pages --used-by cut-it` |
+| How Cut It **uses** one physical device | [ref/device/](ref/device/) — `fm1` `launchpad` `nanokey` `nanokontrol` `organelle` `phone` `streichfett` |
 | One instrument concern | [ref/module/](ref/module/) — `audio` `boot` `debug` `display` `error` `map` `presence` `sequencer` `songs` `state` `synths` `tempo` `voices` |
 | Boxes, cables, jacks, power | [ref/rig.md](ref/rig.md) |
 | How Cut It lives on the Organelle as a **computer** — its data, measuring, deploying (the Organelle itself: Reference) | [ref/device-os.md](ref/device-os.md) ✅ verified 2026-08-07 |
@@ -94,7 +94,7 @@ stops the instrument**, because loading any patch restarts Pd. See
 | Prefix | Is | Files |
 |---|---|---|
 | `main` | Entry points. `main.pd` is the device's, `main-dev.pd` the Mac's | `main.pd` `main-dev.pd` `u_root.pd` |
-| `m_` | One physical device, publishing named controls, or told what to play | `m_nano` `m_launchpad` `m_organelle` `m_volca` `m_streich` `m_nanokey` |
+| `m_` | One physical device, publishing named controls, or told what to play | `m_nano` `m_launchpad` `m_organelle` `m_fm1` `m_streich` `m_nanokey` |
 | `u_` | One instrument-wide utility | `u_init` `u_map` `u_tempo` `u_state` `u_store` `u_song` `u_voices` `u_perform` `u_sound` `u_once` `u_err` `u_net` `u_present` `u_mother-stub` |
 | `g_` | One display surface, and its sole owner | `g_oled` `g_grid` `g_led` |
 | `c_` | **Instantiable** — there is more than one | `c_clock` `c_presence` `c_devid` `c_mapped` `c_steps` `c_kit` `c_voice` `c_synth` |

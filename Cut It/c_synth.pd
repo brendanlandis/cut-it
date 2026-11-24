@@ -1,7 +1,7 @@
 #N canvas 20 20 2600 1700 12;
 #X declare -lib pdlua;
-#X text 20 20 c_synth -- the synth choice and the router. It holds which synth the nanoKEY plays \, fm (the Volca) or strings (the Streichfett) \, on every page \, and sends each key's release to the synth its press went to \, so a switch mid-chord leaves nothing hanging. ref/module/synths.md, f 70;
-#X text 20 170 inlet: <note> <velocity> from m_nanokey \, 0 a release \, machine <choice> from u_voices (the voice on show's) \, synth <choice> and velocity <on or off> from u_net (the phone). outlet 1: note <n> <v> and program <n> \, to m_volca. outlet 2: the same \, to m_streich. outlet 3: synth <choice> \, to u_net. outlet 4: velocity <on or off> \, to u_net. Each on a change \, and once at load and at the restore. The choice \, the setting and the two programs are the playing section's parts synth \, velocity and programs., f 70;
+#X text 20 20 c_synth -- the synth choice and the router. It holds which synth the nanoKEY plays \, fm (the FM-1) or strings (the Streichfett) \, on every page \, and sends each key's release to the synth its press went to \, so a switch mid-chord leaves nothing hanging. ref/module/synths.md, f 70;
+#X text 20 170 inlet: <note> <velocity> from m_nanokey \, 0 a release \, machine <choice> from u_voices (the voice on show's) \, synth <choice> and velocity <on or off> from u_net (the phone). outlet 1: note <n> <v> and program <n> \, to m_fm1. outlet 2: the same \, to m_streich. outlet 3: synth <choice> \, to u_net. outlet 4: velocity <on or off> \, to u_net. Each on a change \, and once at load and at the restore. The choice \, the setting and the two programs are the playing section's parts synth \, velocity and programs., f 70;
 #X obj 20 400 inlet;
 #X obj 20 700 c_synth-lua;
 #X obj 20 1000 outlet;

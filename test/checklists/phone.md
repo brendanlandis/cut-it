@@ -63,7 +63,7 @@ The rate limit and what `u_net` takes are `phone-assert`'s: what is left is the 
 - [ ] **12. Setup opens the diagnostics page and closes it**
   - **Need:** The performance page.
   - **Do:** Tap Setup, the Launchpad's bottom-left button. Then tap it again.
-  - **Pass if:** At the first tap the phone turns at once to the diagnostics page: diagnostics and test mode, and Volca voice 1 and 2 under them. At the second it turns back to the performance page, at once.
+  - **Pass if:** At the first tap the phone turns at once to the diagnostics page: diagnostics and test mode, and FM voice 1 and 2 under them. At the second it turns back to the performance page, at once.
 
 - [ ] **13. Test mode on, from the diagnostics page**
   - **Do:** Tap Setup, then press the top row's second pad. Wait ten seconds.

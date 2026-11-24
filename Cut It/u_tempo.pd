@@ -58,7 +58,7 @@
 #X obj 580 200 r \$0-rt4;
 #X obj 580 320 midiout;
 #X msg 1020 250 4;
-#X text 580 420 ⛔ PORT 4 GETS THE PANIC STOP AND NOT THE CLOCK \, and the separate receive is what makes that true. \$0-rt4 is written in exactly one place -- the panic branch on the parent canvas -- so no clock byte can reach it however this file is edited later. Item 279 measured ports 2 and 4 getting NOTHING at all \, which is a bug for the Volca: it is a synthesizer with a sequencer \, and one still running through a panic is the case panic exists for. ⚠️ WIDENING THE CLOCK TO MORE PORTS IS A SEPARATE QUESTION and is parked in plan-v04 -- the Launchpad ignores incoming clock in Programmer Mode \, so the one port fed above is pointless while it is there \, and which devices Cut It intends to DRIVE has to be decided before adding more. The Volca honors Start/Stop only when its own MIDI Clock src is set to Auto -- that is Korg's documentation and has not been measured here \, so it is a bench step rather than an assumption. See ref/device/volca.md., f 44;
+#X text 580 420 ⛔ PORT 4 GETS THE PANIC STOP AND NOT THE CLOCK \, and the separate receive is what makes that true. \$0-rt4 is written in exactly one place -- the panic branch on the parent canvas -- so no clock byte can reach it however this file is edited later. Item 279 measured ports 2 and 4 getting NOTHING at all \, which is a bug for the fm synth: it is a synthesizer with a sequencer \, and one still running through a panic is the case panic exists for. ⚠️ WIDENING THE CLOCK TO MORE PORTS IS A SEPARATE QUESTION and is parked in plan-v04 -- the Launchpad ignores incoming clock in Programmer Mode \, so the one port fed above is pointless while it is there \, and which devices Cut It intends to DRIVE has to be decided before adding more. The FM-1 takes Stop for its own sequencer and arpeggiator -- that is M-VAVE's documentation and has not been measured here \, so it is a bench step rather than an assumption. See ref/device/fm1.md., f 44;
 #X connect 1 0 2 0;
 #X connect 3 0 4 0;
 #X connect 4 0 5 0;
@@ -97,7 +97,7 @@
 #X text 20 1360 The counter resets to 23 \, so the next pulse lands on 0 \, the beat. Reset to 0 \, the first beat after every start is skipped., f 58;
 #X text 780 1160 Clock never stops: 248 flows whether the transport runs or not \, or a device following it stretches to whatever tempo it last measured., f 44;
 #X text 780 1330 Never 251: nothing in this rig has Song Position Pointer., f 44;
-#X text 780 1460 panic sends 252 to ports 1 and 4 \, lights the aux LED and leaves the clock running. Port 4 only here \, since a Volca sequencing through a panic is the case it exists for (item 279). Silencing notes is each device layer's., f 44;
+#X text 780 1460 panic sends 252 to ports 1 and 4 \, lights the aux LED and leaves the clock running. Port 4 only here \, since a synth sequencing through a panic is the case it exists for (item 279). Silencing notes is each device layer's., f 44;
 #X text 1450 870 The loadbang's del 200 publishes 120 on tempo once \, if nothing has yet: the fallback (the spigot \, right). The tempo is not drawn at rest: the OLED is for alerts \, levels and a control's name as it moves \, and the phone shows the tempo (ref/module/tempo.md)., f 44;
 #X text 1450 1070 It stores what it hears and never re-emits \, so there is no loop with the bus., f 44;
 #X text 300 1000 Three receives on one name \, all into cold inlets \, so their order does not matter., f 44;
@@ -110,7 +110,7 @@
 #X text 2280 380 The 120 is a fallback: it races mother's knob push \, so any tempo closes the spigot and the seed only fills a silence. With nothing Saved it is the tempo \, since u_map holds knob 1 at this same 120 (R.UNSAVED in u_map.lua \, ref/module/tempo.md)., f 50;
 #X msg 1220 990 252;
 #X obj 1220 1035 s \$0-rt4;
-#X text 620 1810 The same 252 on a receive nothing else writes \, so no clock byte can reach the port-4 box. It fires first \, off the panic trigger's rightmost outlet: the Volca is the longest path in the rig., f 44;
+#X text 620 1810 The same 252 on a receive nothing else writes \, so no clock byte can reach the port-4 box. It fires first \, off the panic trigger's rightmost outlet: port 4 is the longest path in the rig., f 44;
 #X connect 2 0 3 0;
 #X connect 3 1 4 0;
 #X connect 3 0 27 0;

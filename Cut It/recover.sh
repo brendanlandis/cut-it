@@ -6,7 +6,7 @@
 #
 # The one script here that forks on an event rather than at load, within the
 # rule's terms: rare, one per gesture, and it ends the patch. It is the only
-# recovery for a device nothing can detect, like the Volca (item 275).
+# recovery for a device nothing can detect, like the FM-1 (item 275).
 #
 # Two commands, and the order matters: /reloadNoRemount resets mother's patch
 # directory, and /loadPatch takes a name relative to it, so the name carries the

@@ -46,7 +46,7 @@ file decides what that means; and nothing below that file knows what hardware ex
           │              c_synth ◄── m_nanokey        carries that. u_net has
           │           fm │     │ strings   ch 49      cords too: the phone's
           ▼              │     ▼                      synth choice, its drum
-       m_volca ◄─────────┘   m_streich                controls and its tempo
+       m_fm1 ◄─────────┘   m_streich                controls and its tempo
        ch 49                 ch 33, polled:
        notes/cc/program/note c_presence, c_devid 62
                    │
@@ -71,14 +71,14 @@ file decides what that means; and nothing below that file knows what hardware ex
   are Pd. See [sequencer.md](module/sequencer.md).
 - **`c_synth` holds the synth choice on every page**, and the nanoKEY's keys reach it by a cord
   from `m_nanokey`, not on `param`: a key means the chosen synth's note whichever page is up. It
-  sends each key to `m_volca` or `m_streich`, a release to the synth its press went to, and the
+  sends each key to `m_fm1` or `m_streich`, a release to the synth its press went to, and the
   choice and its velocity switch to `u_net`, by cords. `u_voices` chooses, with the voice on show's machine.
   See [synths.md](module/synths.md).
 - **`u_voices` holds a song's voices and writes the page on the `mode` bus**, told by `u_map` and `u_net`, and `u_perform`
   is what the nanoKONTROL means this section, its moves going back into `u_map`'s route on `map-route`; each hands its
   state to `g_grid` and `u_net` by cords. See [voices.md](module/voices.md).
 - **`c_melody` generates chords and a melody**, twice over, one per engine, on `c_steps`' clock, by cords from `c_steps`, `u_map`
-  and `u_net`, and plays them on `m_volca`, `m_streich` or its own Pd voices, whose signal goes up to
+  and `u_net`, and plays them on `m_fm1`, `m_streich` or its own Pd voices, whose signal goes up to
   `u_root`. See [synths.md](module/synths.md), *The generator*.
 - **The phone reads nothing on `disp`** (Brendan, 2026-11-04): `u_net` takes each module's state on
   a cord — `c_steps`', `c_synth`'s, `c_melody`'s, `u_tempo`'s BPM and `u_song`'s sections — and hands the phone's
@@ -104,11 +104,11 @@ file decides what that means; and nothing below that file knows what hardware ex
 
 **The layout of `u_root`'s canvas is this diagram.** Left is the `m_` layer, device by device; middle
 is the buses and the map; right is the display owners. **Where a file has cords, the cords decide
-where it goes** — which is why `m_volca` sits under `u_map` rather than in the `m_` column. Everything without cords talks on the allowlisted buses alone.
+where it goes** — which is why `m_fm1` sits under `u_map` rather than in the `m_` column. Everything without cords talks on the allowlisted buses alone.
 
 **Seven kinds of cord exist on that canvas, and each one is a seam worth seeing.** `u_init` reaches
 `m_launchpad`, `u_state` and, after it through a trigger, `u_song`, because the boot *order* is
-`u_init`'s while the *action* belongs to the file at the other end. `u_map` reaches the output device, `m_volca`, because no bare global name
+`u_init`'s while the *action* belongs to the file at the other end. `u_map` reaches the output device, `m_fm1`, because no bare global name
 carries a sounding note (C-2). `m_launchpad` hands surface ownership to `g_grid`.
 `c_clock` feeds `g_grid`'s beat. `c_steps` sits between `u_map` and both `c_kit` and
 `g_grid`: told what a press means, it plays the drums and says what the drum page shows. And
@@ -132,7 +132,7 @@ and the device is absorbed by these six arguments to `u_root`.
 | 2 | The same for the **Launchpad** | `1` | " |
 | 3 | **`u_state`'s data directory** — absolute, no trailing slash | `/sdcard/cut-it-state` | `/tmp` |
 | 4 | Pd channel for the **Streichfett**'s channel 1, the SP-404's block until it left the rig (Brendan, 2026-11-04) | `33` | " |
-| 5 | Pd channel for the **Volca**'s channel 1, and the first of the **nanoKEY**'s port, which it shares with the Volca's interface | `49` | " |
+| 5 | Pd channel for the **FM-1**'s channel 1, and the first of the **nanoKEY**'s port: the same number, since both are port 4 | `49` | " |
 | 6 | **`u_net`'s inbound UDP port** | `9001` | `9002` |
 
 **A Pd input slot maps to channels `(n-1)*16+1` upward**, so slot 2 begins at 17 and slot 3 at 33.
@@ -191,14 +191,14 @@ allowlist does not say is that **they are not all the same kind of thing.**
 **`param` is a control changing; `disp` is a request to show it**, and the distinction is the whole
 reason for a second bus. **A device layer publishes on `param` alone, and `u_map` makes the
 request**, because it is the only file that knows what a control means: the row it draws is the
-destination's — `volca-cc41 64`, `bpm 157` — and a control nothing maps draws none (Brendan,
+destination's — `fm1-cc41 64`, `bpm 157` — and a control nothing maps draws none (Brendan,
 2026-11-04). When the
 `m_` layers posted their own row as well, a mapped fader drew two (item 317). `g_oled` still listens
 on `disp` alone, so no display file has had to learn that `param` exists.
 
 ## Output devices are WIRED, not given a bus
 
-`m_volca` and `m_streich` are **told what to play**, as `m_404` was until the SP-404 left the rig
+`m_fm1` and `m_streich` are **told what to play**, as `m_404` was until the SP-404 left the rig
 (Brendan, 2026-11-04). No bus carries a sounding note — `param` is device-to-map and `disp` is
 display, and a note is neither. `m_streich` is told by `c_synth`, which chooses between the two
 for the nanoKEY's keys ([synths.md](module/synths.md)); `u_map`'s cord to `c_synth` carries the
@@ -264,7 +264,7 @@ Nothing overlaps, and that is deliberate:
 | **Launchpad** | Move and hit: a row is a voice, and the grid is the page's: the drums, harmony and melody pages, and the performance page's columns. Anything needing state you can *see* |
 | **nanoKONTROL** | In play: the same on every page, whatever this section assigned. Momentary buttons only |
 | **Organelle keyboard** | Choosing songs: key N the Nth song of the setlist chosen. Its knobs the same on every page, and aux the songs page |
-| **nanoKEY** | Playing the chosen synth, the Volca or the Streichfett, on every page (Brendan, 2026-11-04) |
+| **nanoKEY** | Playing the chosen synth, the FM-1 or the Streichfett, on every page (Brendan, 2026-11-04) |
 
 ⚠️ **The Launchpad mode conflict evaporates because of this split.** Authoring that needs Note or
 Chord mode uses them; everything Cut It draws, the drum page's sequencing included, is Programmer

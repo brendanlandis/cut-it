@@ -35,7 +35,7 @@ it moves, the phone for the Launchpad's current page, from each module's state o
 | iPhone / the Cut It app | yes | `u_net` | Not on `disp` since 2026-11-04: it controls the Launchpad's current page, from state on cords ([phone.md](../device/phone.md)) | unknown | — |
 
 Two devices in the rig can display nothing at all: the nanoKONTROL mk1 has no host-controllable
-LEDs, and the Volca is receive-only. The SP-404, until it left the rig (2026-11-04), had **the best
+LEDs, and nothing is wired back from the FM-1, whose screen is its own. The SP-404, until it left the rig (2026-11-04), had **the best
 screen in it and nothing known reached it** (Reference, `~/Sites/!reference/roland-sp-404mkii.md`).
 
 ### The `disp` message
@@ -132,10 +132,10 @@ at y = 8, 17, 26, 35, 44, 53**, one per source, under the info bar.
 
 | | Evidence | Item |
 |---|----------|------|
-| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **six**: `m_launchpad`, `m_nano`, `m_organelle`, `m_volca`, `m_streich` and `m_nanokey` (2026-11-04), the most the layer draws. `m_404` went with the SP-404. Verified on the rig with five; the sixth row has not been seen there | verified | 301 |
+| One row per source on the presence bus, drawn as `<src> <state>`. The roster is whatever `expect` published at load — today **six**: `m_launchpad`, `m_nano`, `m_organelle`, `m_fm1`, `m_streich` and `m_nanokey` (2026-11-04), the most the layer draws. `m_404` went with the SP-404. Verified on the rig with five; the sixth row has not been seen there | verified | 301 |
 | **The two passive layers, `m_organelle` and `m_nanokey`, read `never` until they first speak**, and `here` from then on: never polled and never aged, so the row says *heard since load*, not *there now*. The nanoKEY speaks only when a key is played ([presence.md](presence.md)) | unknown | — |
 | ⛔ **`<src>` is the ABSTRACTION's name** — `m_nano`, never "nanoKONTROL". `g_oled` sits below the `m_` boundary, so this is the only name it has. See [presence.md](presence.md) | verified | 301 |
-| Four states: `here` · `gone` · `never` · `unchecked`. **`m_volca` registers `none` and reads `unchecked`** — it is never polled and can never be lost, so drawing it as healthy would be a claim nothing has tested | verified | 301 |
+| Four states: `here` · `gone` · `never` · `unchecked`. **`m_fm1` registers `none` and reads `unchecked`** — it is never polled and can never be lost, so drawing it as healthy would be a claim nothing has tested | verified | 301 |
 | ⛔ **The loop is bounded at SIX rows, not at the roster size.** The sixth ends at y=60; a seventh would run off the bottom of the screen | unknown | 301 |
 | ⚠️ **`m_launchpad unchecked` is 21 characters** — the whole width of an 8px row. A longer state word or a longer abstraction name clips silently | verified | 301 |
 | Summoned by `disp` → `diag`, which carries nothing. Cleared by a retriggered `[del 8000]`, so pressing again while it is up buys another eight seconds | verified | 301 |

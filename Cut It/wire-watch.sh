@@ -3,8 +3,8 @@
 # u_present on a slow heartbeat, from /tmp/patch.
 #
 # It exists because u_present's recovery is gated on a loss, and a device
-# registered none, the Volca, can never be lost: its interface plugged in after
-# boot would sit unsubscribed forever (item 285, ref/module/presence.md).
+# registered none, the FM-1, can never be lost: plugged in after
+# boot, it would sit unsubscribed forever (item 285, ref/module/presence.md).
 
 # The hash covers client names, not subscriptions: all of `aconnect -l` would
 # change whenever wire.sh connected anything, and the watcher would re-wire

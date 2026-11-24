@@ -1,7 +1,7 @@
 #N canvas 20 20 9900 6700 12;
 #X declare -lib pdlua;
 #X obj 20 300 r param;
-#X obj 20 1070 route tempo transport start stop panic volca-note volca-cc volca-prog volca-key recover diag drum-page test-mode drums arrangement section save revert song rush melody voices perform machine;
+#X obj 20 1070 route tempo transport start stop panic fm1-note fm1-cc fm1-prog fm1-key recover diag drum-page test-mode drums arrangement section save revert song rush melody voices perform machine;
 #X obj 20 1160 c_mapped bpm 210 40;
 #X obj 20 1220 unpack f f;
 #X obj 20 1430 s tempo;
@@ -32,11 +32,11 @@
 #X obj 1380 1280 spigot;
 #X obj 1380 1340 t b;
 #X obj 1380 1400 s panic;
-#X obj 1600 1160 c_mapped volca-note%d 127 0;
+#X obj 1600 1160 c_mapped fm1-note%d 127 0;
 #X obj 1600 1390 pack f f 200;
 #X obj 1600 1450 list prepend notes;
 #X obj 1600 1510 list trim;
-#X obj 1920 1160 c_mapped volca-cc%d 127 0;
+#X obj 1920 1160 c_mapped fm1-cc%d 127 0;
 #X obj 1920 1390 pack f f;
 #X obj 1920 1450 list prepend cc;
 #X obj 1920 1510 list trim;
@@ -50,7 +50,7 @@
 #X obj 2500 1290 s err;
 #X obj 1920 1620 outlet;
 #X text 20 20 u_map -- the map \, and the only file in Cut It that says what a control means. Devices publish named controls on param \; this turns them into the buses and the output devices' cords \, so nothing in e_ or c_ learns that a nanoKONTROL exists. ref/module/map.md, f 58;
-#X text 20 165 creation arg 1: the state directory \, the \$3 u_state takes: the recover breadcrumb lives beside the state files. inlet 1: a BPM a tap or the phone set \, from u_tempo: knob 1 is held there until turned through it. outlet 1: the Volca \, selector-prefixed -- notes <n> <v> <d> \, cc <c> <v> \, program <n> \, note <n> <v>. One outlet per output device \, wired in u_root (C-2). outlet 2: c_steps \, what a press on the drum page means -- step \, vel or pad \, <n> <velocity> \, and a drum-page pad's release at velocity 0 -- and the drums destination's <arg> <0-1> \, knobs 2 and 3's last and track-last \, and swing. outlet 3: u_net \, a bang that flips test mode. outlet 4: u_tempo \, what a press of a cell in cut-it-arrangement-page.txt means \, its role: tap. outlet 5: u_song \, the top row's top <1-8> \, and save and revert. outlet 6: c_melody \, the melody destination's <arg> <value>. outlet 7: u_voices \, <arg> <value>. outlet 8: u_perform \, <arg> <value>., f 58;
+#X text 20 165 creation arg 1: the state directory \, the \$3 u_state takes: the recover breadcrumb lives beside the state files. inlet 1: a BPM a tap or the phone set \, from u_tempo: knob 1 is held there until turned through it. outlet 1: the FM-1 \, selector-prefixed -- notes <n> <v> <d> \, cc <c> <v> \, program <n> \, note <n> <v>. One outlet per output device \, wired in u_root (C-2). outlet 2: c_steps \, what a press on the drum page means -- step \, vel or pad \, <n> <velocity> \, and a drum-page pad's release at velocity 0 -- and the drums destination's <arg> <0-1> \, knobs 2 and 3's last and track-last \, and swing. outlet 3: u_net \, a bang that flips test mode. outlet 4: u_tempo \, what a press of a cell in cut-it-arrangement-page.txt means \, its role: tap. outlet 5: u_song \, the top row's top <1-8> \, and save and revert. outlet 6: c_melody \, the melody destination's <arg> <value>. outlet 7: u_voices \, <arg> <value>. outlet 8: u_perform \, <arg> <value>., f 58;
 #X text 700 20 The map is a table \, by page: cut-it-map.txt \, one row per mapping \, four atoms always -- <page> <control> <dest> <arg> \, a page of all being every page's. u_map-lua reads it and looks each control up., f 76;
 #X text 1400 20 The allowlist guard is what makes a table acceptable: a row names a destination that must be a literal argument on the route below \, feeding a handler on this canvas \, and never a send. Skip it and nothing fails., f 76;
 #X text 2200 20 A row naming a destination not on the route is a real error \, unknown-dest on err. An unmapped control is normal: it is silent on every bus \, and draws nothing (Brendan \, 2026-11-04)., f 62;
@@ -62,15 +62,15 @@
 #X text 1080 2160 Arg then value \, always: unpack fires right to left \, so the value is in a cold inlet or a gate before the arg triggers., f 62;
 #X text 2140 2160 Value destinations are c_mapped instances \, and the scaling lives there: tempo is c_mapped bpm 210 40 \, 0-1 over 40 to 250 BPM. Each draws its own row and passes arg and scaled value on only while live. The transport chain holds no state: it reads back r start and r stop., f 62;
 #X text 20 2390 The spigot is the trigger test \, the same three boxes everywhere: a press is non-zero after normalizing and a release is 0 \, so one test serves every surface., f 62;
-#X text 1080 2390 The Volca handlers build the selector-prefixed message m_volca expects. C-6, f 62;
-#X text 2140 2390 volca-prog uses the value as a gate \, since the program number is the arg: a fader release cannot select a patch., f 62;
+#X text 1080 2390 The FM-1 handlers build the selector-prefixed message m_fm1 expects. C-6, f 62;
+#X text 2140 2390 fm1-prog uses the value as a gate \, since the program number is the arg: a fader release cannot select a patch., f 62;
 #X text 20 2850 The mode bus gives the Lua its key and nothing else: u_voices alone writes it \, a page's name as the selector (ref/module/voices.md)., f 62;
 #X text 1080 2850 The page is u_voices' to keep. The table itself is not persisted \, as it is read from the patch folder., f 50;
 #X text 2140 2850 map-route: u_perform's controls come in here \, as this file's own lookups do: <dest> <arg> <value> <target> <live>., f 50;
 #X obj 720 440 loadbang;
 #X obj 720 490 del 1000;
 #X msg 720 580 window-shut;
-#X text 2140 1930 The screen shows the mapped value \, named for the destination (bpm 157 \, volca-cc41 64) \, not the raw position (item 238) \, and an unmapped control nothing. volca-key and the button destinations draw nothing either (ref/module/map.md)., f 62;
+#X text 2140 1930 The screen shows the mapped value \, named for the destination (bpm 157 \, fm1-cc41 64) \, not the raw position (item 238) \, and an unmapped control nothing. fm1-key and the button destinations draw nothing either (ref/module/map.md)., f 62;
 #X obj 3400 3620 loadbang;
 #X obj 3400 3680 del 2000;
 #X msg 3400 4040 live;
@@ -82,7 +82,7 @@
 #X obj 3400 1390 pack f f;
 #X obj 3400 1450 list prepend note;
 #X obj 3400 1510 list trim;
-#X text 3400 1620 volca-key is a keyboard: the arg is the note \, the value the velocity \, and 0 a real note-off. No spigot here \, or the Volca would drone., f 62;
+#X text 3400 1620 fm1-key is a keyboard: the arg is the note \, the value the velocity \, and 0 a real note-off. No spigot here \, or the FM-1 would drone., f 62;
 #X obj 4600 250 unpack f f;
 #X obj 4600 310 != 0;
 #X obj 4600 370 select 1 0;
@@ -124,7 +124,7 @@
 #X text 3000 180 A Launchpad CC button sends 127 then 0 \, so these gates stop each selection firing twice. They cannot go above the route: og-key releases there are real note-offs (item 293). C-8, f 62;
 #X obj 20 1010 list trim;
 #X obj 2380 1330 t f f;
-#X obj 2380 1390 list prepend volca-prog;
+#X obj 2380 1390 list prepend fm1-prog;
 #X obj 2380 1450 list trim;
 #X obj 2380 1510 s disp;
 #X text 20 2160 Five atoms reach the route: <dest> <arg> <value> <target> <live> \, from the Lua \, a fader's too. A button's unpack f f drops the last three \, so a button is never held., f 62;

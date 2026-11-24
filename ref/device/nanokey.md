@@ -3,7 +3,7 @@
 
 **Files:** `Cut It/m_nanokey.pd` · **Gate:** `test/gate/synths-assert.sh` · **Checklist:** `test/checklists/synths.md`, `test/checklists/linecheck.md`
 
-The rig's keyboard: 25 keys that play whichever synth is chosen, the Volca or the Streichfett, on
+The rig's keyboard: 25 keys that play whichever synth is chosen, the FM-1 or the Streichfett, on
 every page (Brendan, 2026-11-04; [synths.md](../module/synths.md)). What the nanoKEY is, its USB
 and ALSA names, its channel and its identity reply are in Reference:
 `~/Sites/!reference/korg-nanokey.md`. This page is how Cut It reads it.
@@ -16,10 +16,11 @@ up per page; `m_nanokey` hands `<note> <velocity>` to `c_synth`, which decides w
 
 ### The port it shares
 
-`wire.sh` connects `nanoKEY:0` to Pd's Midi-In 4, channels 49–64, which it shares with the Volca's
-USB→DIN interface, whose DIN IN carries nothing ([boot.md](../module/boot.md), *The ALSA wiring*).
-`m_nanokey` takes the block's first channel, `u_root`'s fifth argument, 49 on the device: the same
-number as the Volca's output block, since the Volca's interface is port 4 both ways.
+`wire.sh` connects `nanoKEY:0` to Pd's Midi-In 4, channels 49–64, which it has to itself: the FM-1
+is on Midi-Out 4, and its own keys are left unwired so they can't read as the nanoKEY's
+([boot.md](../module/boot.md), *The ALSA wiring*). `m_nanokey` takes the block's first channel,
+`u_root`'s fifth argument, 49 on the device: the same number as the FM-1's output block, since both
+are port 4.
 
 | | Value | Evidence |
 |---|---|---|

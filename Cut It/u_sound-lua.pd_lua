@@ -3,7 +3,7 @@
 -- and nothing else. ref/module/voices.md.
 --
 -- inlet 1: u_map's <row>:<param> <value>. inlet 2: the phone's sound <cmd> ..., through u_net. inlet 3:
--- u_sound.pd's own -- restore <key> <atoms...>, rows, init. outlet 1: to m_volca. outlet 2: to m_streich.
+-- u_sound.pd's own -- restore <key> <atoms...>, rows, init. outlet 1: to m_fm1. outlet 2: to m_streich.
 -- outlet 3: tone, to the c_melody engines. outlet 4: sound <atoms>, to u_net. outlet 5: <key> <atoms>, to
 -- put song on the state bus. outlet 6: err. outlet 7: a bang on init, the proof the Lua loaded. outlet 8: heard, to u_perform.
 -- outlet 9: a bang when the kit's sound is saved, to c_steps. outlet 10: sound <11 atoms>, to g_grid. outlet 11: to c_keys.

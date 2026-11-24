@@ -240,7 +240,7 @@ SEQ = [
     #    the wrong one
     (16000, "cmdwire",  [("cmd", ("cutit", "re-wire"))]),
     (17400, "cmdclear", [("cmd", ("cutit", "clear-alert"))]),
-    (18800, "cmdvolca", [("cmd", ("cutit", "test-note m_volca"))]),
+    (18800, "cmdfm1", [("cmd", ("cutit", "test-note m_fm1"))]),
     # Six more wrong commands, each of which must reach nothing; the heartbeat
     # in this window is the witness that the link was live.
     (20200, "cmdbogus", [("cmd", ("cutit", "panic")),

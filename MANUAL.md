@@ -108,7 +108,7 @@ A patch is a machine's saved sound.
 - **Song patches** live with the song.
 - **Save to patch** makes what you hear what the patch holds. **Save as new** makes another.
 
-A synth is only told what you've actually set, so a voice taking up the Volca keeps whatever sound it has until you change
+A synth is only told what you've actually set, so a voice taking up the FM-1 keeps whatever sound it has until you change
 something. Its own knobs still work, but Cut It can't see them, so they can't be saved.
 
 ### Effects on a Pd voice
@@ -130,7 +130,7 @@ what it snaps back to.
 
 | Machine | Parameters |
 |---|---|
-| FM (Volca) | program, mod-attack, mod-decay, car-attack, car-decay, lfo-rate, lfo-depth, algorithm, chorus, chorus-width, chorus-speed |
+| FM (FM-1) | program, filter, cutoff, resonance, reverb, delay, drive, chorus, phaser, filter-type, reverb-type, reverb-decay, delay-time, delay-feedback, drive-tone, drive-level, chorus-rate, chorus-depth, phaser-rate, phaser-depth |
 | strings (Streichfett) | program, registration, octaves, release, crescendo, ensemble-type, ensemble, solo-tone, tremolo, split, solo-sustain, solo-attack, solo-decay, balance, fx-type, animate, phaser, reverb |
 | sine | attack, release, bright, level, drive, echo, echo-time, reverb, echo-fb, room, drive-type |
 | saw | attack, release, bright, level, drive, echo, echo-time, reverb, echo-fb, room, drive-type |
@@ -144,7 +144,7 @@ what it snaps back to.
 | saw | pluck, pad, brass |
 | square | hollow, reed |
 | strings (Streichfett) | wide, thin, solo |
-| FM (Volca) | slow-bloom, short |
+| FM (FM-1) | dry, wide, echo, dark |
 
 ## Writing parts
 
@@ -287,11 +287,11 @@ Besides these, every parameter of a voice's machine.
   while the songs page is open.
 - **A warning or failure** draws on the Organelle's screen, on every page.
 
-### Trying a whole voice on the Volca
+### Trying a whole voice on the FM-1
 
-The diagnostics page has two amber pads, and the phone has two buttons, that each send the Volca a whole DX7 voice: a glassy
-bell and a growling bass. Play the nanoKEY on an FM voice after each. If the sound changes, and the Volca's stored patches
-are as they were, Volca patches can be DX7 voices held in Cut It.
+The diagnostics page has two amber pads, and the phone has two buttons, that each send the FM-1 a whole DX7 voice: a glassy
+bell and a growling bass. Play the nanoKEY on an FM voice after each. The voice takes the place of the one the FM-1 is on,
+and stays there through program changes. Don't hold SAVE on the FM-1 afterwards, unless you want it kept in that slot.
 
 ## Every control
 

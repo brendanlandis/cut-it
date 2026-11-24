@@ -141,15 +141,15 @@ def nano(g):
     print("\n   the patch, in Pd ...")
     # Slider 1 mapped straight to a destination that draws its row: what a fader draws in the
     # shipped map depends on what's in play (test/gate/lua/u_perform_test.lua).
-    return _stdin_gate(g, 40, rows=["all slider-1 volca-cc 41"]) or rc_lua
+    return _stdin_gate(g, 40, rows=["all slider-1 fm1-cc 41"]) or rc_lua
 
 
-def volca(g):
-    S.require("Cut It/m_volca.pd", "Cut It/cut-it-map.txt")
-    return _stdin_gate(g, 40, rows=["all gk-cc volca-cc 41",
-                                    "all gk-note volca-note 48",
-                                    "all gk-prog volca-prog 5",
-                                    "all gk-key volca-key 60"])
+def fm1(g):
+    S.require("Cut It/m_fm1.pd", "Cut It/cut-it-map.txt")
+    return _stdin_gate(g, 40, rows=["all gk-cc fm1-cc 41",
+                                    "all gk-note fm1-note 48",
+                                    "all gk-prog fm1-prog 5",
+                                    "all gk-key fm1-key 60"])
 
 
 def display(g):
@@ -317,15 +317,15 @@ def map_(g):
     # play nothing until they choose songs (Brendan, 2026-11-04).
     # pad-13-at is pressure, mapped: the raw-row exemption must not hide a
     # mapped destination's row.
-    rows = ["perform gk-cc volca-cc 41",
+    rows = ["perform gk-cc fm1-cc 41",
             "perform gk-bad no-such-destination 0",
-            "perform og-knob-2 volca-cc 42",
-            "perform og-knob-3 volca-cc 43",
-            "perform og-knob-4 volca-cc 44",
-            "perform gk-note volca-note 60",
-            "perform gk-prog volca-prog 20",
-            "perform gk-key volca-key 60",
-            "perform pad-13-at volca-cc 45"]
+            "perform og-knob-2 fm1-cc 42",
+            "perform og-knob-3 fm1-cc 43",
+            "perform og-knob-4 fm1-cc 44",
+            "perform gk-note fm1-note 60",
+            "perform gk-prog fm1-prog 20",
+            "perform gk-key fm1-key 60",
+            "perform pad-13-at fm1-cc 45"]
 
     # Twice, differing only in knobs.txt: u_map arms pickup for a saved knob
     # position and not for a live one, and tells them apart by that file (item
@@ -514,7 +514,7 @@ def synths(g):
     s = g.copy()
     s.state_dir()
     # A song whose one section holds strings and the velocity switch off, restored at about
-    # 3.5 s: fm and on are the boot defaults, so a restore that never landed plays the Volca at the
+    # 3.5 s: fm and on are the boot defaults, so a restore that never landed plays the FM-1 at the
     # key's own velocity in the first window.
     for name in ("cut-it-song.txt", "cut-it-song-draft.txt"):
         with open(os.path.join(s.state, name), "w") as fh:
@@ -676,7 +676,7 @@ RECIPES = {
     "init": init, "presence": presence, "audio": audio, "err": err,
     "display": display, "oled": oled, "led": led, "tempo": tempo,
     "clock": clock, "map": map_, "recover": recover, "launchpad": launchpad,
-    "nano": nano, "organelle": organelle, "volca": volca,
+    "nano": nano, "organelle": organelle, "fm1": fm1,
     "debug": debug, "sequencer": sequencer, "kit": kit, "synths": synths, "song": song,
     "voices": voices,
 }

@@ -9,7 +9,7 @@ across a real power cut.
 
 **Before you start:**
 
-- The drums audible through the PA, the Volca and the Streichfett on, and the phone showing Cut It.
+- The drums audible through the PA, the FM-1 and the Streichfett on, and the phone showing Cut It.
 - A song of at least two sections that sound different: on the phone's songs page, aux on the Organelle, tap **new**
   under the middle column, the sections; then on the drum page change the drum pattern while the new section plays
   (step 3 says how to play it), and on the songs page its tempo, with the plus or minus beside tempo.

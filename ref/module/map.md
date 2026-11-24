@@ -12,7 +12,7 @@ that keeps that true.
 
 The map is **table-driven, by page**. `Cut It/cut-it-map.txt` sits beside the patch, one row per
 mapping, and a control means whatever the row for the page on show says it means, or an `all` row
-says on every page. Telling the instrument "on the drum page, this fader plays the Volca" is one row
+says on every page. Telling the instrument "on the drum page, this fader plays the FM-1" is one row
 of a text file. `u_voices` chooses the page and writes it on the `mode` bus ([voices.md](voices.md)).
 
 **Its lookup is Lua, and its destinations are Pd.** `u_map.lua` reads the table and holds the
@@ -27,7 +27,7 @@ guard**, and the whole of what makes a table acceptable here. See *Design*.
 
 `u_map` has **one inlet**, the BPM a tap or the phone set, from `u_tempo`, at which it holds knob 1
 ([tempo.md](tempo.md)). It has **one outlet per output device**, wired in `u_root`, because no bus
-carries a sounding note — the Volca's, the one since the SP-404 left the rig (Brendan, 2026-11-04) —
+carries a sounding note — the FM-1's, the one since the SP-404 left the rig (Brendan, 2026-11-04) —
 then one to `c_steps`, for what a press on the drum page means ([sequencer.md](sequencer.md)),
 one to `u_net`, which flips test mode, one to `u_tempo`, for the tap button and knob 4
 ([tempo.md](tempo.md)), one to `u_song`, for the top row, save and revert, the Organelle's
@@ -67,10 +67,10 @@ file and rejects it before Pd ever does, and the Lua skips it.
 | `start` | unused | Non-zero fires; a release does nothing | verified | — |
 | `stop` | unused | Non-zero fires | verified | — |
 | `panic` | unused | Non-zero fires | verified | — |
-| `volca-note` | The note number | Velocity. Duration is a fixed **200 ms** | verified | — |
-| `volca-cc` | The CC number | The CC value | verified | — |
-| `volca-prog` | The program number | A **gate only** — it decides whether the press counts | verified | — |
-| `volca-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key. ⚠️ **No shipped row names it** since the Organelle's keys left the map (2026-11-04) | verified | 293 |
+| `fm1-note` | The note number | Velocity. Duration is a fixed **200 ms** | verified | — |
+| `fm1-cc` | The CC number | The CC value | verified | — |
+| `fm1-prog` | The program number | A **gate only** — it decides whether the press counts | verified | — |
+| `fm1-key` | The note number | **Velocity, and 0 is a real note-off.** No fixed duration — the release comes from the key. ⚠️ **No shipped row names it** since the Organelle's keys left the map (2026-11-04) | verified | 293 |
 | `recover` | unused | **Two tiers on one control.** Non-zero raises `panic` at once; held for **2000 ms** it also raises `recover` | verified | 298 |
 | `diag` | unused | Non-zero summons `g_oled`'s diagnostic layer. **`pad-81` on the diagnostics page**, which Setup opens ([voices.md](voices.md)) | unknown | 301 |
 | `drum-page` | The **grid index**, looked up in `cut-it-drum-page.txt` | `<role> <n> <velocity>` to `c_steps`, the pad's own velocity, and a release as velocity 0, which `c_steps` acts on only for a repeat pad, the 500 BPM repeat and the saved tempo's lamp; `pad-35` and `pad-38` are two of them (Brendan, 2026-11-05), and `pad-36` and `pad-37` between them no row at all; an index the layout lacks is `fail u_map layout-miss` | verified | — |
@@ -91,7 +91,7 @@ This table is checked against the literal `route` box, so a destination added to
 to this page fails the doc gate. `map-assert.py` checks the same box against the map's rows.
 
 ⛔ **`recover` is the one destination that reads the RELEASE**, so it cannot use the uniform spigot
-trigger test — that gate opens on non-zero and throws the release away. `volca-key` is the existing
+trigger test — that gate opens on non-zero and throws the release away. `fm1-key` is the existing
 precedent for a branch that lets a `0` through. The press raises `panic` and starts a `[del 2000]`;
 the release sends it `stop`. **Only the timer's completion reaches `recover`.**
 
@@ -114,12 +114,12 @@ there and nowhere else.
 | Destination | Live row | Held row | Evidence | Item |
 |-------------|----------|----------|----------|------|
 | `tempo` | `bpm 75` | `bpm 60 (120)` | verified | 316 |
-| `volca-cc` | `volca-cc41 64` | `volca-cc41 64 (114)` | verified | 316 |
-| `volca-note` | `volca-note60 100` | same shape | verified | 316 |
-| `volca-prog` | `volca-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
+| `fm1-cc` | `fm1-cc41 64` | `fm1-cc41 64 (114)` | verified | 316 |
+| `fm1-note` | `fm1-note60 100` | same shape | verified | 316 |
+| `fm1-prog` | `fm1-prog 20` — the **arg**, because the value is only a gate | none | verified | 316 |
 | `drums` | `last-step 12`, `pad2-last 6`, `swing 62 %`: drawn by `c_steps`, which holds the latch | `last-step 16 (7)`, `swing 50 (62)` | verified | — |
 | `rush` | `rush 420 bpm` below the handoff, `rush 4.2 Hz`, the loop's real frequency, above it, drawn by `u_tempo` and `c_steps` | `rush 120 (1817)`, `rush 120 (46k)`: the tempo in force with the knob's own rate in brackets | unknown | — |
-| `volca-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
+| `fm1-key` | **nothing** — 25 keys reporting both edges would evict the five-row screen twice per note | none | verified | 293 |
 | `drum-page` | **nothing** — the grid is the feedback, and 62 pads in use would bury the screen | none | unknown | — |
 | `arrangement` | **nothing** — the phone shows the tempo | none | unknown | — |
 | `voices` | **nothing** — the columns' lamps say it | none | unknown | — |
@@ -134,7 +134,7 @@ the third slot.
 
 | | Evidence | Item |
 |---|----------|------|
-| **A control draws exactly one row, and it is `u_map`'s.** No `m_` file sends a control's row to `disp` — `m_nano` and `m_launchpad` publish on `param` alone, as `m_organelle` always has, and as `m_404` did until the SP-404 left the rig (2026-11-04). A fader mapped to `volca-cc 41` draws `volca-cc41 64` and nothing beside it; an unmapped control draws nothing (*Design*); a mapped button draws nothing | verified | 317 |
+| **A control draws exactly one row, and it is `u_map`'s.** No `m_` file sends a control's row to `disp` — `m_nano` and `m_launchpad` publish on `param` alone, as `m_organelle` always has, and as `m_404` did until the SP-404 left the rig (2026-11-04). A fader mapped to `fm1-cc 41` draws `fm1-cc41 64` and nothing beside it; an unmapped control draws nothing (*Design*); a mapped button draws nothing | verified | 317 |
 | `map-assert.py` reads every `m_` file's `[s disp]` count, exactly, and the set of `m_` files with it: none has one | verified | 317 |
 
 ### Values are normalized to 0–1, and the divisor is not uniform
@@ -302,7 +302,7 @@ no page, and every control would fall to the unmapped branch — no tempo from k
 the screen where a BPM belongs (item 294).
 
 ⚠️ **On screen it reads as every control falling silent** — nothing where `bpm 120` or
-`volca-cc41 64` belongs — because a control's only row is its destination's and a dead lookup sends
+`fm1-cc41 64` belongs — because a control's only row is its destination's and a dead lookup sends
 every control down the unmapped branch, which draws nothing. Nothing else reports it.
 
 **Fix:** **the Lua refuses a `mode` that is not one atom naming a page, and says `fail u_map
@@ -477,7 +477,7 @@ sends only the press. Each button destination's handler opens on non-zero, or ev
 **twice** — idempotent often enough that nothing on screen would look wrong. `voices` and `perform`
 carry the release to their Lua, which ignores it the same way.
 
-⛔ **The gate cannot go above the route.** `og-key-*` releases are **real note-offs** `volca-key` must
+⛔ **The gate cannot go above the route.** `og-key-*` releases are **real note-offs** `fm1-key` must
 act on (item 293), and `recover` reads its release; a value test up there would swallow every one.
 
 ### Each scaling lives with its destination
@@ -489,14 +489,14 @@ own row, live or held, in its own units. The alternative — one scaling in the 
 a shared readout — is the duplication item 240 was, and it grows with every destination.
 
 **The row is named for the destination, and it is the only one.** A nanoKONTROL fader mapped to
-`volca-cc 41` draws `volca-cc41 64` and never `slider-1 64` beside it: the `m_` layers publish on
+`fm1-cc 41` draws `fm1-cc41 64` and never `slider-1 64` beside it: the `m_` layers publish on
 `param` alone and leave the screen to this file, as `m_organelle` always did for the knobs. One row
 per control, so two faders moving are two rows rather than four (item 317).
 
 ### The drum page is one destination and a layout table
 
 The drum page's 62 pads are 62 rows, `drums pad-81 drum-page 81`, and the arg is the grid
-index because the handler never sees the control's name — the `volca-key` precedent. The handler
+index because the handler never sees the control's name — the `fm1-key` precedent. The handler
 looks the index up in `cut-it-drum-page.txt`, the table `g_grid` paints the page from
 ([display.md](display.md)), so `c_steps` receives `step 1 100` and never a cell. **The map says
 which pads are the drum page; the layout says what each one is.** A row the layout
@@ -516,7 +516,7 @@ page, and every role is one `u_tempo` routes.
 **An unmapped control draws nothing** (Brendan, 2026-11-04: "Mapped ones only"). The OLED is for
 alerts and warnings, the output's levels and the name of a control as it moves, and a control the
 current page does not bind means nothing there, so its name on the screen said only that it was
-touched. A page's rows are now what its controls mean: `bpm 120`, `volca-cc41 64`,
+touched. A page's rows are now what its controls mean: `bpm 120`, `fm1-cc41 64`,
 `last-step 16 (7)`.
 
 **What it costs is item 242's case**: a control that does nothing and says nothing cannot be told
@@ -531,13 +531,13 @@ proof that a surface reaches the map.
 both edges (item 293), and pressure, a stream per held pad (item 318), so neither could flood the
 five-row screen. With no raw row there is nothing to skip: `R.quiet` and its prefix and suffix
 tests are gone, and a key or a pressure name the page maps still draws its destination's row, or
-nothing for `volca-key`.
+nothing for `fm1-key`.
 
 ### Arg then value, always — and `[unpack]` gives them in the right order for free
 
 Every branch receives `<arg> <value>` as two floats, and `[unpack]` fires **right to left**: the
 value lands in a cold inlet or sets a gate before the arg arrives to trigger. That is the same
-guarantee `m_volca`'s `[t b f]` had to be built by hand to get.
+guarantee `m_fm1`'s `[t b f]` had to be built by hand to get.
 
 ### The spigot is one uniform trigger test
 
@@ -545,7 +545,7 @@ A nano button sends 1, a pad sends 127 and an Organelle aux sends 1 —
 **all non-zero after normalizing, and a release is zero.** So the gate opens on non-zero and the arg
 passes through it: one test, not a different threshold per surface.
 
-`volca-prog` uses the value as a gate rather than as data, because a program number is the *arg* —
+`fm1-prog` uses the value as a gate rather than as data, because a program number is the *arg* —
 so a fader release cannot select a patch.
 
 ### A file, not a table in the code
@@ -555,11 +555,11 @@ opening Pd or the Lua. The read is relative — from the folder of the patch tha
 `[u_map-lua]`, no path, no creation argument, nothing absolute — so one file works on the Mac, on
 the device and inside the gate's scratch copy (item 229).
 
-### The Volca handlers build the message `m_volca` expects
+### The FM-1 handlers build the message `m_fm1` expects
 
 `[list trim]` is what turns `list notes 48 100 200` into a message whose **selector** is `notes`.
-Without it `m_volca`'s `route` would reject every one straight to `err` — loudly, at least, which is
-why that reject exists. See [volca.md](../device/volca.md).
+Without it `m_fm1`'s `route` would reject every one straight to `err` — loudly, at least, which is
+why that reject exists. See [fm1.md](../device/fm1.md).
 
 ### The page is `u_voices'`; the table is not state
 

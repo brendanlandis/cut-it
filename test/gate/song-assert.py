@@ -35,7 +35,7 @@ WINDOWS = ["LOADED", "PRESS-STOPPED", "EDIT", "REVERT", "EDIT-2", "SAVE", "PLAY"
 RELOAD_WINDOWS = ["LOADED", "REVERT", "FLUSHED"]
 SONGS_WINDOWS = ["LOADED", "KEY-STOPPED", "EDIT", "KEY-BACK", "PLAY", "KEY-BAR", "AT-BAR", "NEXT",
                  "BACK", "NEXT-AGAIN", "AT-NEXT-BAR", "KEY-STOP", "KEY-PAST", "FLUSHED"]
-FM, STRINGS = 49, 33            # the Volca's and the Streichfett's Pd channels, args 5 and 4
+FM, STRINGS = 49, 33            # the FM-1's and the Streichfett's Pd channels, args 5 and 4
 PARTS = ["drums", "programs", "synth", "tempo", "velocity"]
 # While the transport runs the tempo and the programs wait for step 1, so they come after the rest.
 PARTS_RUNNING = ["drums", "synth", "velocity", "programs", "tempo"]
@@ -151,8 +151,8 @@ def main():
                                                                          ["velocity", "off"]], got)
     A.check("... its tempo, 240, on the bus", tempos(W("PRESS-STOPPED")) == [240.0],
             tempos(W("PRESS-STOPPED")))
-    A.check("⛔ its programs go out as it starts: the Volca's 20 and the Streichfett's 5, the "
-            "Volca first, once each", programs(W("PRESS-STOPPED")) == [(21, FM), (6, STRINGS)],
+    A.check("⛔ its programs go out as it starts: the FM-1's 20 and the Streichfett's 5, the "
+            "FM-1 first, once each", programs(W("PRESS-STOPPED")) == [(21, FM), (6, STRINGS)],
             "%s (pgmout is given the number plus one)" % programs(W("PRESS-STOPPED")))
     e = edges(frames, "PRESS-STOPPED")
     A.check("... and the top row shows it: verse playing on button 4, both arrows lit",
@@ -183,7 +183,7 @@ def main():
     A.check("⛔ its length played, two loops, chorus starts by itself",
             section_keys(W("HANDOVER")) == PARTS_RUNNING and tempos(W("HANDOVER")) == [180.0],
             "restores %s, tempo %s" % (section_keys(W("HANDOVER")), tempos(W("HANDOVER"))))
-    A.check("... its program, the Volca's 7, and none for the Streichfett",
+    A.check("... its program, the FM-1's 7, and none for the Streichfett",
             programs(W("HANDOVER")) == [(8, FM)], programs(W("HANDOVER")))
     # The playhead, track 1's step on the drum page, in each frame of the window once chorus's
     # lamp is lit: verse's last step, 8, where it handed over, then chorus's own step 1.

@@ -38,10 +38,10 @@ Every step runs with Cut It stopped — selecting any patch restarts Pd — so t
   - **Pass if:** The screen reads 4-NETWORK and the row under it reads ip- followed by this Organelle's own address. That is the number the Cut It app sends to, set as a literal address, and reading it here is what removes the last reason this rig needs a laptop to fix the phone link.
   - **Note:** Item 312: the phone is set to a literal address (PdParty could not resolve the name), and on the house network the lease moves (the addresses seen are on the Organelle's Reference page). On the access point it is always the same ([phone](../../ref/device/phone.md)).
 
-- [ ] **7. The Volca answers when you fire at it**
-  - **Need:** The Volca powered and audible.
+- [ ] **7. The FM-1 answers when you fire at it**
+  - **Need:** The FM-1 powered and audible.
   - **Do:** Press the second key from the bottom to see the test screen — then press the C an octave up. Listen.
-  - **Pass if:** The C an octave up plays a note on the Volca. The sent counter goes up by exactly one — two for one finger would mean a key release is firing as well as the press.
+  - **Pass if:** The C an octave up plays a note on the FM-1. The sent counter goes up by exactly one — two for one finger would mean a key release is firing as well as the press.
 
 - [ ] **8. A re-wire by hand reports how many links it made**
   - **Do:** Press the sixth key from the bottom for the re-wire screen, then press the E an octave up twice.

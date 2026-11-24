@@ -26,7 +26,7 @@ UMAP = "Cut It/u_map.pd"
 # Every m_ file and its exact [s disp] count: none, since a control's row is u_map's. The file set
 # is exact too: m_404 went with the SP-404, and m_streich and m_nanokey came with the synths
 # (2026-11-04).
-DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 0, "m_volca": 0,
+DISP_EXPECT = {"m_launchpad": 0, "m_nano": 0, "m_organelle": 0, "m_fm1": 0,
                "m_streich": 0, "m_nanokey": 0}
 ARRANGE_PAGE = "Cut It/cut-it-arrangement-page.txt"
 DRUM_PAGE = "Cut It/cut-it-drum-page.txt"
@@ -306,8 +306,8 @@ def run_asserts(cap):
             any(e[0] == "CTLOUT" and e[1][1] == 41 for e in W("MAPPED")),
             repr(W("MAPPED")))
     # The row is named for what the control means, and it is the only row.
-    A.check("⛔ ... and draws its MAPPED row on disp -- volca-cc41 64",
-            any(d == ["volca-cc41", "64"] for d in [e[1] for e in W("MAPPED") if e[0] == "DISP"]),
+    A.check("⛔ ... and draws its MAPPED row on disp -- fm1-cc41 64",
+            any(d == ["fm1-cc41", "64"] for d in [e[1] for e in W("MAPPED") if e[0] == "DISP"]),
             "disp in that window: %s" % [e[1] for e in W("MAPPED") if e[0] == "DISP"])
     A.check("⛔ the SAME control on another page does NOTHING (the table is by page)",
             not midi("PAGE-DEP"), repr(midi("PAGE-DEP")))
@@ -410,9 +410,9 @@ def run_asserts(cap):
             % cc("LATE-KNOB", 43))
 
     # The held row uses its destination's scaling (item 240): knob 2 is armed at
-    # 0.5 and mapped to volca-cc 42 on the performance page by a gate row, so it never draws a bpm.
-    A.check("⛔ a held knob draws ITS OWN destination's row -- volca-cc42 64 (114)",
-            any(d == ["volca-cc42", "64", "(114)"] for d in disp("KNOB-2")),
+    # 0.5 and mapped to fm1-cc 42 on the performance page by a gate row, so it never draws a bpm.
+    A.check("⛔ a held knob draws ITS OWN destination's row -- fm1-cc42 64 (114)",
+            any(d == ["fm1-cc42", "64", "(114)"] for d in disp("KNOB-2")),
             "disp in that window: %s" % disp("KNOB-2"))
     A.check("⛔ ... and never a bpm row -- the tempo scaling does not leak",
             not any(d[:1] == ["bpm"] for d in disp("KNOB-2")),
@@ -497,21 +497,21 @@ def run_asserts(cap):
             "performance page, back for the rows",
             modes("PERFORM") == [["songs"], ["harmony"], ["perform"]],
             "mode in that window: %s" % modes("PERFORM"))
-    A.check("⛔ volca-cc draws volca-cc41 64", rows("ROW-CC") == [["volca-cc41", "64"]],
+    A.check("⛔ fm1-cc draws fm1-cc41 64", rows("ROW-CC") == [["fm1-cc41", "64"]],
             "disp in that window: %s" % disp("ROW-CC"))
-    A.check("⛔ volca-note draws volca-note60 100", rows("ROW-NOTE") == [["volca-note60", "100"]],
+    A.check("⛔ fm1-note draws fm1-note60 100", rows("ROW-NOTE") == [["fm1-note60", "100"]],
             "disp in that window: %s" % disp("ROW-NOTE"))
     A.check("... and the note itself still fires",
             any(e[0] == "NOTEOUT" and e[1][:2] == [60, 100] for e in W("ROW-NOTE")),
             repr(W("ROW-NOTE")))
-    A.check("⛔ volca-prog draws volca-prog 20 -- the ARG, because the value is only a gate",
-            rows("ROW-PROG") == [["volca-prog", "20"]],
+    A.check("⛔ fm1-prog draws fm1-prog 20 -- the ARG, because the value is only a gate",
+            rows("ROW-PROG") == [["fm1-prog", "20"]],
             "disp in that window: %s" % disp("ROW-PROG"))
     A.check("... and the program change still fires",
             any(e[0] == "PGMOUT" for e in W("ROW-PROG")), repr(W("ROW-PROG")))
     # The exception: a key draws nothing, since 25 keys reporting both edges
     # would evict the five-row screen twice per note (item 293).
-    A.check("⛔ volca-key draws NOTHING -- the keyboard exception, item 293",
+    A.check("⛔ fm1-key draws NOTHING -- the keyboard exception, item 293",
             not disp("ROW-KEY"), "disp in that window: %s" % disp("ROW-KEY"))
     A.check("... and the key still sounds -- the window was live",
             any(e[0] == "NOTEOUT" and e[1][:2] == [60, 100] for e in W("ROW-KEY")),
@@ -525,10 +525,10 @@ def run_asserts(cap):
     # pad, and since 2026-11-04 nor does the pad's own press with nothing in play. gk-cc,
     # mapped on the performance page, is the witness that the window drew at all.
     A.check("⛔ neither an unmapped pad's pressure nor its press draws a row",
-            rows("PRESSURE") == [["volca-cc41", "64"]],
-            "u_map's rows in that window: %s -- volca-cc41 64 alone, gk-cc's" % rows("PRESSURE"))
-    A.check("⛔ MAPPED pressure still draws its destination's row -- volca-cc45 64",
-            rows("PRESSURE-MAPPED") == [["volca-cc45", "64"]],
+            rows("PRESSURE") == [["fm1-cc41", "64"]],
+            "u_map's rows in that window: %s -- fm1-cc41 64 alone, gk-cc's" % rows("PRESSURE"))
+    A.check("⛔ MAPPED pressure still draws its destination's row -- fm1-cc45 64",
+            rows("PRESSURE-MAPPED") == [["fm1-cc45", "64"]],
             "disp in that window: %s" % disp("PRESSURE-MAPPED"))
 
 
@@ -563,9 +563,9 @@ def nosave_asserts(cap):
             len(cc("SUPPRESS", 41)) == 1, repr(W("SUPPRESS")))
     A.check("⛔ knob 2 is live -- exactly one cc 42, where the armed run has none",
             len(cc("KNOB-2", 42)) == 1, "cc 42 in that window: %s" % cc("KNOB-2", 42))
-    A.check("⛔ ... and its row is the mapped value ALONE -- volca-cc42 114, no bracket",
-            any(d == ["volca-cc42", "114"] for d in disp("KNOB-2"))
-            and not any(len(d) > 2 for d in disp("KNOB-2") if d[:1] == ["volca-cc42"]),
+    A.check("⛔ ... and its row is the mapped value ALONE -- fm1-cc42 114, no bracket",
+            any(d == ["fm1-cc42", "114"] for d in disp("KNOB-2"))
+            and not any(len(d) > 2 for d in disp("KNOB-2") if d[:1] == ["fm1-cc42"]),
             "disp in that window: %s" % disp("KNOB-2"))
 
 if __name__ == "__main__":

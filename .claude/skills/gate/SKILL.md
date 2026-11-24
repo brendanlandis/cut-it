@@ -22,7 +22,7 @@ a gate can be right about one fault and blind to another.
 Every one of these has happened here, and the first three were all in one gate — the phase 6 grid
 gate, since split into `display-assert` and `launchpad-assert`.
 
-**1. It rewrote the wrong thing.** It rewrote `[midiout]` only. `m_volca`, and `m_404` while the
+**1. It rewrote the wrong thing.** It rewrote `[midiout]` only. `m_fm1`, and `m_404` while the
 SP-404 was in the rig, emit through `noteout` / `ctlout` / `pgmout`, so it found nothing in them and
 every assertion about them would have passed silently.
 

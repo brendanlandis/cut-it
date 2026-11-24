@@ -67,7 +67,7 @@ What Cut It sends out with nothing playing, from the code and the Organelle's Re
 | Right | Both of the input's contacts passed through at unity: the mic's tip, the input's own hiss (not measured on the S2), and whatever sound reaches the open mic; and the ring, the noise floor of a contact a TS plug grounds | unknown |
 
 Nothing else in the patch makes a sound: there is no oscillator, no stage and no synth inside it,
-and the Volca and the Streichfett reach the mixer on cables of their own ([rig.md](../rig.md)).
+and the FM-1 and the Streichfett reach the mixer on cables of their own ([rig.md](../rig.md)).
 Whether that hiss lights mother's output meter is *Open*.
 
 ## Traps

@@ -27,7 +27,7 @@ A song has up to eight voices, one a row, each with its own color on every surfa
 | Performance | PLAY brings it up, or the lit button again |
 | A voice's behavior | Its left button |
 | A voice's setup | Its right button |
-| Songs and sections | Aux, on the Organelle; aux again closes it |
+| Songs and sections | Aux, on the Organelle, or songs under the phone's left column; either again closes it |
 | Diagnostics | Setup, on the Launchpad; Setup again closes it |
 
 Save and revert are the rightmost of the small buttons under the Launchpad's pads, in its two bottom rows: save in the

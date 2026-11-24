@@ -93,7 +93,7 @@ struct RootView: View {
     }
 }
 
-/// A column: eight buttons, in each voice's color; dark for a row with none.
+/// A column: eight buttons, in each voice's color; dark for a row with none. Under the left one, songs.
 struct Rail: View {
     enum Side { case left, right }
     let side: Side
@@ -101,22 +101,47 @@ struct Rail: View {
 
     var body: some View {
         VStack(spacing: 3) {
-            ForEach(1...8, id: \.self) { row in
-                let v = cut.voices[row - 1]
-                let lit = cut.pageRow == row && cut.pageKind == (side == .left ? "voice" : "setup")
-                Button {
-                    Tick.down()
-                    cut.press("voices", side == .left ? "left" : "right", row)
-                } label: {
-                    Text(title(v, row))
-                        .font(.system(size: 12, weight: lit ? .semibold : .regular))
-                        .lineLimit(2).minimumScaleFactor(0.7).multilineTextAlignment(.center)
-                        .frame(width: 58).frame(maxHeight: .infinity)
-                        .foregroundStyle(lit ? Color.black : (v == nil ? Color.white.opacity(0.3) : Color.white))
-                        .background(fill(v, row, lit), in: .rect(cornerRadius: 5))
-                }
-                .buttonStyle(.plain)
+            rows
+            foot.padding(.top, 3)
+        }
+    }
+
+    /// The songs page, opened and closed as aux opens and closes it, and lit white while it's open, as aux's LED
+    /// is (Brendan, 2026-11-24). Under the right column the same room, so each row stays across from its own.
+    @ViewBuilder private var foot: some View {
+        if side == .left {
+            let open = cut.pageKind == "songs"
+            Button {
+                Tick.down()
+                cut.press("voices", "aux")
+            } label: {
+                Text("songs").font(.system(size: 12, weight: open ? .semibold : .regular))
+                    .frame(width: 58, height: 34)
+                    .foregroundStyle(open ? Color.black : Color.white)
+                    .background(open ? Color.white : Color.white.opacity(0.16), in: .rect(cornerRadius: 5))
             }
+            .buttonStyle(.plain)
+        } else {
+            Color.clear.frame(width: 58, height: 34)
+        }
+    }
+
+    private var rows: some View {
+        ForEach(1...8, id: \.self) { row in
+            let v = cut.voices[row - 1]
+            let lit = cut.pageRow == row && cut.pageKind == (side == .left ? "voice" : "setup")
+            Button {
+                Tick.down()
+                cut.press("voices", side == .left ? "left" : "right", row)
+            } label: {
+                Text(title(v, row))
+                    .font(.system(size: 12, weight: lit ? .semibold : .regular))
+                    .lineLimit(2).minimumScaleFactor(0.7).multilineTextAlignment(.center)
+                    .frame(width: 58).frame(maxHeight: .infinity)
+                    .foregroundStyle(lit ? Color.black : (v == nil ? Color.white.opacity(0.3) : Color.white))
+                    .background(fill(v, row, lit), in: .rect(cornerRadius: 5))
+            }
+            .buttonStyle(.plain)
         }
     }
 

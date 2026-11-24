@@ -14,10 +14,11 @@ moves; the phone shows the page `u_voices` names on `/cutit/voices`: `perform`, 
 play; `drums`, the drum screen; `harmony`, `melody`, `keys` and `sound`, a voice's pages; `songs`,
 the songs and the sections, where the tempo, the last step, the time signature, the swing and the
 drunkenness are set; and `diag`, which Setup opens. The Launchpad's two columns run down either
-side of it, and a press on either moves both (`cut-it/cut-it-app`). It was a mirror of `disp`
-until 2026-11-04, with a remote screen of diagnostic buttons, and both went with the split: that
-reverses the decision on [display.md](../module/display.md) that the phone stays a mirror, which
-was right for a readout and is not for a control surface.
+side of it, and a press on either moves both (`cut-it/cut-it-app`). Under the left one, songs
+opens and closes the songs page, as aux does, by sending `voices aux` (Brendan, 2026-11-24). It
+was a mirror of `disp` until 2026-11-04, with a remote screen of diagnostic buttons, and both went
+with the split: that reverses the decision on [display.md](../module/display.md) that the phone
+stays a mirror, which was right for a readout and is not for a control surface.
 
 `u_net.pd` is the only file that talks to it, and it reads nothing on `disp`. Outbound it carries
 a heartbeat and each module's state — the sequencer's, the synth choice, the velocity switch, the

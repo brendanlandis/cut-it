@@ -29,7 +29,7 @@ itself.
 | | A row with none | Nothing | unknown |
 | A right button, CC 99 − 10 × row | A row with a voice | `sound`, its setup; the lit one again, the performance page | unknown |
 | | A row with none | Starts a new voice, `voice_<row>`, keys, on the first machine no other has, and shows its setup | unknown |
-| aux, on the Organelle | Any page | Opens `songs`; again, back where it was | unknown |
+| aux, on the Organelle, or songs under the phone's left column | Any page | Opens `songs`; again, back where it was | unknown |
 | Setup, on the Launchpad | Any page | Opens `diag`; again, back where it was. Its `pad-81` is the diagnostic layer, and `pad-82` test mode | unknown |
 | PLAY | A voice's left or right page, stopped | The performance page, by itself. Not from `songs` or `diag`, and not while the transport already runs | unknown |
 

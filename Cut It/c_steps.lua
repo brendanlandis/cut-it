@@ -743,30 +743,67 @@ function R.select(st, track)
   return { { "page", "track", { st.track } }, R.page_last(st), R.steps(st) }
 end
 
--- The sequencer's state, for the phone's drum and arrangement screens: playing (1 or 0), the
--- global last step, the selected track, a pending sync or snap (0 none, 1 sync, 2 snap), then
--- each track's last step, then 1 for each track with a last step of its own, then the time
--- signature, the drunkenness and the swing, then each track's volume, its pitch and its
--- randomness, then the selected track's effects, in R.FX's order, its character last, and the
--- reverb's size and damping, then each track's mute and each track's solo, 1 or 0, then the
--- reverb's type, 0 to 2, then each track's random pitch, 1 or 0. 148 numbers.
-R.PHONE = 4 + 2 * R.TRACKS + 4 + 3 * R.TRACKS + #R.FX + #R.VERB + 2 * R.TRACKS + 1 + R.TRACKS
+-- The sequencer's state, for the phone's drum and arrangement screens, field by field, in the
+-- order it goes: a name, how many numbers it takes and what writes them. The app reads the list
+-- by position, and takes each field's place from this table: phone/state-at.py writes them into
+-- phone/CutIt/StateAt.swift, and test/gate/app-assert.py fails when that file is behind. So a
+-- field is added here, anywhere, and nowhere else by hand.
+local function one(get)
+  return function(st, a) a[#a + 1] = get(st) end
+end
+local function a_track(which)
+  return function(st, a)
+    for t = 1, R.TRACKS do a[#a + 1] = st[which][t] end
+  end
+end
+R.PHONE_FIELDS = {
+  { "playing", 1, one(function(st) return st.playing and 1 or 0 end) },
+  { "last", 1, one(function(st) return R.global_last(st) end) },
+  { "track", 1, one(function(st) return st.track end) },
+  -- a sync or snap waiting for the 1: 0 none, 1 sync, 2 snap
+  { "pending", 1, one(function(st) return st.snap and 2 or (st.sync and 1 or 0) end) },
+  -- each track's last step, then 1 for each track with a last step of its own
+  { "lasts", R.TRACKS, function(st, a)
+    for t = 1, R.TRACKS do a[#a + 1] = R.last_of(st, t) end
+  end },
+  { "own", R.TRACKS, function(st, a)
+    for t = 1, R.TRACKS do a[#a + 1] = st.own[t] >= 1 and 1 or 0 end
+  end },
+  { "num", 1, one(function(st) return st.num end) },
+  { "den", 1, one(function(st) return st.den end) },
+  { "drunk", 1, one(function(st) return st.drunk end) },
+  { "swing", 1, one(function(st) return st.swing end) },
+  { "vol", R.TRACKS, a_track("vol") },
+  { "pitch", R.TRACKS, a_track("pitch") },
+  { "randomness", R.TRACKS, a_track("randomness") },
+}
+-- the selected track's effects, in R.FX's order, its character last, and the reverb's size and
+-- damping
+for _, f in ipairs(R.FX) do
+  R.PHONE_FIELDS[#R.PHONE_FIELDS + 1] =
+    { "fx-" .. f[1], 1, one(function(st) return st.fx[f[1]][st.track] end) }
+end
+for _, f in ipairs(R.VERB) do
+  R.PHONE_FIELDS[#R.PHONE_FIELDS + 1] = { "verb-" .. f[1], 1, one(function(st) return st.verb[f[1]] end) }
+end
+for _, f in ipairs({
+  { "mute", R.TRACKS, a_track("mute") },
+  { "solo", R.TRACKS, a_track("solo") },
+  -- the reverb's type, 0 to 2, and each track's random pitch, 1 or 0
+  { "verb-type", 1, one(function(st) return st.verb_type end) },
+  { "rolled", R.TRACKS, a_track("rolled") },
+}) do
+  R.PHONE_FIELDS[#R.PHONE_FIELDS + 1] = f
+end
+-- How many numbers that is, 148, and where each field begins, 1 the first.
+R.PHONE, R.PHONE_AT = 0, {}
+for _, f in ipairs(R.PHONE_FIELDS) do
+  R.PHONE_AT[f[1]] = R.PHONE + 1
+  R.PHONE = R.PHONE + f[2]
+end
 function R.phone(st)
-  local out = { st.playing and 1 or 0, R.global_last(st), st.track,
-                st.snap and 2 or (st.sync and 1 or 0) }
-  for t = 1, R.TRACKS do out[#out + 1] = R.last_of(st, t) end
-  for t = 1, R.TRACKS do out[#out + 1] = st.own[t] >= 1 and 1 or 0 end
-  for _, v in ipairs({ st.num, st.den, st.drunk, st.swing }) do out[#out + 1] = v end
-  for _, which in ipairs({ "vol", "pitch", "randomness" }) do
-    for t = 1, R.TRACKS do out[#out + 1] = st[which][t] end
-  end
-  for _, f in ipairs(R.FX) do out[#out + 1] = st.fx[f[1]][st.track] end
-  for _, f in ipairs(R.VERB) do out[#out + 1] = st.verb[f[1]] end
-  for _, which in ipairs({ "mute", "solo" }) do
-    for t = 1, R.TRACKS do out[#out + 1] = st[which][t] end
-  end
-  out[#out + 1] = st.verb_type
-  for t = 1, R.TRACKS do out[#out + 1] = st.rolled[t] end
+  local out = {}
+  for _, f in ipairs(R.PHONE_FIELDS) do f[3](st, out) end
   return out
 end
 

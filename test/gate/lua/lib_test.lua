@@ -50,6 +50,19 @@ function T.equal(name, got, want)
 end
 
 -- The tally, and the failure count. The total proves no check went missing.
+-- A phone state's fields (R.PHONE_FIELDS: a name, how many atoms, what writes them, a group's members)
+-- that don't write what they say: every one must, or the places the app is given are wrong
+-- (phone/state-at.py). Returns their names.
+function T.fields(fields, st)
+  local bad = {}
+  for _, f in ipairs(fields) do
+    local a = {}
+    f[3](st, a)
+    if #a ~= f[2] or (f[4] and f[2] % #f[4] ~= 0) then bad[#bad + 1] = f[1] end
+  end
+  return bad
+end
+
 function T.report()
   print(string.format("\n%d checks, %d failed", total, fails))
   return fails

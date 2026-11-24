@@ -159,6 +159,9 @@ do
   equal("cleared, a roll takes them", st.note[5], R.UNROLLED)
   equal("what the grid is sent: the loop, the tonic, seven notes of the mode, then each step's note and code",
         #R.phone_notes(st), 2 + 7 + 2 * R.STEPS)
+  equal("⛔ every field of the phone's two states writes as many atoms as it says, so each is where the app "
+        .. "is told: 67 and 73", { T.fields(R.PHONE_FIELDS, st), T.fields(R.NOTES_FIELDS, st), R.PHONE, R.NOTES,
+        R.PHONE_AT.slot, R.PHONE_AT.pin, R.NOTES_AT.code }, { {}, {}, 67, 73, 14, 60, 42 })
 end
 
 do

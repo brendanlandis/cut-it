@@ -386,12 +386,28 @@ function R.grid(st)
   return a
 end
 
--- /cutit/voices: the page's name, its kind and row, then the song's voices, name, method and machine
--- a row. The phone knows from these which rows to light and what a machine's other voice is. 27
--- atoms.
+-- /cutit/voices, field by field, in the order it goes: a name, how many atoms it takes, what writes
+-- them and, for a field of groups, what each group holds. The page's name, its kind and row, then the
+-- song's voices, name, method and machine a row. The phone knows from these which rows to light and
+-- what a machine's other voice is. 27 atoms. The app reads the list by position, and takes each
+-- field's place from this table: phone/state-at.py writes them into phone/CutIt/StateAt.swift, and
+-- test/gate/app-assert.py fails when that file is behind.
+R.PHONE_FIELDS = {
+  { "page", 1, function(st, a) a[#a + 1] = R.page_name(st) end },
+  { "kind", 1, function(st, a) a[#a + 1] = st.kind end },
+  { "row", 1, function(st, a) a[#a + 1] = st.row end },
+  { "voice", 3 * R.ROWS, function(st, a)
+    for _, x in ipairs(R.line(st)) do a[#a + 1] = x end
+  end, { "name", "method", "machine" } },
+}
+R.PHONE, R.PHONE_AT = 0, {}
+for _, f in ipairs(R.PHONE_FIELDS) do
+  R.PHONE_AT[f[1]] = R.PHONE + 1
+  R.PHONE = R.PHONE + f[2]
+end
 function R.phone(st)
-  local a = { R.page_name(st), st.kind, st.row }
-  for _, x in ipairs(R.line(st)) do a[#a + 1] = x end
+  local a = {}
+  for _, f in ipairs(R.PHONE_FIELDS) do f[3](st, a) end
   return a
 end
 

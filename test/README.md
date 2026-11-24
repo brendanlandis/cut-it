@@ -199,14 +199,16 @@ each page through a press, the columns', aux's and Setup's, the modal claiming a
 
 **It runs the drum page's painter's Lua tests first** (2026-11-05): `test/gate/lua/g_grid_test.lua`,
 with no Pd, drives `g_grid.lua` and its face through `lib_test`'s stand-in for pdlua, which carries
-a `pd.Table` over arrays the test makes. **66 checks**: the colors read through `g_grid.pd`'s own
+a `pd.Table` over arrays the test makes: the colors read through `g_grid.pd`'s own
 RGB table and held to the page's, the layout's 60 cells in its order, every cell at load, the rows
 of steps at 4/4, 3/4, 9/8, 7/8, 5/4 and `bar 0`, the levels, a step past the last step dark, the
 playhead, the buttons, the pads and the repeat pads, the pads whose tracks won't play, dim, what
 changes nothing, `init`, and the face: the writes into the frame buffer and nowhere else, a buffer
 made after it, `bad-selector`, `no-surface`, a missing layout, a throw, and `g_grid.pd` making it
-and no longer reading the layout itself. What reaches the Launchpad is the Pd half's, and
-`sequencer-assert`'s.
+and no longer reading the layout itself. The generator's two states it paints from are
+`c_melody.lua`'s own, `R.phone` and `R.phone_notes` run on a generator the test sets up, so a field
+added to either moves what the grid reads and the painted cells fail. What reaches the Launchpad is
+the Pd half's, and `sequencer-assert`'s.
 
 **`launchpad-assert` plays the device for the Setup tap** (2026-11-04). Its driver watches
 `t-midiout` and answers every Programmer Mode entry 1 ms later with the announcement the Launchpad
@@ -433,6 +435,16 @@ of two literals are read as they stand; an expression is read through `RESOLVE`,
 supplies it (the harmony page's `knob(...)` calls, the setup page's lists), or the gate says which.
 ⛔ **Every call a plain search finds must be read**, so one the parser skips is a failure, not a
 smaller count. `cut.control` is inlined from `Cut.swift`'s own body, and the gate checks that body.
+
+⛔ **What the app reads by position is checked against the Lua's field tables**
+([the phone's page](../ref/device/phone.md), *The app reads each state by name*):
+`phone/CutIt/StateAt.swift` must be what `phone/state-at.py` writes today; every `a[...]` in
+`Cut.swift`'s cases for `/cutit/notes`, `/cutit/melody`, `/cutit/drums`, `/cutit/voices` and
+`/cutit/perform`, each case's guard and every `cut.drum(...)` must be at a place that file names for
+that state, with no number in it; and every place named must be one the file has. A field added
+mid-list in `c_melody.lua` failed the first, `a[4]` and `cut.drum(DrumsAt.muted + track - 1)` the
+other two. It reads the source and builds nothing, so a place renamed in the Lua fails here before
+Xcode says so.
 
 ## `sequencer-assert.sh` — the drum machine, from the outside
 

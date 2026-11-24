@@ -378,14 +378,19 @@ equal("⛔ but not on the performance page, whose bottom rows are the nanoKONTRO
       { DARK, DARK })
 
 print("\n--- the harmony page ---")
--- What c_melody sends the phone: t's fields, over what doesn't show.
+-- What c_melody sends the phone, written by c_melody's own R.phone from a generator holding t's fields:
+-- g_grid reads the list by position, so a field added before one it reads fails here.
+local M = dofile(DIR .. "c_melody.lua")
+local function generator(t)
+  local m = M.new()
+  M.internal.init(m)
+  m.chords, m.audition, m["on-h"], m["on-m"] = t.chords or 0, t.sounding or 0, t.on_h or 0, t.on_m or 0
+  m.total, m.style, m.bass = t.total or 16, t.style or 1, t.bass or 0
+  for k = 1, 8 do m.slot_start[k] = (t.starts or {})[k] or -1 end
+  return m
+end
 local function melody_state(t)
-  local a = {}
-  for k = 1, 67 do a[k] = 0 end
-  a[1], a[7], a[8], a[9], a[12] = t.chords or 0, t.sounding or 0, t.on_h or 0, t.on_m or 0, t.total or 16
-  for k = 1, 8 do a[17 + (k - 1) * 4] = (t.starts or {})[k] or -1 end
-  a[56], a[57] = t.style or 1, t.bass or 0
-  return a
+  return M.phone(generator(t))
 end
 local function harmony(row, t)
   st = R.new(LAYOUT)
@@ -422,12 +427,16 @@ f = frame(st)
 equal("... on, bass and modal dim while off", { f[101], f[104], f[105] }, { dim[2], dim[2], dim[2] })
 
 print("\n--- the melody page ---")
+-- ... and its melody grid, by c_melody's own R.phone_notes: a code is the step's flag, plus 4 if pinned.
 local function notes_state(t)
-  local a = { t.loop or 32, t.tonic or 0 }
-  for d = 1, 7 do a[#a + 1] = ({ 0, 2, 4, 5, 7, 9, 11 })[d] end
-  for k = 1, 32 do a[#a + 1] = (t.notes or {})[k] or 0 end
-  for k = 1, 32 do a[#a + 1] = (t.codes or {})[k] or 0 end
-  return a
+  local m = generator(t)
+  m.loop, m.tonic = t.loop or 32, t.tonic or 0
+  for d = 1, 7 do m.scale[d] = ({ 0, 2, 4, 5, 7, 9, 11 })[d] end
+  for k = 1, 32 do
+    local code = (t.codes or {})[k] or 0
+    m.note[k], m.flag[k], m.pin[k] = (t.notes or {})[k] or 0, code % 4, code // 4
+  end
+  return M.phone_notes(m)
 end
 local function melody(row, t)
   st = R.new(LAYOUT)

@@ -190,6 +190,8 @@ equal("g_grid: the row on show, the kind, each row's method", { table.unpack(R.g
 local ph = R.phone(st)
 equal("the phone: the page's name, kind and row, then the voices, three atoms each: 27", { #ph, ph[1], ph[2], ph[3],
       ph[4], ph[8] }, { 27, "sound", "setup", 2, "drums", "harmony" })
+equal("⛔ every field of it writes as many atoms as it says, so each is where the app is told",
+      { T.fields(R.PHONE_FIELDS, st), R.PHONE, R.PHONE_AT.voice }, { {}, 27, 4 })
 
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "u_voices-lua.pd_lua", DIR)

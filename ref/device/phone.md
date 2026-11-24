@@ -1,7 +1,7 @@
 <!-- schema: device -->
 # The phone — the Cut It app and the link
 
-**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `phone/CutIt/Link.swift`, `phone/CutIt/Cut.swift`, `phone/CutIt/LineCheck.swift` · **Gate:** `test/gate/phone-assert.sh`, `test/gate/app-assert.sh` · **Checklist:** `test/checklists/phone.md`
+**Files:** `Cut It/u_net.pd`, `Cut It/phone-ip.sh`, `phone/CutIt/Link.swift`, `phone/CutIt/Cut.swift`, `phone/CutIt/LineCheck.swift`, `phone/state-at.py` · **Gate:** `test/gate/phone-assert.sh`, `test/gate/app-assert.sh` · **Checklist:** `test/checklists/phone.md`
 
 An iPhone running the Cut It app, `phone/` in this repo, on the same network (from 2026-11-19;
 TouchOSC from 2026-11-04, and PdParty before it). What was measured with those two stays on their
@@ -231,6 +231,26 @@ What the keys page's velocity button sends after `velocity`, each acknowledged b
 `phone/install.sh` builds the working tree and puts it on the phone over Wi-Fi; `phone/testflight.sh`
 sends a pushed commit to TestFlight, which installs it on the phone by itself. What each page shows
 and sends is its own code, `phone/CutIt/Pages.swift` and the views beside it.
+
+### The app reads each state by name
+
+**A state's fields are named once, in the Lua that writes it, and the app's places come from that
+table.** The drums' state, the generator's, its notes', `u_perform`'s and `u_voices`' each go out
+as one flat list, and the app reads a list by position. The Lua names a list's fields in order,
+each with how many atoms it takes (`R.PHONE_FIELDS` in `c_steps.lua`, `c_melody.lua`,
+`u_perform.lua` and `u_voices.lua`, and `c_melody`'s `R.NOTES_FIELDS`), and writes the list by
+running that table, so the table and the list can't differ. `phone/state-at.py` writes where each
+field begins into `phone/CutIt/StateAt.swift`, and the app reads only there:
+`a[MelodyAt.home]`, `cut.drum(DrumsAt.vol, track: 3)`.
+
+⛔ **A field added to a state moves every read after it, and the two ends deploy apart.** So
+`app-assert` fails while `StateAt.swift` is not what the Lua's tables give today, when the app
+reads one of these states at a number of its own, and when it names a place the file hasn't. After
+changing a state's fields, run `python3 phone/state-at.py`, build the app and put it on the phone
+when the patch is deployed: an app built before the change reads the new list at the old places.
+
+`g_grid.lua` reads the generator's two states by position as well, at indices of its own, which
+`g_grid_test.lua` holds by painting from what `c_melody`'s `R.phone` and `R.phone_notes` write.
 
 ### The phone controls the page, and does not copy the OLED
 

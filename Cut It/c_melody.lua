@@ -1086,35 +1086,71 @@ local function set(st, atoms)
   return assign(st, name, v)
 end
 
--- What the phone shows: the chords' controls, the slot sounding, whether each part is on, the key and
--- mode, the grid's length and the pattern's last step, each slot's name, spelling, Roman numeral and
--- start, the two voices, then the melody's controls.
-function R.phone(st)
-  local a = { st.chords, st["chord-lock"], st.smooth, st.tension, st.home, st.span,
-              st.audition or st.ch_pos, st["on-h"], st["on-m"], st.key, st.mode, st.total, st.last }
-  for i = 1, R.SLOTS do
-    local c = chord_of(st, i)
-    a[#a + 1] = c and c.name or "-"
-    a[#a + 1] = c and c.spell or "-"
-    a[#a + 1] = c and c.roman or "-"
-    a[#a + 1] = i <= st.chords and st.slot_start[i] or -1
+-- What the phone shows, field by field, in the order it goes: a name, how many atoms it takes, what
+-- writes them and, for a field of groups, what each group holds. The chords' controls, the slot sounding,
+-- whether each part is on, the key and mode, the grid's length and the pattern's last step, each slot's
+-- name, spelling, Roman numeral and start, the two voices, the melody's controls, then each slot's pin.
+-- The app and g_grid.lua read the list by position. The app takes each field's place from this table:
+-- phone/state-at.py writes them into phone/CutIt/StateAt.swift, and test/gate/app-assert.py fails when
+-- that file is behind. g_grid.lua's are held by its test, which reads what R.phone writes.
+local function own(k)
+  return { k, 1, function(st, a) a[#a + 1] = st[k] end }
+end
+-- A table's fields laid end to end: how many atoms, and where each begins, 1 the first.
+local function laid(fields)
+  local n, at = 0, {}
+  for _, f in ipairs(fields) do
+    at[f[1]] = n + 1
+    n = n + f[2]
   end
-  for _, k in ipairs({ "voice-h", "voice-m", "lock", "fit", "leap", "notes", "length", "echo", "loop",
-                       "range", "style", "bass", "arrive", "octave" }) do
-    a[#a + 1] = st[k]
-  end
-  for i = 1, R.SLOTS do a[#a + 1] = st.slot_pin[i] end
+  return n, at
+end
+local function written(fields, st)
+  local a = {}
+  for _, f in ipairs(fields) do f[3](st, a) end
   return a
 end
+R.PHONE_FIELDS = {
+  own("chords"), own("chord-lock"), own("smooth"), own("tension"), own("home"), own("span"),
+  { "sounding", 1, function(st, a) a[#a + 1] = st.audition or st.ch_pos end },
+  own("on-h"), own("on-m"), own("key"), own("mode"), own("total"), own("last"),
+  { "slot", 4 * R.SLOTS, function(st, a)
+    for i = 1, R.SLOTS do
+      local c = chord_of(st, i)
+      a[#a + 1] = c and c.name or "-"
+      a[#a + 1] = c and c.spell or "-"
+      a[#a + 1] = c and c.roman or "-"
+      a[#a + 1] = i <= st.chords and st.slot_start[i] or -1
+    end
+  end, { "name", "spell", "roman", "start" } },
+  own("voice-h"), own("voice-m"), own("lock"), own("fit"), own("leap"), own("notes"), own("length"),
+  own("echo"), own("loop"), own("range"), own("style"), own("bass"), own("arrive"), own("octave"),
+  { "pin", R.SLOTS, function(st, a)
+    for i = 1, R.SLOTS do a[#a + 1] = st.slot_pin[i] end
+  end },
+}
+R.PHONE, R.PHONE_AT = laid(R.PHONE_FIELDS)
+function R.phone(st)
+  return written(R.PHONE_FIELDS, st)
+end
 
--- What the phone's melody grid shows: the loop's length, the tonic, the mode's notes, each step's note (0 a
--- rest, -1 not rolled), and each step's flag plus 4 if it is pinned.
+-- What the phone's melody grid shows, the same way: the loop's length, the tonic, the mode's notes, each
+-- step's note (0 a rest, -1 not rolled), and each step's flag plus 4 if it is pinned.
+R.NOTES_FIELDS = {
+  own("loop"), own("tonic"),
+  { "scale", 7, function(st, a)
+    for d = 1, 7 do a[#a + 1] = st.scale[d] end
+  end },
+  { "note", R.STEPS, function(st, a)
+    for i = 1, R.STEPS do a[#a + 1] = st.note[i] end
+  end },
+  { "code", R.STEPS, function(st, a)
+    for i = 1, R.STEPS do a[#a + 1] = st.flag[i] + 4 * st.pin[i] end
+  end },
+}
+R.NOTES, R.NOTES_AT = laid(R.NOTES_FIELDS)
 function R.phone_notes(st)
-  local a = { st.loop, st.tonic }
-  for d = 1, 7 do a[#a + 1] = st.scale[d] end
-  for i = 1, R.STEPS do a[#a + 1] = st.note[i] end
-  for i = 1, R.STEPS do a[#a + 1] = st.flag[i] + 4 * st.pin[i] end
-  return a
+  return written(R.NOTES_FIELDS, st)
 end
 
 -- Hand edits on the melody grid. A step edited is pinned: drift and roll leave it until pins are cleared

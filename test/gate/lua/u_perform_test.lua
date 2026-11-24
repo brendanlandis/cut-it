@@ -179,6 +179,8 @@ st = bound("slider-1", "tempo", 0, 0, 0.5)
 local ph = R.phone(st)
 equal("the phone: armed, then a group's knob and fader, label, row, value and held, and its two buttons: 113 atoms",
       { #ph, ph[1], ph[2], ph[6], ph[7], ph[8], ph[9] }, { 113, 0, "-", "tempo", 0, 0.5, 0 })
+equal("⛔ every field of it writes as many atoms as it says, so each is where the app is told",
+      { T.fields(R.PHONE_FIELDS, st), R.PHONE, R.PHONE_AT.group }, { {}, 113, 2 })
 equal("⛔ a name tapped takes it out of play", { R.remove(st, "slider-1"), st.list["slider-1"] }, { {}, nil })
 equal("... one not there is nothing", R.remove(st, "slider-1"), {})
 

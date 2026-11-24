@@ -364,6 +364,9 @@ print("\n--- the drum screen ---")
 st = R.new(1)
 equal("its state: stopped, global 16, track 1, nothing pending, every track at 16 and following",
       R.phone(st), phone(0, 16, 1, 0, {}, {}))
+equal("⛔ every field of it writes as many numbers as it says, so each is where the app is told: 148",
+      { T.fields(R.PHONE_FIELDS, st), R.PHONE, R.PHONE_AT.playing, R.PHONE_AT.num, R.PHONE_AT["fx-drive"],
+        R.PHONE_AT.rolled }, { {}, 148, 1, 37, 89, 133 })
 R.presses.pad(st, { 2, 90 })
 R.presses["track-last"](st, { at(16) })
 R.presses["track-last"](st, { at(5) })

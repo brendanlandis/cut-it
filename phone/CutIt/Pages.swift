@@ -553,17 +553,17 @@ struct SongsView: View {
             stepper("tempo", String(format: "%g", cut.tempo),
                     { cut.press("tempo", (cut.tempo - 1).rounded()) },
                     { cut.press("tempo", (cut.tempo + 1).rounded()) })
-            stepper("last step", String(Int(cut.drum(1))),
-                    { cut.press("drums", "set-last", Int(cut.drum(1)) - 1) },
-                    { cut.press("drums", "set-last", Int(cut.drum(1)) + 1) })
-            stepper("time", "\(Int(cut.drum(36)))/\(Int(cut.drum(37)))",
+            stepper("last step", String(Int(cut.drum(DrumsAt.last))),
+                    { cut.press("drums", "set-last", Int(cut.drum(DrumsAt.last)) - 1) },
+                    { cut.press("drums", "set-last", Int(cut.drum(DrumsAt.last)) + 1) })
+            stepper("time", "\(Int(cut.drum(DrumsAt.num)))/\(Int(cut.drum(DrumsAt.den)))",
                     { cut.press("drums", "num", -1) }, { cut.press("drums", "num", 1) })
-            stepper("swing", String(Int(cut.drum(39))),
-                    { cut.press("drums", "set-swing", max(50, Int(cut.drum(39)) - 1)) },
-                    { cut.press("drums", "set-swing", min(75, Int(cut.drum(39)) + 1)) })
-            stepper("drunk", String(Int(cut.drum(38))),
-                    { cut.press("drums", "drunk", max(0, Int(cut.drum(38)) - 5)) },
-                    { cut.press("drums", "drunk", min(100, Int(cut.drum(38)) + 5)) })
+            stepper("swing", String(Int(cut.drum(DrumsAt.swing))),
+                    { cut.press("drums", "set-swing", max(50, Int(cut.drum(DrumsAt.swing)) - 1)) },
+                    { cut.press("drums", "set-swing", min(75, Int(cut.drum(DrumsAt.swing)) + 1)) })
+            stepper("drunk", String(Int(cut.drum(DrumsAt.drunk))),
+                    { cut.press("drums", "drunk", max(0, Int(cut.drum(DrumsAt.drunk)) - 5)) },
+                    { cut.press("drums", "drunk", min(100, Int(cut.drum(DrumsAt.drunk)) + 5)) })
             HStack {
                 Text("tweaks").font(.system(size: 13)).foregroundStyle(Theme.dim)
                 Spacer()

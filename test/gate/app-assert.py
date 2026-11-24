@@ -13,6 +13,12 @@ deploy by different routes (TestFlight, tools/deploy.sh), so a misspelled comman
 on the rig as bad-selector. touchosc-assert did this for the TouchOSC layout until it went
 (2026-11-19).
 
+What the app reads is checked too, where it reads a state by position (ref/device/phone.md, *The
+app reads each state by name*): phone/CutIt/StateAt.swift is what phone/state-at.py writes from the
+Lua's field tables today, the app reads those five states and the drums' numbers only at places
+that file names, and every place it names is one the file has. So a field added to a state in the
+Lua fails here until StateAt.swift is written again, and the app's reads move with it.
+
 The patch's side is read by loading its Lua under lua.org's Lua 5.4, so a key made in a loop
 (c_steps' vol-1 to vol-16) is there as Pd sees it; the Swift's by reading, every argument a
 literal, an interpolated string (its \\( ) parts any text), a choice of two literals, or an
@@ -246,6 +252,99 @@ RESOLVE = {
 }
 
 
+# ------------------------------------------------------------------ where the app reads a state
+STATE_AT = os.path.join(ROOT, "phone", "state-at.py")
+AT_FILE = "StateAt.swift"
+# Each state the app reads by position: its address, and the enum phone/state-at.py writes for it.
+READS = [("/cutit/notes", "NotesAt"), ("/cutit/melody", "MelodyAt"), ("/cutit/drums", "DrumsAt"),
+         ("/cutit/voices", "VoicesAt"), ("/cutit/perform", "PerformAt")]
+ENUMS = [e for _, e in READS]
+NUMBER = re.compile(r"(?<![\w$.])\d")
+NAMED = re.compile(r"\b(%s)((?:\.[A-Za-z]\w*)+)" % "|".join(ENUMS))
+
+
+def written():
+    """StateAt.swift as phone/state-at.py would write it now, or (None, why)."""
+    try:
+        p = subprocess.run([sys.executable, STATE_AT, "--print"], cwd=ROOT, stdout=subprocess.PIPE,
+                           stderr=subprocess.PIPE, timeout=30, env=dict(os.environ, LUA=S.LUA or ""))
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return None, str(e)
+    if p.returncode != 0:
+        return None, p.stderr.decode("utf-8", "replace").strip()
+    return p.stdout.decode("utf-8"), ""
+
+
+def places(text):
+    """Every place StateAt.swift names: DrumsAt.vol, MelodyAt.Slot.name."""
+    out, path = set(), []
+    for line in text.splitlines():
+        m = re.match(r"\s*enum (\w+) \{", line)
+        if m:
+            path.append(m.group(1))
+        elif line.strip() == "}":
+            path.pop()
+        else:
+            m = re.match(r"\s*static let (\w+) = \d+$", line)
+            if m:
+                out.add(".".join(path + [m.group(1)]))
+    return out
+
+
+def state_reads():
+    """(reads counted, [a read at a number of the app's own], [a place named that the file hasn't])."""
+    sources = {f: open(os.path.join(SWIFT, f), encoding="utf-8").read()
+               for f in sorted(os.listdir(SWIFT)) if f.endswith(".swift") and f != AT_FILE}
+    known = places(open(os.path.join(SWIFT, AT_FILE), encoding="utf-8").read())
+    n, own, unknown = 0, [], []
+
+    def line(f, i):
+        return "%s:%d" % (f, sources[f].count("\n", 0, i) + 1)
+
+    # Each state's case in Cut's heard(): its guard and every a[...] in it.
+    src = sources[CUT]
+    for address, enum in READS:
+        m = re.search(r'\n( *)case "%s":\n' % re.escape(address), src)
+        if not m:
+            own.append("%s has no case for %s" % (CUT, address))
+            continue
+        end = re.compile(r"\n%s(case |default:)" % m.group(1)).search(src, m.end())
+        block, at = src[m.end():end.start() if end else len(src)], m.end()
+        lets = dict(re.findall(r"\blet (\w+) = ([^\n]+)", block))
+        for other in ENUMS:
+            if other != enum and other + "." in block:
+                own.append("%s reads %s at %s's places" % (address, address, other))
+        g = re.search(r"guard a\.count ([^\n]*)", block)
+        if not g or NUMBER.search(g.group(1)) or enum + "." not in g.group(1):
+            own.append("%s: its guard is not %s's: %s" % (address, enum, g.group(0) if g else "none"))
+        for i in re.finditer(r"(?<![\w.])a\[", block):
+            index, _ = args_at(block, i.end() - 1)
+            text = " ".join(index or [])
+            # A let the index is built from is read with it.
+            whole = text + " " + " ".join(v for k, v in lets.items() if re.search(r"\b%s\b" % k, text))
+            n += 1
+            if index is None or NUMBER.search(whole) or enum + "." not in whole:
+                own.append("%s a[%s]" % (line(CUT, at + i.start()), text))
+
+    # The drums' numbers, kept whole and read by the pages: cut.drum(<a place>[, track:]).
+    for f, s in sources.items():
+        for m in re.finditer(r"(?<!\w)drum\(", s):
+            if s[max(0, m.start() - 5):m.start()] == "func ":
+                continue
+            a, _ = args_at(s, m.end() - 1)
+            n += 1
+            if not a or not re.fullmatch(r"DrumsAt\.[a-z]\w*", a[0]) \
+                    or (len(a) > 1 and not a[1].startswith("track:")) or len(a) > 2:
+                own.append("%s drum(%s)" % (line(f, m.start()), ", ".join(a or [])))
+        for m in re.finditer(r"drumRaw\[", s):
+            if not (f == CUT and in_func(s, m.start(), "drum")):
+                own.append("%s reads drumRaw itself" % line(f, m.start()))
+        for m in NAMED.finditer(s):
+            if (m.group(1) + m.group(2)) not in known:
+                unknown.append("%s %s%s" % (line(f, m.start()), m.group(1), m.group(2)))
+    return n, own, unknown
+
+
 def main():
     print("\n=== the app's commands, read against the patch's -- no Pd, no phone ===")
     t, why = lua_tables()
@@ -404,6 +503,23 @@ def main():
         A.check("⛔ every %s the app sends is one %s" % (what, who),
                 not bad.get(what) and n > 0,
                 "%d calls; not taken: %s" % (n, "; ".join(bad.get(what, [])) or "-"))
+
+    print("\n=== where the app reads each state ===")
+    want, why = written()
+    have = open(os.path.join(SWIFT, AT_FILE), encoding="utf-8").read() \
+        if os.path.exists(os.path.join(SWIFT, AT_FILE)) else None
+    A.check("⛔ %s is what phone/state-at.py writes from the Lua's fields today" % AT_FILE,
+            want is not None and want == have,
+            why or "a state's fields changed in the Lua: run python3 phone/state-at.py, and build "
+                   "the app")
+    if have is None:
+        return A.report()
+    n, own, unknown = state_reads()
+    A.note("%d reads by position" % n)
+    A.check("⛔ the app reads each state at the places %s names, never at a number of its own" % AT_FILE,
+            n > 0 and not own, "; ".join(own) or "%d reads" % n)
+    A.check("⛔ every place the app names is one %s has" % AT_FILE,
+            not unknown, "; ".join(unknown) or "-")
     return A.report()
 
 

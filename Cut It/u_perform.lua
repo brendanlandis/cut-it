@@ -250,26 +250,47 @@ local function label(st, c)
   return info and info.label or tostring(c.arg)
 end
 
--- /cutit/perform: armed (0, 1 waiting for a control, 2 for a physical one), then for each of the eight
--- groups its knob and fader, label, row, value and held, and its two buttons, label, row and on, - 0 0
--- for one not in play. 113 atoms.
+-- /cutit/perform, field by field, in the order it goes: a name, how many atoms it takes, what writes
+-- them and, for a field of groups, what each group holds. Armed (0, 1 waiting for a control, 2 for a
+-- physical one), then for each of the eight groups its knob and fader, label, row, value and held, and
+-- its two buttons, label, row and on, - 0 0 for one not in play. 113 atoms. The app reads the list by
+-- position, and takes each field's place from this table: phone/state-at.py writes them into
+-- phone/CutIt/StateAt.swift, and test/gate/app-assert.py fails when that file is behind.
+local GROUP = {}
+for _, what in ipairs({ "knob", "fader" }) do
+  for _, part in ipairs({ "label", "row", "value", "held" }) do GROUP[#GROUP + 1] = what .. "-" .. part end
+end
+for _, what in ipairs({ "top", "bottom" }) do
+  for _, part in ipairs({ "label", "row", "on" }) do GROUP[#GROUP + 1] = what .. "-" .. part end
+end
+R.PHONE_FIELDS = {
+  { "armed", 1, function(st, a) a[#a + 1] = st.armed end },
+  { "group", #GROUP * R.GROUPS, function(st, a)
+    for lane = 1, R.GROUPS do
+      for _, what in ipairs({ "knob", "slider" }) do
+        local c = st.list[name_of(what, lane)]
+        a[#a + 1] = label(st, c)
+        a[#a + 1] = c and c.row or 0
+        a[#a + 1] = c and c.value or 0
+        a[#a + 1] = (c and not c.live) and 1 or 0
+      end
+      for _, what in ipairs({ "btn-a", "btn-b" }) do
+        local c = st.list[name_of(what, lane)]
+        a[#a + 1] = label(st, c)
+        a[#a + 1] = c and c.row or 0
+        a[#a + 1] = (c and c.value >= 0.5) and 1 or 0
+      end
+    end
+  end, GROUP },
+}
+R.PHONE, R.PHONE_AT = 0, {}
+for _, f in ipairs(R.PHONE_FIELDS) do
+  R.PHONE_AT[f[1]] = R.PHONE + 1
+  R.PHONE = R.PHONE + f[2]
+end
 function R.phone(st)
-  local a = { st.armed }
-  for lane = 1, R.GROUPS do
-    for _, what in ipairs({ "knob", "slider" }) do
-      local c = st.list[name_of(what, lane)]
-      a[#a + 1] = label(st, c)
-      a[#a + 1] = c and c.row or 0
-      a[#a + 1] = c and c.value or 0
-      a[#a + 1] = (c and not c.live) and 1 or 0
-    end
-    for _, what in ipairs({ "btn-a", "btn-b" }) do
-      local c = st.list[name_of(what, lane)]
-      a[#a + 1] = label(st, c)
-      a[#a + 1] = c and c.row or 0
-      a[#a + 1] = (c and c.value >= 0.5) and 1 or 0
-    end
-  end
+  local a = {}
+  for _, f in ipairs(R.PHONE_FIELDS) do f[3](st, a) end
   return a
 end
 

@@ -195,7 +195,13 @@ final class Cut {
         send("perform", "ctl", pageRow, dest, arg, value)
     }
 
-    func drum(_ i: Int) -> Double { i < drumRaw.count ? drumRaw[i] : 0 }
+    /// A number of the drums' state, at a place StateAt.swift names; and a track's, 1 the first, of a field
+    /// that holds one a track.
+    func drum(_ at: Int) -> Double { at < drumRaw.count ? drumRaw[at] : 0 }
+    func drum(_ at: Int, track: Int) -> Double {
+        let i = at + track - 1
+        return i < drumRaw.count ? drumRaw[i] : 0
+    }
 
     private func heard(_ path: String, _ a: [OSCValue]) {
         switch path {
@@ -213,78 +219,86 @@ final class Cut {
             gridStep = a[0].number
             melodyStep = a[1].number
         case "/cutit/notes":
-            guard a.count >= 73, !holding else { return }
-            loop = max(1, a[0].number)
-            tonic = a[1].number
-            scale = Set((2...8).map { a[$0].number % 12 })
-            notes = (0..<32).map { a[9 + $0].number }
-            codes = (0..<32).map { a[41 + $0].number }
+            guard a.count >= NotesAt.count, !holding else { return }
+            loop = max(1, a[NotesAt.loop].number)
+            tonic = a[NotesAt.tonic].number
+            scale = Set((0..<7).map { a[NotesAt.scale + $0].number % 12 })
+            notes = (0..<32).map { a[NotesAt.note + $0].number }
+            codes = (0..<32).map { a[NotesAt.code + $0].number }
         case "/cutit/melody":
-            guard a.count >= 67 else { return }
-            chordCount = a[0].number
-            chordLock = a[1].number
-            smooth = a[2].number
-            tension = a[3].number
-            home = a[4].number
-            span = a[5].number
-            sounding = a[6].number
-            onChords = a[7].number == 1
-            onMelody = a[8].number == 1
-            key = a[9].number
-            mode = a[10].number
-            total = max(1, a[11].number)
-            last = max(1, a[12].number)
-            for (i, name) in ["lock", "fit", "leap", "notes", "length", "echo", "loop", "range"].enumerated() {
-                melodyValues[name] = a[47 + i].number
-            }
-            style = a[55].number
-            bass = a[56].number
-            melodyValues["arrive"] = a[57].number
-            melodyValues["octave"] = a[58].number
+            guard a.count >= MelodyAt.count else { return }
+            chordCount = a[MelodyAt.chords].number
+            chordLock = a[MelodyAt.chordLock].number
+            smooth = a[MelodyAt.smooth].number
+            tension = a[MelodyAt.tension].number
+            home = a[MelodyAt.home].number
+            span = a[MelodyAt.span].number
+            sounding = a[MelodyAt.sounding].number
+            onChords = a[MelodyAt.onH].number == 1
+            onMelody = a[MelodyAt.onM].number == 1
+            key = a[MelodyAt.key].number
+            mode = a[MelodyAt.mode].number
+            total = max(1, a[MelodyAt.total].number)
+            last = max(1, a[MelodyAt.last].number)
+            melodyValues["lock"] = a[MelodyAt.lock].number
+            melodyValues["fit"] = a[MelodyAt.fit].number
+            melodyValues["leap"] = a[MelodyAt.leap].number
+            melodyValues["notes"] = a[MelodyAt.notes].number
+            melodyValues["length"] = a[MelodyAt.length].number
+            melodyValues["echo"] = a[MelodyAt.echo].number
+            melodyValues["loop"] = a[MelodyAt.loop].number
+            melodyValues["range"] = a[MelodyAt.range].number
+            style = a[MelodyAt.style].number
+            bass = a[MelodyAt.bass].number
+            melodyValues["arrive"] = a[MelodyAt.arrive].number
+            melodyValues["octave"] = a[MelodyAt.octave].number
             if !holding {
                 for i in 0..<8 {
-                    let b = 13 + i * 4
-                    chords[i].name = a[b].text
-                    chords[i].spell = a[b + 1].text
-                    chords[i].roman = a[b + 2].text
-                    chords[i].start = a[b + 3].number
-                    chords[i].pinned = a[59 + i].number == 1
+                    let b = MelodyAt.slot + i * MelodyAt.Slot.width
+                    chords[i].name = a[b + MelodyAt.Slot.name].text
+                    chords[i].spell = a[b + MelodyAt.Slot.spell].text
+                    chords[i].roman = a[b + MelodyAt.Slot.roman].text
+                    chords[i].start = a[b + MelodyAt.Slot.start].number
+                    chords[i].pinned = a[MelodyAt.pin + i].number == 1
                 }
             }
         case "/cutit/drums":
-            guard a.count >= 37 else { return }
-            playing = a[0].number == 1
-            drumTrack = a[2].number
-            every = max(1, a[36].number)
+            guard a.count > DrumsAt.num else { return }
+            playing = a[DrumsAt.playing].number == 1
+            drumTrack = a[DrumsAt.track].number
+            every = max(1, a[DrumsAt.num].number)
             drumRaw = a.map(\.value)
         case "/cutit/tempo":
             if let v = a.first { tempo = v.value }
         case "/cutit/velocity":
             velocityOn = a.first?.text == "on"
         case "/cutit/voices":
-            guard a.count >= 27 else { return }
-            pageName = a[0].text
-            pageKind = a[1].text
-            pageRow = a[2].number
+            guard a.count >= VoicesAt.count else { return }
+            pageName = a[VoicesAt.page].text
+            pageKind = a[VoicesAt.kind].text
+            pageRow = a[VoicesAt.row].number
             voices = (0..<8).map { r in
-                let b = 3 + r * 3
-                return a[b].text == "-" ? nil : Voice(name: a[b].text, method: a[b + 1].text, machine: a[b + 2].text)
+                let b = VoicesAt.voice + r * VoicesAt.Voice.width
+                let name = a[b + VoicesAt.Voice.name].text
+                return name == "-" ? nil : Voice(name: name, method: a[b + VoicesAt.Voice.method].text,
+                                                 machine: a[b + VoicesAt.Voice.machine].text)
             }
         case "/cutit/perform":
-            guard a.count >= 113 else { return }
-            armed = a[0].number
-            var at = 1
-            func held() -> Held {
-                defer { at += 4 }
-                return Held(label: a[at].text, row: a[at + 1].number, value: a[at + 2].value, waiting: a[at + 3].number == 1)
-            }
-            func button() -> Held {
-                defer { at += 3 }
-                return Held(label: a[at].text, row: a[at + 1].number, value: a[at + 2].value)
-            }
-            strips = (0..<8).map { _ in
-                let k = held(), f = held(), t = button(), b = button()
-                return Strip(knob: k, fader: f, top: t, bottom: b)
+            guard a.count >= PerformAt.count else { return }
+            armed = a[PerformAt.armed].number
+            strips = (0..<8).map { g in
+                let b = PerformAt.group + g * PerformAt.Group.width
+                return Strip(
+                    knob: Held(label: a[b + PerformAt.Group.knobLabel].text, row: a[b + PerformAt.Group.knobRow].number,
+                               value: a[b + PerformAt.Group.knobValue].value,
+                               waiting: a[b + PerformAt.Group.knobHeld].number == 1),
+                    fader: Held(label: a[b + PerformAt.Group.faderLabel].text, row: a[b + PerformAt.Group.faderRow].number,
+                                value: a[b + PerformAt.Group.faderValue].value,
+                                waiting: a[b + PerformAt.Group.faderHeld].number == 1),
+                    top: Held(label: a[b + PerformAt.Group.topLabel].text, row: a[b + PerformAt.Group.topRow].number,
+                              value: a[b + PerformAt.Group.topOn].value),
+                    bottom: Held(label: a[b + PerformAt.Group.bottomLabel].text, row: a[b + PerformAt.Group.bottomRow].number,
+                                 value: a[b + PerformAt.Group.bottomOn].value))
             }
         case "/cutit/lists":
             lists(a)

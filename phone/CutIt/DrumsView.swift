@@ -41,48 +41,44 @@ struct DrumsView: View {
         }
     }
 
-    private func fx(_ i: Int) -> Double { cut.drum(fxOffset + i) }
-    private var fxOffset: Int { 4 + 32 + 4 + 48 }
-
     @ViewBuilder private var effects: some View {
         let t = cut.drumTrack
         switch effect {
         case .distortion:
             VStack(spacing: 10) {
-                segments(["soft", "hard", "fold", "crush"], Int(fx(Fx.char)) - 1) { cut.press("drums", "char", t, $0 + 1) }
+                segments(["soft", "hard", "fold", "crush"], Int(cut.drum(DrumsAt.fxChar)) - 1) { cut.press("drums", "char", t, $0 + 1) }
                 HStack {
-                    knob("drive", fx(Fx.drive)) { cut.control("drums", "drive-\(t)", Double($0) / 100) }
-                    knob("tone", fx(Fx.tone)) { cut.control("drums", "tone-\(t)", Double($0) / 100) }
-                    knob("mix", fx(Fx.dist)) { cut.control("drums", "dist-\(t)", Double($0) / 100) }
+                    knob("drive", cut.drum(DrumsAt.fxDrive)) { cut.control("drums", "drive-\(t)", Double($0) / 100) }
+                    knob("tone", cut.drum(DrumsAt.fxTone)) { cut.control("drums", "tone-\(t)", Double($0) / 100) }
+                    knob("mix", cut.drum(DrumsAt.fxDist)) { cut.control("drums", "dist-\(t)", Double($0) / 100) }
                 }
                 Spacer(minLength: 0)
             }
         case .delay:
             VStack(spacing: 10) {
-                segments(["1/2", "1/4", "1/8", "1/16", "1/32"], Int(fx(Fx.delayNote)) - 1) { cut.press("drums", "delay-note", t, $0 + 1) }
-                segments(["straight", "triplet", "dotted"], Int(fx(Fx.delayFeel)) - 1) { cut.press("drums", "delay-feel", t, $0 + 1) }
+                segments(["1/2", "1/4", "1/8", "1/16", "1/32"], Int(cut.drum(DrumsAt.fxNote)) - 1) { cut.press("drums", "delay-note", t, $0 + 1) }
+                segments(["straight", "triplet", "dotted"], Int(cut.drum(DrumsAt.fxFeel)) - 1) { cut.press("drums", "delay-feel", t, $0 + 1) }
                 HStack {
-                    knob("feedback", fx(Fx.feedback)) { cut.control("drums", "feedback-\(t)", Double($0) / 100) }
-                    knob("level", fx(Fx.delay)) { cut.control("drums", "delay-\(t)", Double($0) / 100) }
+                    knob("feedback", cut.drum(DrumsAt.fxFeedback)) { cut.control("drums", "feedback-\(t)", Double($0) / 100) }
+                    knob("level", cut.drum(DrumsAt.fxDelay)) { cut.control("drums", "delay-\(t)", Double($0) / 100) }
                 }
                 Spacer(minLength: 0)
             }
         case .reverb:
             VStack(spacing: 10) {
-                segments(["plate", "giga", "free"], Int(cut.drum(verbTypeAt))) { cut.press("drums", "verb-type", $0) }
+                segments(["plate", "giga", "free"], Int(cut.drum(DrumsAt.verbType))) { cut.press("drums", "verb-type", $0) }
                 HStack {
-                    knob("send", fx(Fx.send)) { cut.control("drums", "send-\(t)", Double($0) / 100) }
-                    knob("size", cut.drum(fxOffset + Fx.count)) { cut.control("drums", "kit-size", Double($0) / 100) }
-                    knob("damping", cut.drum(fxOffset + Fx.count + 1)) { cut.control("drums", "kit-damping", Double($0) / 100) }
+                    knob("send", cut.drum(DrumsAt.fxSend)) { cut.control("drums", "send-\(t)", Double($0) / 100) }
+                    knob("size", cut.drum(DrumsAt.verbSize)) { cut.control("drums", "kit-size", Double($0) / 100) }
+                    knob("damping", cut.drum(DrumsAt.verbDamping)) { cut.control("drums", "kit-damping", Double($0) / 100) }
                 }
                 Spacer(minLength: 0)
             }
         }
     }
 
-    private var verbTypeAt: Int { fxOffset + Fx.count + 2 + 32 }
-    /// Each track's random pitch, 1 or 0, follows the reverb's type.
-    private var rolled: Bool { cut.drum(verbTypeAt + cut.drumTrack) == 1 }
+    /// The selected track's random pitch, 1 or 0.
+    private var rolled: Bool { cut.drum(DrumsAt.rolled, track: cut.drumTrack) == 1 }
 
     private func knob(_ label: String, _ v: Double, _ send: @escaping (Int) -> Void) -> some View {
         Knob(label: label, value: v / 100, text: String(Int(v)), color: Theme.voice(cut.pageRow)) { send(Int(($0 * 100).rounded())) }
@@ -101,12 +97,6 @@ struct DrumsView: View {
                 .buttonStyle(.plain)
             }
         }
-    }
-
-    /// c_steps' R.FX order, from c_steps.lua.
-    enum Fx {
-        static let drive = 0, tone = 1, dist = 2, delayNote = 3, delayFeel = 4, feedback = 5, delay = 6, send = 7, char = 8
-        static let count = 9
     }
 }
 
@@ -149,14 +139,12 @@ struct TrackPad: View {
         .buttonStyle(.plain)
     }
 
-    private var i: Int { track - 1 }
-    private var base: Int { 4 + 32 + 4 }
     private var value: Double {
         switch show {
-        case .volume: return cut.drum(base + i)
-        case .pitch: return cut.drum(base + 16 + i)
-        case .random: return cut.drum(base + 32 + i)
-        case .last: return cut.drum(4 + i)
+        case .volume: return cut.drum(DrumsAt.vol, track: track)
+        case .pitch: return cut.drum(DrumsAt.pitch, track: track)
+        case .random: return cut.drum(DrumsAt.randomness, track: track)
+        case .last: return cut.drum(DrumsAt.lasts, track: track)
         }
     }
     private var text: String {
@@ -167,9 +155,8 @@ struct TrackPad: View {
         default: return String(Int(v))
         }
     }
-    private var after: Int { base + 48 + DrumsView.Fx.count + 2 }
-    private var muteOn: Bool { cut.drum(after + i) == 1 }
-    private var soloOn: Bool { cut.drum(after + 16 + i) == 1 }
+    private var muteOn: Bool { cut.drum(DrumsAt.mute, track: track) == 1 }
+    private var soloOn: Bool { cut.drum(DrumsAt.solo, track: track) == 1 }
 
     private func drag(_ dy: Double) {
         guard let from else { return }

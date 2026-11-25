@@ -44,6 +44,7 @@ there, save and revert lit.
 | a part → `u_song` | `put section <key> <atoms…>` | A part put back during its restore, as `u_tempo` puts the tempo: it lands in the section now starting | unknown |
 | a part → `u_song` | `put song <key> <atoms…>` | The part as it is now, into the song itself: every section shares it. It shows as unsaved, and save and revert keep it, as they do a section's. Restored as `restore <key> <atoms…>` when the song loads or reverts | unknown |
 | a part → `u_song` | `put seed <key> <atoms…>` | What a song that holds none starts as: into the song and what's saved of it together, so it shows as nothing unsaved | unknown |
+| a part → `u_song` | `put seed-section <key> <atoms…>` | What a section that holds none starts as, its voices: into the section playing and what's saved of that section together, so it shows as nothing unsaved (`test/gate/lua/u_song_test.lua`) | verified |
 
 ### The parts a section holds
 
@@ -59,14 +60,18 @@ Each part puts at load and on every change, and takes its restore.
 | `tempo` | `u_tempo` | The BPM, as the tempo bus carries it ([tempo.md](tempo.md)) | unknown |
 | A part asked back | `recall <key>` on the third inlet, from `c_steps`, `pad-38`'s `recall tempo` (Brendan, 2026-11-05): the part as the saved song holds it in the section playing, or for a section never saved, or a part its save didn't hold, the draft's, back out as `restore <key> <atoms...>`, the way a section starting sends it. It still knows nothing of what a key means. The part puts back what it restores, so the draft takes it like any change. A part nobody holds sends nothing | verified |
 | `velocity` | `c_synth` | `on` or `off` | unknown |
+| `voices` | `u_voices` | The eight rows, name, behavior and instrument each, `-` for one with none, 24 atoms ([voices.md](voices.md)). Said first of a section's parts, with nothing after it for a section that holds none, which is then given the seed's. Its restore waits for step 1 while the transport runs | verified |
+| `sounds` | `u_sound` | Each voice's sound as it stands: its row, its patch or `-`, its instrument, how many values, then each parameter and its value ([voices.md](voices.md), *Instruments and patches*). Said second, after the voices it is for, though the section holds none; waits for step 1 too | verified |
 
 ### The parts a song holds
 
-Lines between `song` and the first `section` in its file. Sent on load and on revert, after the section's.
+Lines between `song` and the first `section` in its file. Sent on load and on revert, before the section's.
 
 | Key | Part | Atoms | Evidence |
 |-----|------|-------|----------|
-| `voices` | `u_voices` | The eight rows, name, behavior and instrument each, `-` for one with none, 24 atoms ([voices.md](voices.md)). A song with none is told so, `restore voices` with nothing after it, and is given the seed's | unknown |
+| `patches` | `u_sound` | The song's patches: each one's name, its instrument, how many values, then each parameter and its value ([voices.md](voices.md), *Instruments and patches*). A song with none is told so | unknown |
+| `kit` | `c_steps` | The kit's sound, 195 numbers ([sequencer.md](sequencer.md)). A song with none is told so, and takes its first section's (`put seed kit`) | unknown |
+| A song from before a section held its voices | Its own `voices` and `sounds` are given, at the read, to every section that holds none, and both its files are written without them (`test/gate/lua/u_song_test.lua`) | verified |
 
 ### The interface
 
@@ -79,7 +84,7 @@ Lines between `song` and the first `section` in its file. Sent on load and on re
 | Inlet 4 | A bang meaning load now, from `u_init` after `u_state`'s restore, through a trigger in `u_root`: startup order is `u_init`'s | unknown |
 | Outlet 1 | To `g_grid`'s state inlet: `top <8 lamps>` and `unsaved <0 or 1>`, each when it changes ([display.md](display.md)) | unknown |
 | Outlet 2 | To `u_net`'s fifth inlet, when it changes: `lists <atoms>`, the setlists, the songs and the loaded song's sections, whole (*The lists, on the phone*, below) | unknown |
-| Buses | Hears `state` (`put section`, `put song`, `put seed`), `start`, `stop` and `panic`; says `restore` on `state`, and on `err` `info u_song saved`, `reverted` and `loaded-<name>`, `warn u_song last-section`, `last-song` and `set-full`, `fail u_song bad-button`, `bad-put`, `bad-selector`, `bad-starts`, `lua-<selector>`, `write-failed` and `no-lua` (C-12) | unknown |
+| Buses | Hears `state` (`put section`, `put song`, `put seed`, `put seed-section`), `start`, `stop` and `panic`; says `restore` on `state`, and on `err` `info u_song saved`, `reverted` and `loaded-<name>`, `warn u_song last-section`, `last-song` and `set-full`, `fail u_song bad-button`, `bad-put`, `bad-selector`, `bad-starts`, `lua-<selector>`, `write-failed` and `no-lua` (C-12) | unknown |
 
 ### The top row
 
@@ -218,7 +223,7 @@ page (`R.lists` in `u_song.lua`).
 | | Lives in | Evidence |
 |---|---|---|
 | The songs, the setlists, the song loaded and the one waiting, the sections, playing and queued, the window, the bars, the drafts against the saves, the files' text | `u_song.lua`: a state table and a function per rule, each returning what leaves | verified |
-| Reading and writing the files, the lamps and the phone's lists sent when they change | `u_song-lua.pd_lua`, the class `u_song-lua`: three inlets (the top row, save, revert, the keys; the phone; `u_song.pd`'s own `put`, `put-song`, `seed-song`, `bar`, `start`, `stop`, `load`, `flush` and `init`), six outlets (to `g_grid`, the phone, the state bus, `err`, a bang on `init`, the stop bus). Before a press, a key, go, a phone command, `start` or `stop` it sends `sync` on the state bus, so a part holding its put back (`c_steps`, up to 100 ms, [sequencer.md](sequencer.md)) puts it first, into the section still playing of the song still loaded | verified |
+| Reading and writing the files, the lamps and the phone's lists sent when they change | `u_song-lua.pd_lua`, the class `u_song-lua`: three inlets (the top row, save, revert, the keys; the phone; `u_song.pd`'s own `put`, `put-song`, `seed-song`, `seed-section`, `bar`, `start`, `stop`, `load`, `flush` and `init`), six outlets (to `g_grid`, the phone, the state bus, `err`, a bang on `init`, the stop bus). Before a press, a key, go, a phone command, `start` or `stop` it sends `sync` on the state bus, so a part holding its put back (`c_steps`, up to 100 ms, [sequencer.md](sequencer.md)) puts it first, into the section still playing of the song still loaded | verified |
 | The cords, the state bus's section policy, the transport and the STOP a silence sends, the draft's 2 s timer armed by the load, the `no-lua` guard | `u_song.pd` | verified |
 
 ## Traps

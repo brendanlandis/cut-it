@@ -74,7 +74,7 @@ file decides what that means; and nothing below that file knows what hardware ex
   sends each key to `m_fm1` or `m_streich`, a release to the synth its press went to, and the
   choice and its velocity switch to `u_net`, by cords. `u_voices` chooses, with the voice on show's instrument.
   See [synths.md](module/synths.md).
-- **`u_voices` holds a song's voices and writes the page on the `mode` bus**, told by `u_map` and `u_net`, and `u_perform`
+- **`u_voices` holds the playing section's voices and writes the page on the `mode` bus**, told by `u_map` and `u_net`, and `u_perform`
   is what the nanoKONTROL means this section, its moves going back into `u_map`'s route on `map-route`; each hands its
   state to `g_grid` and `u_net` by cords. See [voices.md](module/voices.md).
 - **`c_melody` generates chords and a melody**, twice over, one per engine, on `c_steps`' clock, by cords from `c_steps`, `u_map`

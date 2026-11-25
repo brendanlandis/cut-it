@@ -1,7 +1,7 @@
 # Songs and sections
 
-A song is any number of sections. A section holds its patterns, its tempo, and what's in play. The song holds its voices
-and their sounds, which every section shares.
+A song is any number of sections. A section holds its voices and their sounds, its patterns, its tempo, and what's in
+play. The song holds its patches and the kit's sound, which every section shares.
 
 ## Moving through a song
 
@@ -30,8 +30,8 @@ Aux opens it, or songs under the phone's left column, and both go white while it
 - **Sections:** the selected song's. Green is playing, amber is queued.
 - **The section:** its length, tempo, last step, time signature, swing and drunkenness, and **tweaks**.
 
-**Tweaks** is what happens to a sound you've tweaked when this section starts. Snap back returns every voice to what it
-was saved as. Carry on leaves it as it stands.
+**Tweaks** is what happens to a sound you've tweaked when this section starts. Snap back returns every voice to the sound
+this section holds for it. Carry on leaves it as it stands.
 
 **Save as new** makes what's playing a new section after the one it was, and the original goes back to how it was saved.
 Play around with a section until you like it, then press this.

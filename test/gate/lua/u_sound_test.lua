@@ -62,15 +62,42 @@ equal("its parameter goes to its engine and line", R.param(st, "3:bright", 0.5),
       { { "engine", "tone", { 2, "m", "bright", 0.5 } } })
 
 print("\n--- a song's files ---")
-R.copy_factory(st, "pad")
+local copied = R.copy_factory(st, "pad")
 local s2 = R.new(read("cut-it-instruments.txt"), read("cut-it-factory.txt"))
 R.rows(s2, rows(3, { [3] = { "saw", 2, "m" } }))
 R.restore_patches(s2, R.save_patches and {} or {})
 local line = R.save_line(st)
-out = R.restore_sounds(s2, line)
-equal("a song's sounds restored: the same values, the same patch", { s2.rows[3].patch, s2.rows[3].values.bright },
-      { "pad", 0.15 })
+equal("⛔ the sounds are the section's, and the patches the song's", (function()
+  local t = {}
+  for _, e in ipairs(copied) do
+    if e[1] == "save" then t[#t + 1] = e[2] .. " " .. e[3][1] end
+  end
+  return t
+end)(), { "section sounds", "song patches", "section sounds" })
+out = R.restore_sounds(s2, { table.unpack(line, 2) })
+equal("a section's sounds restored to a voice fresh on its instrument: the same values, the same patch",
+      { s2.rows[3].patch, s2.rows[3].values.bright }, { "pad", 0.15 })
 equal("... said out to the instrument", out[1][1], "engine")
+
+print("\n--- a section's sounds ---")
+equal("⛔ a section starting on the same voice says nothing yet: what it holds waits for snap back or carry on",
+      { R.restore_sounds(s2, { 3, "-", "saw", 2, "bright", 0.8, "level", 0.6 }), s2.rows[3].values.bright },
+      { {}, 0.15 })
+equal("carry on: the sound and its patch stay as they stand",
+      { R.tweaks(s2, 1), s2.rows[3].values.bright, s2.rows[3].patch }, { {}, 0.15, "pad" })
+out = R.tweaks(s2, 0)
+equal("⛔ snap back: what differs is said, what the section doesn't hold goes back to its default, and the "
+      .. "patch is the section's", { out, s2.rows[3].values.attack, s2.rows[3].patch },
+      { { { "engine", "tone", { 2, "m", "bright", 0.8 } }, { "engine", "tone", { 2, "m", "attack", 0.08 } },
+          { "engine", "tone", { 2, "m", "release", 0.21 } } } })
+R.rows(s2, rows(3, { [3] = { "sine", 2, "m" } }))
+R.restore_sounds(s2, { 3, "-", "sine", 1, "bright", 0.3 })
+equal("⛔ a voice fresh on its instrument takes the section's sound at once, carry on or not",
+      { R.tweaks(s2, 1), s2.rows[3].values.bright }, { {}, 0.3 })
+R.restore_sounds(s2, { 3, "-", "saw", 1, "bright", 0.9 })
+R.tweaks(s2, 0)
+equal("a section's sound for another instrument on that row is not this one's: nothing set",
+      next(s2.rows[3].values), nil)
 
 print("\n--- the phone ---")
 local ph = R.phone(st)
@@ -217,7 +244,7 @@ out = R.param(st, "3:dx7-bank", 1.5 / 32)
 equal("⛔ a DX7 voice chosen lets go of the program, and goes again though it was the last one sent",
       { st.rows[3].values.program, #bytes(out) }, { nil, 165 })
 equal("a recall says the voice first, then what's set", kinds(R.recall(st, "fm-patch")),
-      { "program 12", "cc 4 1", "cc 7 100", "sounds 3 fm-patch fm 2 program 0.098 reverb 1.0" })
+      { "program 12", "cc 4 1", "cc 7 100", "section sounds 3 fm-patch fm 2 program 0.098 reverb 1.0" })
 R.param(st, "3:dx7-bank", 1.5 / 32)
 out = R.tweaks(st, 0)
 equal("⛔ a section snapping back takes the voice back to what was saved, and lets go of the other",
@@ -226,5 +253,12 @@ R.param(st, "3:dx7-bank", 1.5 / 32)
 R.save(st, false)
 R.param(st, "3:program", 0.5)
 equal("... a DX7 voice the same, sent whole", kinds(R.tweaks(st, 0)), { "byte", "cc 4 1", "cc 7 100" })
+
+print("\n--- a section with the fm voice on another row ---")
+local moved = { table.unpack(R.save_line(st), 2) }
+moved[1] = 4
+R.rows(st, rows(4, { [4] = { "fm", 1, "h" } }))
+equal("⛔ the FM-1 isn't sent the voice it already holds, only what's set: each one is written into it",
+      kinds(R.restore_sounds(st, moved)), { "cc 4 1", "cc 7 100" })
 
 os.exit(T.report() == 0)

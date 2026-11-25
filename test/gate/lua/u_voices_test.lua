@@ -29,7 +29,7 @@ local function seeded()
   return st
 end
 
-print("\n--- a song's voices ---")
+print("\n--- a section's voices, the first to come ---")
 local st = R.new()
 equal("before anything: the performance page, no voice", { st.kind, st.row, R.page_name(st), R.grid(st)[3] },
       { "perform", 0, "perform", "-" })
@@ -184,6 +184,25 @@ st = seeded()
 R.left(st, 3)
 equal("⛔ a song with no such row: off that page, to the performance page", page(R.restore(st, { "a", "keys", "fm" })),
       "perform")
+
+print("\n--- a section's voices ---")
+st = seeded()
+R.left(st, 3)
+local same = R.line(st)
+equal("⛔ a section starting on the same voices says nothing: they come at every section's start",
+      R.restore(st, same), {})
+local differ = { table.unpack(same) }
+differ[6] = "sine"
+out = R.restore(st, differ)
+equal("⛔ voices that differ are assigned and the rows told, and the page stays as it is: nothing it hangs on "
+      .. "changed", { #of(out, "engine"), #of(out, "sound"), #of(out, "perform"), page(out), #of(out, "save") },
+      { 4, 1, 1, nil, 0 })
+differ[8] = "keys"
+equal("⛔ ... and the page follows when its own voice's behavior does", page(R.restore(st, differ)), "keys")
+st = seeded()
+out = R.restore(st, {})
+equal("⛔ a section with none is seeded and saved so, though its voices are the ones already playing",
+      { #out, out[1][1] }, { 1, "seed" })
 
 print("\n--- what the surfaces show ---")
 st = seeded()

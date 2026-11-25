@@ -1,6 +1,7 @@
 -- u_sound.lua -- a voice's sound: each instrument's parameters, the song's patches and the factory's
 -- (Brendan, 2026-11-06). A patch is an instrument's saved sound. Factory patches are starting points, in a
 -- library outside songs; song patches live with the song, copied and depending on nothing after that.
+-- Each voice's sound as it stands is its section's, as its voices are (Brendan, 2026-11-25).
 -- Plain Lua with no Pd in it, so test/gate/lua/u_sound_test.lua runs it on the Mac with lua.org's
 -- interpreter. u_sound-lua.pd_lua is its Pd face, and u_sound.pd keeps the cords. ref/module/voices.md.
 --
@@ -8,7 +9,8 @@
 -- order, as {outlet, selector, atoms}:
 --   {"fm" | "strings", "cc" | "program", {...}}   that synth's device layer
 --   {"engine", "tone", {engine, line, param, value}}   c_melody: a Pd voice's parameter
---   {"save", "sounds" | "patches", {atoms}}       the state bus: put song
+--   {"save", "section", {"sounds", atoms}}        the state bus: put section sounds
+--   {"save", "song", {"patches", atoms}}          the state bus: put song patches
 --   {"heard", "list", {"instrument", param, value}}   u_perform: a parameter moved on the Launchpad
 --   {"kit", "bang", {}}                           c_steps: the kit's sound as it stands is what it snaps back to
 --   {"keys", "tone" | "list", {...}}              c_keys: a keys voice on a Pd instrument
@@ -73,7 +75,7 @@ end
 
 function R.new(instruments_text, factory_text)
   local st = { instruments = R.parse_instruments(instruments_text), factory = R.parse_factory(factory_text),
-               rows = {}, patches = {}, order = {}, at_row = 0, last_sent = {}, library = {} }
+               rows = {}, patches = {}, order = {}, at_row = 0, last_sent = {}, library = {}, voiced = {} }
   return st
 end
 
@@ -182,20 +184,22 @@ local function into_slot(instrument, m, bytes, out)
 end
 
 -- A DX7 voice from the library. The same voice isn't sent twice running, since each is written into the
--- FM-1. again: send it whatever was last sent, as a recall does. True if it went.
+-- FM-1: what an instrument was last sent is the instrument's, not a row's, so a section starting on voices
+-- that have it on another row sends nothing it already holds. again: send it whatever was last sent, as a
+-- recall does. True if it went.
 local function say_voice(st, row, out, again)
   local m = st.instruments[row.instrument]
   if not (m and m.bank and m.voice) then return false end
   local bank = index(value_of(st, row, m.bank), m.by[m.bank].n)
   local voice = index(value_of(st, row, m.voice), m.by[m.voice].n)
   local key = bank * m.by[m.voice].n + voice
-  if row.voiced == key and not again then return false end
+  if st.voiced[row.instrument] == key and not again then return false end
   local data = st.library[bank + 1]
   if not data then
     out[#out + 1] = report("warn", "no-dx7-bank-" .. (bank + 1))
     return false
   end
-  row.voiced = key
+  st.voiced[row.instrument] = key
   into_slot(row.instrument, m, dump(R.unpacked(data, voice)), out)
   return true
 end
@@ -212,6 +216,8 @@ local function say(st, r, row, param, value, out)
     if p.switch then out[#out + 1] = { row.instrument, "cc", { p.switch, v > 0 and 1 or 0 } } end
     out[#out + 1] = { row.instrument, "cc", { p.n, v } }
   elseif p.how == "pc" then
+    -- A program takes the instrument off the DX7 voice it was sent.
+    st.voiced[row.instrument] = nil
     out[#out + 1] = { row.instrument, "program", { index(value, p.n) } }
   elseif p.how == "bank" or p.how == "voice" then
     say_voice(st, row, out)
@@ -223,8 +229,9 @@ local function say(st, r, row, param, value, out)
   return out
 end
 
--- A row's whole sound said again: an instrument taken up, a patch recalled, a song loaded.
-local function say_all(st, r, out)
+-- A row's whole sound said again: an instrument taken up, a patch recalled, a section's voices starting.
+-- held: a DX7 voice its instrument already holds isn't sent again.
+local function say_all(st, r, out, held)
   local row = st.rows[r]
   local m = row and st.instruments[row.instrument]
   if not m then return out end
@@ -233,7 +240,7 @@ local function say_all(st, r, out)
     if m.by[p].how == "pc" and row.values[p] ~= nil then say(st, r, row, p, row.values[p], out) end
   end
   if m.bank and m.voice and (row.values[m.bank] ~= nil or row.values[m.voice] ~= nil) then
-    say_voice(st, row, out, true)
+    say_voice(st, row, out, not held)
   end
   for _, p in ipairs(m.list) do
     local how = m.by[p].how
@@ -286,20 +293,28 @@ local function patches_line(st)
   return a
 end
 
-R.save_line = sounds_line
+-- A line as the state bus takes it, behind its key.
+local function keyed(key, line)
+  local a = { key }
+  for _, x in ipairs(line) do a[#a + 1] = x end
+  return a
+end
+
+-- The sounds are the section's, the patches the song's.
+function R.save_line(st) return keyed("sounds", sounds_line(st)) end
 
 local function saved(st, out)
-  out[#out + 1] = { "save", "sounds", sounds_line(st) }
+  out[#out + 1] = { "save", "section", R.save_line(st) }
   return out
 end
 
 local function saved_patches(st, out)
-  out[#out + 1] = { "save", "patches", patches_line(st) }
+  out[#out + 1] = { "save", "song", keyed("patches", patches_line(st)) }
   return saved(st, out)
 end
 
 -- u_voices: the row on show, and each row's instrument, engine and line (- 0 - for none). An instrument a row
--- has just taken up starts from its defaults; the rest is as it was.
+-- has just taken up starts from its defaults, and is fresh until it is touched; the rest is as it was.
 function R.rows(st, a)
   st.at_row = math.floor(num(a[1]))
   local out = {}
@@ -311,7 +326,8 @@ function R.rows(st, a)
     else
       local row = st.rows[r]
       if not row or row.instrument ~= instrument then
-        st.rows[r] = { instrument = instrument, engine = engine, line = line, patch = nil, values = {}, base = {} }
+        st.rows[r] = { instrument = instrument, engine = engine, line = line, patch = nil, values = {}, base = {},
+                       fresh = true }
         say_all(st, r, out)
       else
         local moved = row.engine ~= engine or row.line ~= line
@@ -334,6 +350,7 @@ function R.param(st, row_param, value)
   value = math.max(0, math.min(1, num(value)))
   local how = m.by[p].how
   local out = {}
+  row.fresh = nil
   if not CHOOSES[how] then
     row.values[p] = value
     st.dirty_sounds = true
@@ -351,7 +368,6 @@ function R.param(st, row_param, value)
   end
   local went = true
   if how == "pc" then
-    row.voiced = nil
     say(st, r, row, p, value, out)
   else
     went = say_voice(st, row, out)
@@ -382,7 +398,7 @@ function R.recall(st, name)
   local row = row_on_show(st)
   local p = st.patches[name]
   if not row or not p or p.instrument ~= row.instrument then return {} end
-  row.patch = name
+  row.patch, row.base_patch, row.fresh = name, name, nil
   row.values, row.base = copy(p.values), copy(p.values)
   local out = {}
   say_all(st, st.at_row, out)
@@ -414,12 +430,12 @@ function R.save(st, as_new)
     st.order[#st.order + 1] = name
   end
   st.patches[name] = { instrument = row.instrument, values = copy(row.values) }
-  row.patch, row.base = name, copy(row.values)
+  row.patch, row.base_patch, row.base, row.fresh = name, name, copy(row.values), nil
   return saved_patches(st, {})
 end
 
--- A section starts. Snap back (0): every voice's sound back to what it was saved as. Carry on (1): as it
--- stands (Brendan, 2026-11-06: it depends on the song and section).
+-- A section starts. Snap back (0): every voice's sound to what the section holds for it, saying only what
+-- differs. Carry on (1): as it stands (Brendan, 2026-11-06: it depends on the song and section).
 function R.tweaks(st, keep)
   if num(keep) == 1 then return {} end
   local out = {}
@@ -435,22 +451,30 @@ function R.tweaks(st, keep)
           chosen = chosen or CHOOSES[m.by[k] and m.by[k].how] or false
         end
       end
+      -- What it has set that the section doesn't hold is let go. A Pd instrument's goes back to its default;
+      -- a hardware synth's stays as it sounds, since nothing says what it was before.
+      local gone = {}
+      for k in pairs(row.values) do
+        if row.base[k] == nil then gone[#gone + 1] = k end
+      end
+      table.sort(gone)
+      for _, k in ipairs(gone) do row.values[k] = nil end
+      row.patch = row.base_patch
       if chosen then
-        -- Its voice went back: what it was saved with chooses it alone, and the rest is said behind it.
-        for _, q in ipairs(m.list) do
-          if CHOOSES[m.by[q].how] and row.base[q] == nil then row.values[q] = nil end
-        end
-        say_all(st, r, out)
+        -- Its voice went back: what the section holds chooses it alone, and the rest is said behind it.
+        say_all(st, r, out, true)
       else
         for _, k in ipairs(moved) do say(st, r, row, k, row.values[k], out) end
+        for _, k in ipairs(gone) do
+          if m.by[k] and m.by[k].how == "pd" then say(st, r, row, k, value_of(st, row, k), out) end
+        end
       end
-      if #moved > 0 then st.dirty_sounds = true end
     end
   end
   return out
 end
 
--- restore sounds / restore patches, as a song loads. Sounds are said out as they arrive.
+-- restore patches, as a song loads.
 function R.restore_patches(st, a)
   st.patches, st.order = {}, {}
   local i = 1
@@ -471,9 +495,13 @@ function R.restore_patches(st, a)
   return {}
 end
 
+-- restore sounds: what the section starting holds for each row, kept as what its sound snaps back to
+-- (R.tweaks, which follows it). A row with nothing there for its instrument has nothing set. A row fresh on
+-- its instrument takes it at once, said whole, whatever the section says of carrying on: it has no sound
+-- to carry.
 function R.restore_sounds(st, a)
   local i = 1
-  local out = {}
+  local out, got = {}, {}
   st.loaded = true
   while i <= #a do
     local r, patch, instrument, n = math.floor(num(a[i])), a[i + 1], a[i + 2], math.floor(num(a[i + 3]))
@@ -483,11 +511,23 @@ function R.restore_sounds(st, a)
       v[a[i]] = num(a[i + 1])
       i = i + 2
     end
+    got[r] = { instrument = instrument, values = v,
+               patch = type(patch) == "string" and patch ~= "-" and patch or nil }
+  end
+  for r = 1, R.ROWS do
     local row = st.rows[r]
-    if row and row.instrument == instrument then
-      row.values, row.base = v, copy(v)
-      row.patch = type(patch) == "string" and patch ~= "-" and patch or nil
-      say_all(st, r, out)
+    if row then
+      local g = got[r]
+      if g and g.instrument == row.instrument then
+        row.base, row.base_patch = g.values, g.patch
+      else
+        row.base, row.base_patch = {}, nil
+      end
+      if row.fresh then
+        row.fresh = nil
+        row.values, row.patch = copy(row.base), row.base_patch
+        say_all(st, r, out, true)
+      end
     end
   end
   return out
@@ -625,10 +665,8 @@ function R.test_voice(st, n)
   local m = st.instruments.fm
   if not (v and m and m.voice) then return {} end
   local out = into_slot("fm", m, v, {})
-  -- Whatever row held a DX7 voice no longer has it there.
-  for r = 1, R.ROWS do
-    if st.rows[r] then st.rows[r].voiced = nil end
-  end
+  -- Whatever DX7 voice it was sent is no longer there.
+  st.voiced.fm = nil
   return out
 end
 

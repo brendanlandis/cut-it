@@ -5,12 +5,12 @@
 
 ## What it is
 
-**A row of the Launchpad is a voice, not a fixed part** (Brendan, 2026-11-06). A song has up to eight voices, one a
-row. Each has a name, a behavior, what it does, and an instrument, what it does it on. **Harmony, melody and the drum page
+**A row of the Launchpad is a voice, not a fixed part** (Brendan, 2026-11-06). A section has up to eight voices, one a
+row, each section its own (Brendan, 2026-11-25; the song's, before). Each has a name, a behavior, what it does, and an instrument, what it does it on. **Harmony, melody and the drum page
 are ways of doing something, not voices.** The button on the left is what the voice does, and the button across from it
 on the right sets it up.
 
-**`u_voices` holds a song's voices and the page on show, and it alone writes the `mode` bus**, a page's name as the
+**`u_voices` holds the playing section's voices and the page on show, and it alone writes the `mode` bus**, a page's name as the
 selector: `perform`, `drums`, `harmony`, `melody`, `keys`, `sound`, `songs` or `diag`. `u_map`, `g_grid` and `u_net`
 each hear it and decide what that means to them.
 
@@ -36,10 +36,10 @@ itself.
 | | | Evidence |
 |---|---|---|
 | Across a power cycle | `put auto page <kind> <row>`, on every change of page; restored at boot | unknown |
-| A voice's page, restored | Waits for the song's voices, which come after the auto file; the performance page if the song has no such row | unknown |
+| A voice's page, restored | Waits for the first section's voices, which come after the auto file; the performance page if it has no such row | unknown |
 | The boot, with nothing saved | The performance page | unknown |
 
-### What a song's voices are
+### What a section's voices are
 
 | | | Evidence |
 |---|---|---|
@@ -47,8 +47,10 @@ itself.
 | An instrument | `kit`, on the drums; `fm`, `strings`, `sine`, `saw` or `square`, on the others | unknown |
 | How many | One drums, two each of harmony and melody, what there are engines for: a third warns `too-many-harmony` and changes nothing. Keys as many as there are rows | unknown |
 | A name | Lowercase, one symbol, spaces as `_`, at most 16 characters | unknown |
-| Where it's saved | `put song voices <24 atoms>`, name, behavior and instrument a row, `-` for one with none, in the song itself, for every section ([songs.md](songs.md)). It shows as unsaved, as any change to a song does | unknown |
-| A song with none | Is given the seed's: row 1 `drums`, on `kit`; row 2 `chords`, harmony, on `strings`; row 3 `melody`, on `fm`. `put seed voices`, which is no change to the song | unknown |
+| Where it's saved | `put section voices <24 atoms>`, name, behavior and instrument a row, `-` for one with none, in the section playing ([songs.md](songs.md)). It shows as unsaved, as any change to a song does | unknown |
+| A section with none | Is given the seed's when it starts: row 1 `drums`, on `kit`; row 2 `chords`, harmony, on `strings`; row 3 `melody`, on `fm`. `put seed-section voices`, which is no change to the song | unknown |
+| A new section | Copies them, as it copies every part | unknown |
+| A section starting | `restore voices`, first of its parts, on step 1 while the transport runs. The same voices as the last section's say nothing. Others assign the engines and tell the rows, and the page is said again only when what it hangs on changed, its voice's behavior, instrument or engine; a page whose row is gone gives way to the performance page (`test/gate/lua/u_voices_test.lua`) | verified |
 | A voice removed | The performance page, if it was on show | unknown |
 | A voice's engine | Each harmony and melody voice by row order: the first of each engine 1's, the second engine 2's. `assign <engine> <h or m> <instrument or off>` tells each `c_melody` what it plays on; `active <engine>` which one the page's voice is in, 0 for neither, so the Launchpad, the phone and the nanoKEY reach only that one ([synths.md](synths.md)) | unknown |
 | The nanoKEY | `instrument <fm or strings>` to `c_synth`, on a page whose voice is on hardware. The performance page, and a voice on a Pd instrument, leave it on the last ([synths.md](synths.md)) | unknown |
@@ -63,7 +65,7 @@ itself.
 | Outlet 2 | To the `c_melody`s, `assign` and `active` | unknown |
 | Outlet 3 | To `c_synth`, `instrument <instrument>` | unknown |
 | Outlet 4 | To `u_net`, `voices <page> <kind> <row> <24 atoms>`, sent as `/cutit/voices`, when it changes and on every heartbeat | unknown |
-| Buses | Writes `mode`, `put song voices`, `put seed voices`, `put auto page` on `state`, `err`, and `voices-rows` to `u_perform`, the row on show and each row's engine. Hears `start`, `stop`, `panic` and `restore voices` and `restore page` on `state` | unknown |
+| Buses | Writes `mode`, `put section voices`, `put seed-section voices`, `put auto page` on `state`, `err`, and `voices-rows` to `u_perform`, the row on show and each row's engine. Hears `start`, `stop`, `panic` and `restore voices` and `restore page` on `state` | unknown |
 
 ### Taking a control into play
 
@@ -108,8 +110,8 @@ takes.
 **`u_sound` is what each voice sounds like** (Brendan, 2026-11-06). `cut-it-instruments.txt` lists each instrument's
 parameters and how each is said: a control change, a program change, a Pd voice's own or a DX7 voice of the library
 (below). A **patch** is an instrument's saved sound. `cut-it-factory.txt` holds factory patches, good starting points outside any song; a song copies one and
-depends on nothing after that. A song holds its patches (`put song patches`) and each voice's sound as it stands
-(`put song sounds`).
+depends on nothing after that. A song holds its patches (`put song patches`), and each section each voice's sound as it stands
+(`put section sounds`).
 
 | | | Evidence |
 |---|---|---|
@@ -121,7 +123,8 @@ depends on nothing after that. A song holds its patches (`put song patches`) and
 | `sound copy <name>` | A factory patch copied into the song, under a name of its own, and recalled | unknown |
 | `sound save` | What the voice sounds like now is what its patch holds; with no patch yet, a new one | unknown |
 | `sound saveas` | The same, always a new one | unknown |
-| A section starting, `tweaks` 0 | Snap back: every voice's sound back to what it was saved as, what differs said out | unknown |
+| A voice's sound, in a section | `put section sounds`, each row's patch, instrument and values as they stand, 300 ms after a change, a recall or a save, in the section playing: a tweak stays with the section it was made in. `restore sounds`, second of a section's parts and on step 1 while the transport runs, is what its voices snap back to; a row new on its instrument takes it at once, said whole (`test/gate/lua/u_sound_test.lua`) | verified |
+| A section starting, `tweaks` 0 | Snap back: every voice's sound to what the section holds for it, only what differs said out. A value the section doesn't hold goes back to a Pd instrument's default, and stays as it sounds on a hardware synth, which is told nothing | verified |
 | A section starting, `tweaks` 1 | Carry on: as it stands (`sections tweaks <0 or 1>`, the section's own) | unknown |
 | The kit | `c_steps` holds its sound, each track's volume, pitch, effects and random pitch and the reverb, and puts it as `put song kit`; a section's `drums` line holds its pattern and a mute or solo. A song with no kit takes its first section's sound, which is no change to it | unknown |
 | A voice's save on the kit | What the kit snaps back to is what it sounds like now | unknown |
@@ -146,6 +149,7 @@ instrument's parameters choose one, `dx7-bank` and `dx7-voice`.
 | A bank that isn't there | `warn u_sound no-dx7-bank-<n>`, and nothing is sent | verified |
 | A program or a DX7 voice | Whichever was chosen last: choosing one lets go of the other, in the voice's sound and so in its patch | verified |
 | A recall, a song loading, a section snapping back | The voice first, a program or a DX7 voice, then what's set | verified |
+| A section starting on the voice the FM-1 holds | Sends no dump: the voice last sent is kept by instrument, not by row, and forgotten when a program is chosen | verified |
 | What a song keeps | The middle of the bank's, the voice's or the program's step, so the three decimals it writes bring the same one back | verified |
 
 **The Launchpad's sound page:** the instrument's first eight parameters as columns on rows 3 to 8, tapped to set; row 2 its
@@ -168,12 +172,12 @@ performance page under the finger, and the pad's release would land on another p
 
 **Fix:** `u_voices` hears `stop` and `panic` too, and takes a start only from stopped.
 
-### Seeding a song must not be a change to it
+### Seeding a section must not be a change to the song
 
-⛔ A song from before there were voices is given the seed's at load and at every revert. As an ordinary `put song` it
-would light save and revert at load, and no revert could ever put them out.
+⛔ A section with no voices is given the seed's when it starts, at load and after every revert. As an ordinary
+`put section` it would light save and revert at load, and no revert could ever put them out.
 
-**Fix:** `put seed`, which goes into what's saved as well.
+**Fix:** `put seed-section`, which goes into what's saved of the section as well.
 
 ### Looking at a voice's page must not be a change to the song
 

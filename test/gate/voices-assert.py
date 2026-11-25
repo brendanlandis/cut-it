@@ -45,9 +45,9 @@ def run_asserts(cap, state):
 
     print("\n--- the song's voices, and the page ---")
     pre = W("PRE") + W("LOADED")
-    seeds = [e[1] for e in pre if e[0] == "STATE" and e[1][:3] == ["put", "seed", "voices"]]
-    A.check("⛔ a song with none is seeded, as a seed, once, with the song store's load",
-            seeds == [["put", "seed", "voices"] + SEED + BLANK], seeds)
+    seeds = [e[1] for e in pre if e[0] == "STATE" and e[1][:3] == ["put", "seed-section", "voices"]]
+    A.check("⛔ a section with none is seeded, as a seed, once, with the song store's load",
+            seeds == [["put", "seed-section", "voices"] + SEED + BLANK], seeds)
     A.check("⛔ ... and the page says so: the performance page",
             [e[1] for e in pre if e[0] == "MODE"] == [["perform"]],
             [e[1] for e in pre if e[0] == "MODE"])
@@ -59,10 +59,10 @@ def run_asserts(cap, state):
     A.check("⛔ the lit one again: the performance page", pages("LEFT-2-AGAIN") == [["perform"]],
             pages("LEFT-2-AGAIN"))
     A.check("⛔ a left button with no voice does nothing", not pages("LEFT-EMPTY"), pages("LEFT-EMPTY"))
-    A.check("⛔ an unused right button: a new voice the song holds, and its setup page",
-            pages("RIGHT-5") == [["sound"]] and puts("RIGHT-5", "put", "song", "voices") ==
-            [["put", "song", "voices"] + SEED + ["-"] * 3 + ["voice_5", "keys", "sine"] + ["-"] * 9],
-            "%s, %s" % (pages("RIGHT-5"), puts("RIGHT-5", "put", "song", "voices")))
+    A.check("⛔ an unused right button: a new voice the section holds, and its setup page",
+            pages("RIGHT-5") == [["sound"]] and puts("RIGHT-5", "put", "section", "voices") ==
+            [["put", "section", "voices"] + SEED + ["-"] * 3 + ["voice_5", "keys", "sine"] + ["-"] * 9],
+            "%s, %s" % (pages("RIGHT-5"), puts("RIGHT-5", "put", "section", "voices")))
     A.check("the lit one again: back", pages("RIGHT-5-AGAIN") == [["perform"]], pages("RIGHT-5-AGAIN"))
     A.check("⛔ aux, through the table: the songs page, and aux again back",
             (pages("AUX"), pages("AUX-AGAIN")) == ([["songs"]], [["perform"]]),
@@ -72,14 +72,14 @@ def run_asserts(cap, state):
             "%s %s" % (pages("SETUP"), pages("SETUP-AGAIN")))
 
     print("\n--- from the phone ---")
-    v = puts("BEHAVIOR", "put", "song", "voices")
+    v = puts("BEHAVIOR", "put", "section", "voices")
     A.check("⛔ a voice's behavior and name, through u_net: row 5 a harmony voice, second_chords",
-            v[-1:] == [["put", "song", "voices"] + SEED + ["-"] * 3 + ["second_chords", "harmony", "sine"]
+            v[-1:] == [["put", "section", "voices"] + SEED + ["-"] * 3 + ["second_chords", "harmony", "sine"]
                        + ["-"] * 9], v)
     A.check("⛔ a third harmony voice and a second drum voice warn, and change nothing",
             [e for e in errs("TOO-MANY") if e[:2] == ["warn", "u_voices"]]
             == [["warn", "u_voices", "too-many-harmony"], ["warn", "u_voices", "too-many-drums"]]
-            and not puts("TOO-MANY", "put", "song", "voices"), errs("TOO-MANY"))
+            and not puts("TOO-MANY", "put", "section", "voices"), errs("TOO-MANY"))
 
     print("\n--- PLAY ---")
     A.check("⛔ PLAY, on a voice's page: the performance page", pages("PLAY") == [["perform"]], pages("PLAY"))
@@ -137,9 +137,11 @@ def run_asserts(cap, state):
     path = os.path.join(state, "cut-it-song-draft.txt")
     lines = open(path).read().splitlines() if os.path.exists(path) else []
     first = next((i for i, ln in enumerate(lines) if ln.startswith("section ")), len(lines))
-    heads = [ln.split() for ln in lines[1:first]]
-    A.check("⛔ the song's voices, between its name and its first section, as the phone left them",
-            any(h[:1] == ["voices"] and "second_chords" in h for h in heads), [h[:3] for h in heads])
+    heads = [ln.split()[0] for ln in lines[1:first] if ln.split()]
+    voices = [ln.split() for ln in lines[first:] if ln.split()[:1] == ["voices"]]
+    A.check("⛔ each section's voices, in the section, as the phone left them: the new section's a copy",
+            len(voices) == 2 and all("second_chords" in v for v in voices) and "voices" not in heads,
+            "%s, before the first section %s" % ([v[:4] for v in voices], heads))
     perform = [ln.split() for ln in lines if ln.split()[:1] == ["perform"]]
     A.check("⛔ and each section's list, the two of them", len(perform) == 2 and all("slider-1" in p for p in perform),
             perform)

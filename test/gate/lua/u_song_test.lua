@@ -711,9 +711,10 @@ end
 st = R.new()
 R.put(st, { "drums", 1 })
 out = R.load(st, nil, nil)
-equal("⛔ a song with no voices, patches, sounds or kit still says so, first, voices before the rest, and a "
-      .. "section with no controls in play says so: without them the last song's and section's would stay",
-      { table.unpack(keys(out), 1, 5) }, { "voices", "patches", "sounds", "kit", "perform" })
+equal("⛔ a song with no patches or kit and a section with no voices, sounds or controls in play still say "
+      .. "so: the song's first, then the section's voices and their sounds before the rest; without them the "
+      .. "last song's and section's would stay",
+      { table.unpack(keys(out), 1, 5) }, { "patches", "kit", "voices", "sounds", "perform" })
 st = R.new()
 st.song.sections[1].parts = { drums = { 1 }, perform = { "slider-1", "tempo", 0, 0, 0.5 } }
 st.queued = st.song.sections[1]
@@ -726,27 +727,64 @@ end)(), 1)
 st = R.new()
 R.load(st, nil, nil)
 equal("nothing unsaved before a song part is put", R.unsaved(st), false)
-R.put_song(st, { "voices", "drums", "drums", "kit" })
-equal("⛔ put song voices: the song holds it, not the section playing, and it shows as unsaved",
-      { st.song.parts.voices, st.playing.parts.voices, R.unsaved(st) },
-      { { "drums", "drums", "kit" }, nil, true })
+R.put_song(st, { "patches", "pad", "saw", 0 })
+equal("⛔ put song patches: the song holds it, not the section playing, and it shows as unsaved",
+      { st.song.parts.patches, st.playing.parts.patches, R.unsaved(st) },
+      { { "pad", "saw", 0 }, nil, true })
 local text = R.text(st.song)
 equal("⛔ ... and is saved between the song's name and its first section",
-      text, "song song 1\nvoices drums drums kit\nsection 1 0 section 1\n")
-equal("⛔ ... and reads back as the song's", R.parse(text).parts, { voices = { "drums", "drums", "kit" } })
+      text, "song song 1\npatches pad saw 0\nsection 1 0 section 1\n")
+equal("⛔ ... and reads back as the song's", R.parse(text).parts, { patches = { "pad", "saw", 0 } })
 equal("... with its sections no different", R.parse(text).sections[1].parts, {})
 out = R.revert(st)
-equal("⛔ revert takes it back and says so: no voices in the saved song, so an empty restore",
-      { st.song.parts.voices, R.unsaved(st), keys(out)[1] }, { nil, false, "voices" })
-R.put_song(st, { "voices", "a", "keys", "fm" })
+equal("⛔ revert takes it back and says so: no patches in the saved song, so an empty restore",
+      { st.song.parts.patches, R.unsaved(st), keys(out)[1] }, { nil, false, "patches" })
+R.put_song(st, { "patches", "a", "fm", 0 })
 R.save(st)
 equal("once saved it is not unsaved, and the same atoms put back leave it that way",
-      { R.unsaved(st), R.put_song(st, { "voices", "a", "keys", "fm" }), R.unsaved(st) }, { false, {}, false })
-R.put_song(st, { "voices", "b", "keys", "fm" })
+      { R.unsaved(st), R.put_song(st, { "patches", "a", "fm", 0 }), R.unsaved(st) }, { false, {}, false })
+R.put_song(st, { "patches", "b", "fm", 0 })
 out = R.revert(st)
 equal("... and a revert restores what was saved", (function()
-  for _, e in ipairs(out) do if e[3] and e[3][1] == "voices" then return e[3] end end
-end)(), { "voices", "a", "keys", "fm" })
+  for _, e in ipairs(out) do if e[3] and e[3][1] == "patches" then return e[3] end end
+end)(), { "patches", "a", "fm", 0 })
+
+print("\n--- a section's voices ---")
+local V1 = { "drums", "drums", "kit" }
+local V2 = { "lead", "melody", "saw" }
+st = R.new()
+R.load(st, nil, nil)
+out = R.seed_section(st, { "voices", table.unpack(V1) })
+equal("⛔ put seed-section voices: the section playing holds them, and what's saved of it, so nothing is unsaved",
+      { out, st.playing.parts.voices, st.saved.sections[1].parts.voices, st.song.parts.voices, R.unsaved(st),
+        st.write_saved }, { {}, V1, V1, nil, false, true })
+R.put(st, { "sounds", 1, "-", "kit", 0 })
+R.add(st)
+equal("a new section starts on a copy of the selected one's voices and sounds",
+      { st.song.sections[2].parts.voices, st.song.sections[2].parts.sounds }, { V1, { 1, "-", "kit", 0 } })
+st.song.sections[2].parts.voices = V2
+st.song.sections[2].parts.tempo = { 90 }
+out = R.go(st, st.song.sections[2])
+equal("⛔ a section starting says its voices first, then their sounds, then the rest: what follows plays on them",
+      { table.unpack(keys(out), 1, 5) }, { "voices", "sounds", "perform", "tweaks", "tempo" })
+equal("... the voices its own", out[1][3], { "voices", table.unpack(V2) })
+R.start(st)
+st.queued = st.song.sections[1]
+out = R.bar(st)
+equal("⛔ playing, the voices and their sounds wait for the next step 1 with the tempo, so the last step plays "
+      .. "out on the old section's", { keys(out), { table.unpack(keys(R.one(st)), 1, 3) } },
+      { { "perform" }, { "voices", "sounds", "tweaks" } })
+R.stop(st)
+local old = R.parse("song old\nvoices a keys fm\nsounds 1 - fm 0\nkit 1 2\nsection 1 0 one\ndrums 1\n"
+                    .. "section 2 0 two\nvoices b keys saw\n")
+st = R.new()
+R.load(st, R.text(old), R.text(old))
+equal("⛔ a song saved while its voices were the song's: each section with none takes them, and their sounds, "
+      .. "and the song lets go of them, keeping what is still its own",
+      { st.song.sections[1].parts.voices, st.song.sections[2].parts.voices, st.song.sections[2].parts.sounds,
+        st.song.parts.voices, st.song.parts.sounds, st.song.parts.kit, R.unsaved(st) },
+      { { "a", "keys", "fm" }, { "b", "keys", "saw" }, { 1, "-", "fm", 0 }, nil, nil, { 1, 2 }, false })
+equal("... and both its files are written again, as it is now", { st.dirty, st.write_saved }, { true, true })
 
 print("\n--- the whole lists ---")
 st = load3()

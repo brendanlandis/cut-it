@@ -1,4 +1,4 @@
--- u_voices.lua -- a song's voices and the page on show. A row of the Launchpad is a voice: its
+-- u_voices.lua -- a section's voices and the page on show. A row of the Launchpad is a voice: its
 -- right button chooses the voice's instrument, names it and sets it, and the button across from it, on
 -- the left, is what it does (Brendan, 2026-11-06). Plain Lua with no Pd in it, so
 -- test/gate/lua/u_voices_test.lua runs it on the Mac with lua.org's interpreter. u_voices-lua.pd_lua
@@ -8,8 +8,8 @@
 -- order, as {outlet, selector, atoms}:
 --   {"mode", <page>, {}}                     the mode bus: the page, the map's key and g_grid's
 --   {"grid", "voices", {row, kind, 8 kinds}} g_grid: the row on show and each row's behavior
---   {"save", "voices", {atoms}}              the state bus: put song voices, with the song
---   {"seed", "seed", {atoms}}                the state bus: put seed voices, what it starts as
+--   {"save", "voices", {atoms}}              the state bus: put section voices, with the section
+--   {"seed", "seed", {atoms}}                the state bus: put seed-section voices, what it starts as
 --   {"page", "page", {kind, row}}            the state bus: put auto page, across a power cycle
 --   {"engine", "assign", {e, line, instrument}}   c_melody <e>: this line plays on this instrument, or off
 --   {"engine", "active", {e}}                the c_melody the page's voice is in, 0 for neither
@@ -82,7 +82,7 @@ function R.page_name(st)
   return st.kind
 end
 
--- The song's voices as atoms: name, behavior and instrument a row, - for one with none.
+-- The voices as atoms: name, behavior and instrument a row, - for one with none.
 function R.line(st)
   local a = {}
   for r = 1, R.ROWS do
@@ -319,10 +319,11 @@ function R.remove(st, a)
   return out
 end
 
--- ------------------------------------------------------------------ a song's voices
+-- ------------------------------------------------------------------ a section's voices
 
--- A song with no voices yet, one from before there were any: what it held, a drum page, and the
--- generator's two lines on the instruments they played on. Only what a new song needs to start with.
+-- A section with no voices yet, one from before there were any: what a song held then, a drum page,
+-- and the generator's two lines on the instruments they played on. Only what a new song needs to
+-- start with.
 local function seed(st)
   st.voices = {
     [1] = { name = "drums", behavior = "drums", instrument = "kit" },
@@ -331,10 +332,22 @@ local function seed(st)
   }
 end
 
--- restore voices <atoms>: the song loaded holds these. None: it is seeded, and saved so, which is no
--- change to it. A voice's page from the last power-off waited for this: the auto file is read before
--- the song is.
+-- What the page on show hangs on: its name, kind and row, and its voice's engine and instrument.
+local function shown(st)
+  local v = st.voices[st.row]
+  return table.concat({ R.page_name(st), st.kind, st.row, R.engine_of(st, st.row) or 0,
+                        v and v.instrument or "-" }, " ")
+end
+
+-- restore voices <atoms>: the section starting holds these (Brendan, 2026-11-25: a section's own,
+-- where the song held one set for all of them). None: it is seeded, and saved so, which is no change
+-- to it. It comes at every section's start, so the same voices again say nothing; voices that differ
+-- are assigned, and the page on show follows only if what it hangs on changed. A voice's page from
+-- the last power-off waited for the first: the auto file is read before the song is.
 function R.restore(st, a)
+  local was = st.restored and table.concat(R.line(st), " ") or nil
+  local page = shown(st)
+  st.restored = true
   st.voices = {}
   local any = false
   for r = 1, R.ROWS do
@@ -351,17 +364,19 @@ function R.restore(st, a)
     seed(st)
     out[1] = { "seed", "seed", R.line(st) }
   end
-  for _, e in ipairs(assign(st)) do out[#out + 1] = e end
   local due = st.page_due
   st.page_due = nil
+  if was == table.concat(R.line(st), " ") and not due then return out end
+  for _, e in ipairs(assign(st)) do out[#out + 1] = e end
   if due and st.voices[due.row] then st.kind, st.row = due.kind, due.row end
   if (st.kind == "voice" or st.kind == "setup") and not st.voices[st.row] then
     return go(st, "perform", 0, out)
   end
+  if was and shown(st) == page then return tell_rows(st, out) end
   return show(st, out)
 end
 
--- restore page <kind> <row>: where it was at the last power-off. A voice's page waits for the song's
+-- restore page <kind> <row>: where it was at the last power-off. A voice's page waits for the section's
 -- voices, if they haven't come yet.
 function R.restore_page(st, a)
   local kind, row = a[1], math.floor(num(a[2]))
@@ -390,7 +405,7 @@ end
 
 -- /cutit/voices, field by field, in the order it goes: a name, how many atoms it takes, what writes
 -- them and, for a field of groups, what each group holds. The page's name, its kind and row, then the
--- song's voices, name, behavior and instrument a row. The phone knows from these which rows to light and
+-- section's voices, name, behavior and instrument a row. The phone knows from these which rows to light and
 -- what an instrument's other voice is. 27 atoms. The app reads the list by position, and takes each
 -- field's place from this table: phone/state-at.py writes them into phone/CutIt/StateAt.swift, and
 -- test/gate/app-assert.py fails when that file is behind.

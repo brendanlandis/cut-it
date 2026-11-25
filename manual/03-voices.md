@@ -3,6 +3,7 @@
 ## Starting a voice
 
 Press an unused row's right button. On the phone, give it a name, and choose its **behavior** and its **instrument**.
+Voices are the section's: each section has its own, and a new section starts with a copy of the one it was made from.
 
 | Behavior | Plays on | There can be |
 |---|---|---|

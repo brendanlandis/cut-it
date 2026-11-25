@@ -122,9 +122,10 @@ def run_asserts(cap):
             seeded == SEEDED,
             "the state bus carried %s, wanted %s" % (seeded, SEEDED))
     song = [v[1] for v in restores if v not in SEEDED]
-    # What the song holds for its sections first, voices before the rest, each said though it holds none;
-    # then a section with no controls in play says so, and that its tweaks snap back.
-    want = ["voices", "patches", "sounds", "kit", "perform", "tweaks"] + SECTION_PARTS
+    # What the song holds for its sections first, each said though it holds none; then the section's
+    # voices and their sounds, said though it holds none; then a section with no controls in play
+    # says so, and that its tweaks snap back.
+    want = ["patches", "kit", "voices", "sounds", "perform", "tweaks"] + SECTION_PARTS
     A.check("⛔ ...and then the song store's first section starts: every part, in order",
             song == want and restores[:len(SEEDED)] == SEEDED,
             "after u_state's: %s, wanted %s after %s" % (song, want, SEEDED))

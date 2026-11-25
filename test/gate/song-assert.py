@@ -37,6 +37,8 @@ SONGS_WINDOWS = ["LOADED", "KEY-STOPPED", "EDIT", "KEY-BACK", "PLAY", "KEY-BAR",
                  "BACK", "NEXT-AGAIN", "AT-NEXT-BAR", "KEY-STOP", "KEY-PAST", "FLUSHED"]
 FM, STRINGS = 49, 33            # the FM-1's and the Streichfett's Pd channels, args 5 and 4
 PARTS = ["drums", "programs", "synth", "tempo", "velocity"]
+# What a section started with no voices is given: the starting three, the other five rows empty.
+SEEDED_VOICES = ("drums drums kit chords harmony strings melody melody fm".split() + ["-"] * 15)
 # While the transport runs the tempo and the programs wait for step 1, so they come after the rest.
 PARTS_RUNNING = ["drums", "synth", "velocity", "programs", "tempo"]
 # The top row's eight, as g_grid paints them: dark, an arrow (palette 1), a section, the one
@@ -135,10 +137,10 @@ def main():
     bad = [f for f in page2 if G.drum_page(f, lay)[0]]
     A.check("every frame from the first window is the drum page with the edges' colors, nothing "
             "else lit", page2 and not bad, bad and G.drum_page(bad[0], lay)[0])
-    # The seed's voices go on the song as what it holds, not as a change to it.
+    # The seed's voices go on the section as what it holds, not as a change to the song.
     voices = [ln.split() for ln in open(os.path.join(opt.after, "cut-it-song.txt"), encoding="utf-8")
               if ln.split()[:1] == ["voices"]]
-    A.check("⛔ a song with no voices is seeded, and saved so: the seed's three, in the saved file, and "
+    A.check("⛔ a section with no voices is seeded, and saved so: the seed's three, in the saved file, and "
             "the lamps above stay dark", voices and voices[0][1:10] == [
                 "drums", "drums", "kit", "chords", "harmony", "strings", "melody", "melody", "fm"],
             voices)
@@ -232,9 +234,10 @@ def main():
     print("\n--- the files ---")
     saved = song(os.path.join(opt.after, "cut-it-song.txt"))
     draft = song(os.path.join(opt.after, "cut-it-song-draft.txt"))
-    want = [(n, l, dict(ps)) for n, l, ps in seed]
+    # Each section started with no voices was seeded with the starting three, in both files.
+    want = [(n, l, dict(ps, voices=SEEDED_VOICES)) for n, l, ps in seed]
     want[1][2]["tempo"] = ["160"]
-    A.check("⛔ the saved song is the save's: the three sections, verse at 160",
+    A.check("⛔ the saved song is the save's: the three sections, verse at 160, each with its seeded voices",
             saved == want, "%s" % [(n, l, ps.get("tempo")) for n, l, ps in saved or []])
     want_d = [(n, l, dict(ps)) for n, l, ps in want]
     want_d[0][2]["tempo"] = ["170"]

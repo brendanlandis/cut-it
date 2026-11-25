@@ -9,7 +9,7 @@ What is left is two synths you can hear and a chord under real fingers.
 
 - The FM-1 and the Streichfett on, the mixer's channels 3 and 4 (the FM-1) and 5 and 6 (the
   Streichfett) up, and the PA on.
-- The song's voices the seed's: row 2 harmony on the Streichfett, row 3 melody on the FM-1.
+- The section's voices the seed's: row 2 harmony on the Streichfett, row 3 melody on the FM-1.
 
 13 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why
 each thing behaves as it does: [synths](../../ref/module/synths.md),
@@ -51,7 +51,7 @@ each thing behaves as it does: [synths](../../ref/module/synths.md),
 - [ ] **8. The phone's keys page**
   - **Need:** Row 3's setup page on show, the third button down the right column, the song as saved.
   - **Do:** On the phone choose keys under does. Then press row 3's left button, look at the phone, and play the nanoKEY.
-  - **Pass if:** Save and revert light at the choice: a voice's behavior is the song's. Row 3's left page on the phone is the keys page: the voice's name in its color, fm beside it, and the velocity switch under them, lit, its word black. The FM-1 plays every key.
+  - **Pass if:** Save and revert light at the choice: a voice's behavior is the section's, in the song's draft. Row 3's left page on the phone is the keys page: the voice's name in its color, fm beside it, and the velocity switch under them, lit, its word black. The FM-1 plays every key.
   - **Note:** The layout's keyboard tab chose the synth with two buttons, FM and STRINGS; the app chooses it only by the voice on show ([phone](../../ref/device/phone.md), *Open*).
 
 - [ ] **9. The velocity switch**

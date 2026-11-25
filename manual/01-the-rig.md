@@ -12,7 +12,7 @@ Five surfaces, each with one job. The same control does the same thing on every 
 
 ## A row is a voice
 
-A song has up to eight voices, one a row, each with its own color on every surface.
+A section has up to eight voices, one a row, each with its own color on every surface.
 
 - The button on the **right** is the voice's setup: what instrument it plays, its name, and its sound.
 - The button across from it on the **left** is what the voice does: a drum page, chords, a melody, or the nanoKEY.

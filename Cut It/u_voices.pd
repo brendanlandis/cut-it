@@ -1,6 +1,6 @@
 #N canvas 20 20 3200 1400 12;
 #X declare -lib pdlua;
-#X text 20 20 u_voices -- a song's voices and the page on show. A row of the Launchpad is a voice: its right button chooses the instrument \, names it and sets it \, and the left button across from it is what it does. The rules are in u_voices.lua. ref/module/voices.md, f 58;
+#X text 20 20 u_voices -- a section's voices and the page on show. A row of the Launchpad is a voice: its right button chooses the instrument \, names it and sets it \, and the left button across from it is what it does. The rules are in u_voices.lua. ref/module/voices.md, f 58;
 #X text 700 20 inlet 1: u_map's <arg> <value>. inlet 2: the phone's voices <cmd> ... \, through u_net. Outlet 1: to g_grid. Outlet 2: to the c_melody engines. Outlet 3: instrument <instrument> \, to c_synth. Outlet 4: voices <atoms> \, to u_net. The mode bus \, the state bus and err are said here., f 58;
 #X obj 20 300 inlet;
 #X obj 300 300 inlet;
@@ -24,7 +24,7 @@
 #X obj 20 1000 s mode;
 #X obj 220 1100 outlet;
 #X obj 420 1000 route voices page seed;
-#X obj 420 1050 list prepend put song voices;
+#X obj 420 1050 list prepend put section voices;
 #X obj 420 1100 list trim;
 #X obj 640 1050 list prepend put auto page;
 #X obj 640 1100 list trim;
@@ -69,7 +69,7 @@
 #X connect 4 5 31 0;
 #X connect 4 6 32 0;
 #X connect 4 8 34 0;
-#X obj 860 1050 list prepend put seed voices;
+#X obj 860 1050 list prepend put seed-section voices;
 #X obj 860 1000 list trim;
 #X obj 1860 800 s voices-sound;
 #X obj 2060 800 s disp;

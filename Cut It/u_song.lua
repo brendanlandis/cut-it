@@ -5,10 +5,10 @@
 -- is its Pd face, which reads and writes the files, and u_song.pd keeps the cords, the state bus,
 -- the transport and the draft's timer. ref/module/songs.md.
 --
--- A song holds what all its sections share, under each part's key, its voices (put song <key>). A
--- section is its name, its length in bars (0 loops until another is queued) and its parts: what
--- each part of the instrument put while it played, under the part's own key (drums, tempo, synth,
--- velocity, programs), as the atoms it put. The store knows nothing about what a key means, as
+-- A song holds what all its sections share, under each part's key, its patches and its kit's sound
+-- (put song <key>). A section is its name, its length in bars (0 loops until another is queued) and
+-- its parts: what each part of the instrument put while it played, under the part's own key (voices,
+-- sounds, drums, tempo, synth, velocity, programs), as the atoms it put. The store knows nothing about what a key means, as
 -- u_state knows nothing (ref/module/state.md): a part puts `put section <key> <atoms...>` on the
 -- state bus, which lands in the playing section, and a section starting sends every part it holds
 -- back as `restore <key> <atoms...>`.
@@ -189,42 +189,52 @@ local function follow(st)
 end
 
 -- A section starting: it plays, nothing is queued, its bars count from 0, and every part it
--- holds goes back out, in the keys' order, so each part plays what the section saved. A part
--- puts straight back what it restores (ref/module/state.md), and that put lands here, in the
--- section now playing.
+-- holds goes back out, so each part plays what the section saved. Its voices go first, then their
+-- sounds, since what follows plays on them (Brendan, 2026-11-25: a section holds its own voices, a
+-- behavior on an instrument a row, where the song held one set for all its sections); each of the
+-- two always, so a section that holds none says so, and is given some. The rest follow in the keys'
+-- order. A part puts straight back what it restores (ref/module/state.md), and that put lands here,
+-- in the section now playing.
 -- A part in R.ON_THE_ONE, while the transport runs, waits for the next step 1 (R.one), so it lands
--- on the beat and the old section's last step plays out at its own tempo (Brendan, 2026-11-05).
-R.ON_THE_ONE = { tempo = true, programs = true, melody = true, ["melody-2"] = true, tweaks = true }
+-- on the beat and the old section's last step plays out at its own tempo (Brendan, 2026-11-05), on
+-- its own voices.
+R.ON_THE_ONE = { tempo = true, programs = true, melody = true, ["melody-2"] = true, tweaks = true,
+                 voices = true, sounds = true }
+R.FIRST_PARTS = { "voices", "sounds" }
 
 local function begin(st, s)
   st.playing, st.queued, st.bars = s, nil, 0
   follow(st)
-  local keys = {}
-  for k in pairs(s.parts) do keys[#keys + 1] = k end
-  table.sort(keys)
   local out, held = {}, {}
-  -- A section with no controls in play says so, or the last section's would stay.
-  if not s.parts.perform then out[1] = { "state", "restore", { "perform" } } end
-  -- And whether the voices' sounds snap back or carry on into it (Brendan, 2026-11-06), snap back unless
-  -- it says.
-  if not s.parts.tweaks then
-    local e = { "state", "restore", { "tweaks", 0 } }
-    if st.running then held[1] = e else out[#out + 1] = e end
-  end
-  for _, k in ipairs(keys) do
+  local function send(k, atoms)
     local a = { k }
-    for _, x in ipairs(s.parts[k]) do a[#a + 1] = x end
+    for _, x in ipairs(atoms or {}) do a[#a + 1] = x end
     local e = { "state", "restore", a }
     if st.running and R.ON_THE_ONE[k] then held[#held + 1] = e else out[#out + 1] = e end
   end
+  local first = {}
+  for _, k in ipairs(R.FIRST_PARTS) do
+    first[k] = true
+    send(k, s.parts[k])
+  end
+  -- A section with no controls in play says so, or the last section's would stay.
+  if not s.parts.perform then send("perform") end
+  -- And whether the voices' sounds snap back or carry on into it (Brendan, 2026-11-06), snap back unless
+  -- it says.
+  if not s.parts.tweaks then send("tweaks", { 0 }) end
+  local keys = {}
+  for k in pairs(s.parts) do
+    if not first[k] then keys[#keys + 1] = k end
+  end
+  table.sort(keys)
+  for _, k in ipairs(keys) do send(k, s.parts[k]) end
   st.on_one = held
   return out
 end
 
 -- What the song holds for all its sections, as begin sends a section's, and before it, so a section
--- starts on its song's voices: the voices first, for what follows them; each of these always, so a song
--- that has none says so, and is given some.
-R.SONG_PARTS = { "voices", "patches", "sounds", "kit" }
+-- starts on its song's patches: each of these always, so a song that has none says so.
+R.SONG_PARTS = { "patches", "kit" }
 local function song_parts(st, after)
   local parts = st.song.parts or {}
   local out, known = {}, {}
@@ -326,6 +336,26 @@ function R.seed_song(st, atoms)
     st.saved.parts = st.saved.parts or {}
     st.saved.parts[key] = { table.unpack(a) }
     st.write_saved = true
+  end
+  st.dirty = true
+  return {}
+end
+
+-- `put seed-section <key> <atoms...>`: what a section that holds none starts as (its voices), into
+-- the section playing and what's saved of it together, so it shows as nothing unsaved, as put seed
+-- does for the song.
+function R.seed_section(st, atoms)
+  local key = atoms[1]
+  if type(key) ~= "string" then return { R.fail("bad-put") } end
+  local a = {}
+  for i = 2, #atoms do a[#a + 1] = atoms[i] end
+  local s = st.playing
+  s.parts[key] = a
+  for _, t in ipairs(st.saved and st.saved.sections or {}) do
+    if t.id == s.id and not t.parts[key] then
+      t.parts[key] = a
+      st.write_saved = true
+    end
   end
   st.dirty = true
   return {}
@@ -522,22 +552,42 @@ local function share(song, saved)
   end
 end
 
+-- A song saved while it held one set of voices, and their sounds, for all its sections: each
+-- section that has none takes the song's, and the song lets go of them. True if it held any.
+local function to_sections(song)
+  local moved = false
+  for _, k in ipairs(R.FIRST_PARTS) do
+    local a = song.parts[k]
+    if a then
+      for _, s in ipairs(song.sections) do
+        if not s.parts[k] then s.parts[k] = a end
+      end
+      song.parts[k] = nil
+      moved = true
+    end
+  end
+  return moved
+end
+
 -- One song's two files as a record: the draft and the saved song, either missing made from the
 -- other, its sections numbered across both, and their equal parts one table. nil when neither
--- holds a song. A draft missing is to be written, and with the saved song missing both are.
+-- holds a song. A draft missing is to be written, and with the saved song missing both are, as
+-- both are for a song whose voices went to its sections.
 local function read_song(id, draft_text, saved_text)
   local draft, saved = R.parse(draft_text), R.parse(saved_text)
   if not draft and not saved then return nil end
   local read = {}
   if draft then read[#read + 1] = draft end
   if saved then read[#read + 1] = saved end
+  local moved = false
+  for _, song in ipairs(read) do moved = to_sections(song) or moved end
   local rec = record(id, nil, nil)
   rec.next_id = number(read)
   rec.song = draft or copy_song(saved)
   rec.saved = saved or copy_song(rec.song)
   share(rec.song, rec.saved)
-  rec.dirty = draft == nil
-  rec.write_saved = saved == nil
+  rec.dirty = draft == nil or moved
+  rec.write_saved = saved == nil or moved
   rec.unsaved = R.differs(rec.song, rec.saved)
   return rec
 end
@@ -1219,6 +1269,7 @@ R.internal = {
   put = function(st, a) return R.put(st, a) end,
   ["put-song"] = function(st, a) return R.put_song(st, a) end,
   ["seed-song"] = function(st, a) return R.seed_song(st, a) end,
+  ["seed-section"] = function(st, a) return R.seed_section(st, a) end,
   recall = function(st, a) return R.recall(st, a[1]) end,
   bar = function(st) return R.bar(st) end,
   one = function(st) return R.one(st) end,

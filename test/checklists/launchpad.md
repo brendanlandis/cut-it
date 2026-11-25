@@ -2,7 +2,7 @@
 
 The grid, the grid arbiter's layers and their timeouts, the voices' lamps, the ring map, hot-swap, panic keeping the surface, and a tap on SETUP. `display-assert` and `launchpad-assert` prove the bytes the patch sends; this is what the surface shows.
 
-Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol.md). Every step sets up its own preconditions, a page among them. The rows are a song's voices: with nothing saved, the seed's, row 1 the drums, row 2 harmony, row 3 melody.
+Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol.md). Every step sets up its own preconditions, a page among them. The rows are the playing section's voices: with nothing saved, the seed's, row 1 the drums, row 2 harmony, row 3 melody.
 
 28 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why each thing behaves as it does: [launchpad](../../ref/device/launchpad.md), [display](../../ref/module/display.md), [presence](../../ref/module/presence.md).
 

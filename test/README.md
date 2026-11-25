@@ -40,7 +40,7 @@ were false.
 | `recover-assert.sh` | `module/map` and `module/boot` — panic's second tier |
 | `state-assert.sh` | `module/state` |
 | `song-assert.sh` | `module/songs` — the songs, the setlists, the keys and the next arrow, the sections, the top row, save and revert, the files |
-| `voices-assert.sh` | `module/voices` — the song's voices, the page, and the controls in play |
+| `voices-assert.sh` | `module/voices` — a section's voices, the page, and the controls in play |
 | `presence-assert.sh` | `module/presence` |
 | `launchpad-assert.sh` | `device/launchpad` |
 | `nano-assert.sh` | `device/nanokontrol` |
@@ -604,7 +604,7 @@ the grid's own clock, which is one too. Without it the transport plays nothing a
 every button's page, aux and Setup over each other, PLAY, the engines, too many of a behavior, the phone's voice page and a
 page waiting for its song; `test/gate/lua/u_perform_test.lua` arm, heard and bind, pickup, a section's list, toggle and hit,
 what a lane shows and the phone. Then **a scratch copy of the instrument with no song saved**, driven on `param` and over
-OSC, which proves the cords: a press through the map to the page on the `mode` bus, the song's voices into its draft,
+OSC, which proves the cords: a press through the map to the page on the `mode` bus, a section's voices into the song's draft,
 tempo taken into play and moved through `map-route`, a roll reaching its own engine by name from the performance page,
 the columns' colors, and a new section's list waiting, then caught.
 

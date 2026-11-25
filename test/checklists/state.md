@@ -6,7 +6,7 @@ Most of the data store is deliberately invisible: state is files, and `state-ass
 
 - [ ] **1. Restored page at boot**
   - **Do:** Look at the Launchpad's two columns. Press nothing.
-  - **Pass if:** The columns show the song's voices, dim, and one button bright if a voice's page was on show when it last went off, or none, for the performance page. A dark grid means nothing below can be read.
+  - **Pass if:** The columns show the section's voices, dim, and one button bright if a voice's page was on show when it last went off, or none, for the performance page. A dark grid means nothing below can be read.
 
 - [ ] **2. Change the page**
   - **Do:** Press the second button down the left column.

@@ -13,7 +13,7 @@
 #X obj 900 1100 s err;
 #X obj 1200 420 r state;
 #X obj 1200 470 route put;
-#X obj 1200 520 route section song seed;
+#X obj 1200 520 route section song seed seed-section;
 #X obj 1200 570 list prepend put;
 #X obj 1200 620 list trim;
 #X obj 1550 420 r start;
@@ -79,3 +79,8 @@
 #X connect 13 2 40 0;
 #X connect 40 0 41 0;
 #X connect 41 0 6 2;
+#X obj 1900 570 list prepend seed-section;
+#X obj 1900 620 list trim;
+#X connect 13 3 42 0;
+#X connect 42 0 43 0;
+#X connect 43 0 6 2;

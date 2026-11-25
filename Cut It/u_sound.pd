@@ -28,7 +28,7 @@
 #X obj 220 1100 outlet;
 #X obj 420 1100 outlet;
 #X obj 620 1100 outlet;
-#X obj 820 1000 list prepend put song;
+#X obj 820 1000 list prepend put;
 #X obj 820 1050 list trim;
 #X obj 820 1100 s state;
 #X obj 1100 1000 s err;

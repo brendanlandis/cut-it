@@ -91,7 +91,7 @@ tapped alone turns on or off; a note there alone sounds. Its commands: on, roll 
 and `u_voices` says what each plays on: `assign <e> <h or m> <instrument or off>`, `off` silencing that line. **Only the
 engine whose voice is on show hears the Launchpad, the phone and the nanoKEY and speaks to them**, told by `active
 <e>`; a message `e<n>-<name>`, from `u_perform`, is for engine n, on show or not. A section holds each under its own
-key, `melody` and `melody-2`. The section's own word for an instrument is overruled by the voice's, which is the song's.
+key, `melody` and `melody-2`. The section's own word for an instrument is overruled by the voice's.
 
 **`c_melody` rolls a loop of up to 8 chords and a loop of up to 32 notes in a key and mode, by
 weighted dice, and a lock on each keeps or drifts what it rolled** (Brendan, 2026-11-05). `c_steps`'

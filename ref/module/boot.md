@@ -201,7 +201,7 @@ on 2026-11-02; the open cases are in `Open` below.
 | Script | Asserted on the Mac | On the device |
 |--------|---------------------|---------------|
 | `wire.sh` | Invoked once, **inside** the `modal wiring` stage. Its `aconnect` lines are also statically parsed against the two tables above | `wire.sh: 9 connections`: all four devices wired in and out, plus ALSA's own announce link — the SP-404 among them, two links that went with it on 2026-11-04 |
-| `state-dir.sh` | Invoked once. The gates work around it by hand-creating the files — see [state.md](state.md) | Run against a real save, all three files byte for byte unchanged; at load it touched them and left their contents |
+| `state-dir.sh` | Invoked once. The gates work around it by hand-creating the files — see [state.md](state.md) | Run against a real save, all three files byte for byte unchanged; at load it touched them and left their contents. The card read back `commit=1` after a load (2026-11-24, [state.md](state.md)) |
 | `logroll.sh` | Invoked once | At load it stamped the session's `BOOT` line and carried the previous session's six lines into the durable log |
 | `phone-ip.sh` | Invoked once, with the fallback address as its argument | On house wifi it printed the fallback. On the Organelle's own access point: not yet checked |
 | `codec-gain.sh` | Invoked once, at `u_root`'s `loadbang` | From the factory's values (170/127/12) set by hand, a Cut It load left the chip at `PCM` 192 and `Headphone` 105 (2026-11-03): the order a power-on gives. What it sets: [audio.md](audio.md) |

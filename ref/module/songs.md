@@ -26,7 +26,7 @@ with no change here.
 section as the song moves; **save** writes every section and the song, **revert** takes them all
 back to the last save, and their two lamps are lit only while the draft differs from the save
 (Brendan, 2026-11-05). The draft is written to the SD card as it changes, so a crash or a power cut
-loses at most its last two seconds. **Each song keeps its own draft** (Brendan, 2026-11-05):
+loses at most its last three seconds. **Each song keeps its own draft** (Brendan, 2026-11-05):
 loading another with changes unsaved leaves them as that song's draft, and coming back finds them
 there, save and revert lit.
 
@@ -295,7 +295,9 @@ with a rename. The rules stay plain Lua with no I/O, tested without Pd.
 
 ### The draft is written as it changes, like the auto store
 
-Every change marks the draft; a 2 s timer, armed by the load, writes it when marked. At load the
+Every change marks the draft; a 2 s timer, armed by the load, writes it when marked, and the card
+keeps a write within a second more ([state.md](state.md), *The card keeps a write within a
+second*). At load the
 draft is what plays, so a crash or a power cut comes back to where it was, with save and revert lit
 if it differed from the save; save and revert act against the saved file. A fresh load, with no
 song files, saves the song it starts with, so the lamps start dark.

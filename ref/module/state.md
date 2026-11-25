@@ -74,7 +74,7 @@ traffic into nothing, and a policy that is neither of its two, `section`, which 
 | Directory | `/sdcard/cut-it-state/` on the device; `main-dev.pd` passes an existing directory on the Mac | verified | — |
 | Files | `cut-it-auto.txt`, `cut-it-manual.txt` — and `cut-it-recover.txt`, which is **not `u_state`'s** | verified | 299 |
 | Format | One line per key, first atom is the key. Written and read with **`-c`** | verified | — |
-| Made at load | `state-dir.sh` via `[shell]`, once per load. It **`mkdir -p`s the directory and `touch`es all three files**, and leaves a saved file byte for byte as it was (checksummed before and after on the device, 2026-11-02) | verified | 143, 147, 299 |
+| Made at load | `state-dir.sh` via `[shell]`, once per load. It **`mkdir -p`s the directory and `touch`es all three files**, and leaves a saved file byte for byte as it was (checksummed before and after on the device, 2026-11-02). Then it has the card commit every second (*The card keeps a write within a second*, below) | verified | 143, 147, 299 |
 | A write into a missing directory | **Prints `write failed`** — it does not fail silently | verified | 143 |
 | A read of a missing file | Prints **three lines** | verified | 147 |
 
@@ -92,6 +92,18 @@ wrong** — the same class of noise as mother's own `knobs.txt: can't open`.
 
 ⚠️ **That last claim is the one thing here nothing tests** — the gates hand-create the two files, so
 `state-dir.sh` itself never runs on a Mac. It is declared in `Open` below.
+
+### The card keeps a write within a second
+
+⛔ **A file written was not a file kept: a power cut inside five seconds gave back the file as it
+was.** The song store writes a file whole and renames it into place, `u_state` truncates and writes,
+and ext4 holds either in its journal until the next commit, five seconds by default (Reference,
+critter-guitari-organelle-s2). On the rig a draft read back from the card with its change, cut 1.5 s
+later, came back without it (2026-11-24). **Fix:** `state-dir.sh` remounts the card under the
+directory with `commit=1` at every load, since the setting lasts only until the Organelle restarts,
+and echoes what the card reads back to the console, `state-dir: /sdcard rw,noatime,commit=1`. The
+same cut then kept the change. Not a sync after each write: that forks from Pd's thread, 1.5 ms on
+the S2, which the audio hears.
 
 ### Contributors today
 

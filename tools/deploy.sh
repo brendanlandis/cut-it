@@ -142,6 +142,12 @@ for p in $ALL_PATCHES; do
 done
 IFS=$_oifs
 
+# scp writes over a file where it lies, and the card keeps that in memory for up
+# to half a minute: a power cut in that time left files with their old text cut
+# to the new length (2026-11-24). So the push is on the card before anything
+# loads it.
+ssh "$HOST" "sync"
+
 echo "deployed:"
 ssh "$HOST" "ls -la '$DEST/$PATCH'"
 

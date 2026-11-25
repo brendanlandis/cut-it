@@ -15,8 +15,12 @@ This page is how you run the thing; that page is how you write it.
 ## `./tools/deploy.sh` — the whole loop, one command
 
 ```
-edit in repo  →  syntax check  →  scp  →  reload patch list  →  load the patch
+edit in repo  →  syntax check  →  scp  →  sync  →  reload patch list  →  load the patch
 ```
+
+⛔ **The sync is there because scp writes over a file where it lies**, and the card keeps that in
+memory for up to half a minute: a power cut in that time left patch files with their old text cut
+to the new length, and the patch loaded them (2026-11-24).
 
 No walking to the device, no Storage → Reload, no selecting from the menu.
 

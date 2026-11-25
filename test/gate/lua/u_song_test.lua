@@ -536,16 +536,18 @@ R.song_select(st, 1)
 R.put(st, { "tempo", 95 })
 local wrote = st.index_dirty
 st.index_dirty = false
-R.song_new(st)
-equal("new song: after the selected, named song 2, selected, and not loaded",
-      { snames(st), st.sel_song.song.name, st.cur.id }, { { "night drive", "song 2", "song 1",
-      "lantern" }, "song 2", 3 })
+out = R.song_new(st)
+equal("new song: after the selected, named song 2, selected, the setlist chosen's last entry, "
+      .. "and loaded at once, the log told",
+      { snames(st), st.sel_song.song.name, entries(st), st.entry, st.cur.id, out[1] },
+      { { "night drive", "song 2", "song 1", "lantern" }, "song 2", { "song 1", "song 2" }, 2, 9,
+        { "err", "info", { "u_song", "loaded-song-2" } } })
 local new = st.sel_song
 equal("... one section, a copy of the section playing, its parts as they are now",
       { #new.song.sections, new.song.sections[1].name, new.song.sections[1].parts.tempo },
       { 1, "intro", { 95 } })
 equal("... saved as it is, both its files to write, its id the next, and the index",
-      { R.differs(new.song, new.saved), new.write_saved, new.id, st.next_song, st.index_dirty },
+      { R.differs(new.song, new.saved), st.write_saved, new.id, st.next_song, st.index_dirty },
       { false, true, 9, 10, true })
 R.song_new(st)
 equal("another is song 3", st.sel_song.song.name, "song 3")
@@ -555,6 +557,7 @@ equal("the name tab's done renames the selected song, its draft and its save at 
       { snames(st)[2], new.song.name, new.saved.name, R.differs(new.song, new.saved),
         new.write_saved }, { "hollow bell", "hollow bell", "hollow bell", false, true })
 R.song_select(st, 1)
+R.song_load(st)
 st.write_saved = false
 R.song_rename(st, { "night ride" })
 equal("... the song loaded too, its files written at once, nothing unsaved",
@@ -823,8 +826,10 @@ equal("the song selected and how many, each its name and words",
       "next bar", "lantern", "unsaved" })
 for _ = 1, 5 do R.song_new(st) end
 ph = R.lists(st)
-equal("eight songs, every one in the lists, each new one after the one selected, and selected",
-      { ph[14], ph[13], #ph }, { 8, 6, 12 + 2 + 16 + 7 + 2 * #st.song.sections })
+equal("eight songs, every one in the lists, each new one after the one selected, selected, and "
+      .. "the setlist's last entry, playing, none loaded",
+      { ph[24], ph[23], ph[6], ph[5], st.cur.song.name, #ph },
+      { 8, 6, 8, 8, "night drive", 22 + 2 + 16 + 7 + 2 * #st.song.sections })
 
 print("\n--- the Pd face ---")
 local tmp = os.tmpname()
@@ -946,14 +951,15 @@ equal("... and the first flush writes the index, song 1 the first setlist's open
 equal("... song 1's files as they were", { file("cut-it-song.txt"), file("cut-it-song-draft.txt") },
       { one, one })
 sent = T.send(o, 2, "songs", { "new" })
-equal("⛔ songs new, from the phone: the phone's lists, two songs, the new one selected, "
-      .. "after a sync", { sent[1], phone(sent)[9], phone(sent)[8], phone(sent)[12] },
-      { { 3, "sync", {} }, 2, 2, "song 2" })
+equal("⛔ songs new, from the phone, stopped: after a sync the new song loads, and the phone's "
+      .. "lists have it the setlist's last entry and selected, of two songs",
+      { sent[1], o.state.cur.id, { table.unpack(phone(sent), 4, 11) } },
+      { { 3, "sync", {} }, 2, { 2, 2, "song 1", "-", "song 2", "loaded", 2, 2 } })
 equal("... its two files written at once, named for its id",
       { file("cut-it-song-2.txt"), file("cut-it-song-2-draft.txt") },
       { "song song 2\nsection 1 0 intro\ndrums 1\ntempo 100\n",
         "song song 2\nsection 1 0 intro\ndrums 1\ntempo 100\n" })
-T.send(o, 2, "songs", { "add" })
+T.send(o, 1, "key", { 1 })
 T.send(o, 3, "put", { "tempo", 120 })
 sent = T.send(o, 1, "key", { 2 })
 equal("key 2, stopped: song 2 loads, its section 1 restored", first_restore(sent), { 3, "restore",
@@ -986,11 +992,11 @@ equal("⛔ the pagers went with the TouchOSC layout: page, songs page and songs 
       { T.send(o2, 2, "page", { 1 }), T.send(o2, 2, "songs", { "page", 1 }),
         T.send(o2, 2, "songs", { "set", 1 }) }, { refused, refused, refused })
 T.send(o2, 3, "start", {})
-T.send(o2, 2, "songs", { "new" })
-T.send(o2, 2, "songs", { "add" })
-sent = T.send(o2, 1, "key", { 2 })
-equal("⛔ playing, a key: the next arrow blinks blue, nothing loads",
+sent = T.send(o2, 2, "songs", { "new" })
+equal("⛔ playing, songs new: the new song waits for the bar, as its key would ask: the next arrow "
+      .. "blinks blue, nothing loads",
       { sent[2], o2.state.cur.id }, { { 1, "top", { R.ARROW, R.NEXT_QUEUED, P, D, D, D, D, D } }, 1 })
+equal("... its key, asked while it waits, changes nothing", T.send(o2, 1, "key", { 2 })[2], nil)
 sent = T.send(o2, 3, "bar", {})
 equal("⛔ the bar: the parts asked to sync, since it moves the song, then the song loads, and the log "
       .. "says which", { sent[1], sent[2], o2.state.cur.id },

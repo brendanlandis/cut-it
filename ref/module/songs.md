@@ -205,7 +205,7 @@ page (`R.lists` in `u_song.lua`).
 |---|---|---|
 | The selections | The phone's, held here: the song selected for `load`, `name`, `add` and `delete`, the entry selected for `up`, `down` and `remove` | unknown |
 | `load` | The selected song, as a key asks for it | unknown |
-| `new` | A song after the selected, "song 2", the first number from 2 no song has, of one section: a copy of the section playing, its name, length and parts. Saved as it is, selected, and not loaded | unknown |
+| `new` | A song after the selected, "song 2", the first number from 2 no song has, of one section: a copy of the section playing, its name, length and parts. Saved as it is and selected; the setlist chosen's last entry, and selected there, while it has room; and asked for as its key would ask, so loaded at once, or at the bar while playing (Brendan, 2026-11-25) (`test/gate/lua/u_song_test.lua`) | verified |
 | `add` | The selected song, the setlist chosen's last entry, from silence, and selected; past 25, `warn u_song set-full` | unknown |
 | `delete` | The selected song goes, from every setlist too, its files with it, and the one now in its place is selected; the last song is `warn u_song last-song`; deleting the song loaded loads the one now in its place, at once. The phone asks first (*Delete asks first*, below) | unknown |
 | `entry`, `up`, `down`, `remove` | A row tapped selects an entry; move up and down move it and its key; remove takes it out, the one now in its place selected | unknown |
@@ -358,7 +358,10 @@ still part of the draft, as the song's sections are.
 
 One section, as the section playing is now, name and all, named "song 2" as a copied section is
 "verse 2" (judgment call, 2026-11-05): what you are playing is the likeliest start of the next
-song. It is not loaded: **load** does that.
+song. **It joins the setlist chosen and loads** (Brendan, 2026-11-25): made and left off the setlist the
+phone had up, not loaded, it looked like a tap that did nothing, and he took the song's unsaved changes for the
+cause. Loading it costs nothing, since the song left keeps its draft (*Each song keeps its own draft*, above). A
+full setlist doesn't take it, and the phone then shows all songs, where it is.
 
 ### Delete asks first
 

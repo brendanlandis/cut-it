@@ -972,7 +972,10 @@ end
 
 -- new song: one section, a copy of the section playing, after the selected song, named "song
 -- 2", the first number from 2 no song has, and selected; saved as it is, so there is nothing to
--- save. Not loaded: load does that.
+-- save. It joins the setlist chosen, its last entry, while there is room, so it shows on the list
+-- the phone has up, and it is asked for as its key would ask: loaded at once, or at the bar while
+-- playing (Brendan, 2026-11-25: a new song that was only made, off the setlist and not loaded,
+-- looked like a tap that did nothing).
 function R.song_new(st)
   local p = st.playing
   local s = { id = 1, name = p.name, length = p.length, parts = copy_parts(p.parts) }
@@ -987,7 +990,13 @@ function R.song_new(st)
   table.insert(st.songs, i, rec)
   st.sel_song = rec
   st.index_dirty = true
-  return {}
+  local set = st.sets[st.set]
+  if #set.entries < R.KEYS then
+    set.entries[#set.entries + 1] = { song = rec }
+    st.entry = #set.entries
+    st.at_entry = st.entry
+  end
+  return R.ask(st, rec)
 end
 
 -- A name typed for a song: the selected song renamed. A song's name is what it

@@ -474,7 +474,12 @@ struct SongsView: View {
             }
             HStack(spacing: 4) {
                 small("load") { cut.press("songs", "load") }
-                small("new") { cut.press("songs", "new") }
+                // A new song joins the setlist on show and loads; a full setlist can't take it, so the
+                // list goes to all songs, where it is (Brendan, 2026-11-25).
+                small("new") {
+                    if !showAll && cut.setEntries.count >= 25 { showAll = true }
+                    cut.press("songs", "new")
+                }
                 Menu {
                     Button("name") { ask(.song, cut.allSongs.first { $0.id == cut.songSelected }?.name ?? "") }
                     Button("add to setlist") { cut.press("songs", "add") }

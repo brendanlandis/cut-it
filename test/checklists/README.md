@@ -43,7 +43,7 @@ session means opening one.
 
 | Checklist | Steps | Judges |
 |---|---|---|
-| [display](display.md) | 18 | the OLED's layers under the info bar, its meters, the map's rows and the error bus |
+| [display](display.md) | 19 | the OLED's layers under the info bar, its meters, the map's rows, the error bus and the Organelle's screen saver |
 | [nanokontrol](nanokontrol.md) | 7 | every control, and hot-swap |
 | [tempo](tempo.md) | 14 | the transport, knob 1's pickup, the clamp |
 | [launchpad](launchpad.md) | 28 | the grid, its layers, the voices' lamps, hot-swap, panic |

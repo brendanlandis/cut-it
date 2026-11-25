@@ -85,3 +85,9 @@ The OLED's layers and the error bus, as a person sees them. `oled-assert` and `e
   - **Do:** Move fader 1, then fader 2. Then turn the Organelle's knob 2 a little.
   - **Pass if:** Knob 2 draws last-step and a step, with the knob's own in brackets while it is held. Neither fader draws anything. No row reads slider-1, slider-2 or og-knob anything.
   - **Note:** A control names itself by its destination's name, and only when something binds it (Brendan, 2026-11-04): knob 2 is the drums' last step on every page, and the faders are whatever this section has in play ([voices](../../ref/module/voices.md)).
+
+- [ ] **19. A knob wakes the Organelle's screen saver**
+  - **Need:** Cut It loaded, and the Organelle's keys and encoder left alone for ten minutes, until its screen saver's circles cover the screen. The Launchpad, the phone and the nanoKONTROL can be played meanwhile: they don't hold it off.
+  - **Do:** Turn the Organelle's knob 2 a little.
+  - **Pass if:** The circles go at once and the screen reads last-step and a step, then clears to the levels.
+  - **Note:** The saver is the Organelle's own, and only its keys and encoder hold it off, so Cut It wakes it whenever it has something to show ([display](../../ref/module/display.md)).

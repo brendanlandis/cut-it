@@ -72,6 +72,13 @@ Write `launchpad-silent`, not `launchpad silent`.
 priority order. **TTL is one retriggered `[delay]` per layer**, so a moving control keeps `param`
 alive and the screen clears 1.2 s after your hands stop rather than after they start.
 
+**A layer raised wakes the Organelle's own screen saver.** mother covers the screen ten minutes
+after the last of its keys or its encoder, whatever is drawn on it, and a knob, the Launchpad and
+the phone don't count (Reference, critter-guitari-organelle-s2): a knob's row was drawn under the
+saver, unseen (on the rig, 2026-11-24). So `param`, `modal`, `diag` and `alert`, as each is raised,
+send `/oled/setscreen 3`, the patch's own screen, once a second at most (`pd wake`). `home` wakes
+nothing, so the saver still comes when nothing happens.
+
 ### Geometry, as built
 
 ```
@@ -617,8 +624,8 @@ grid back in the correct state rather than restoring a frame.
 on redrawing screen 3 underneath, `setscreen 4` displayed it, and `setscreen 3` brought the live
 meters back. Drawing off-screen, `gFlip`-ing and switching both directions all work.
 
-**`g_oled` still draws everything to screen 3 and never switches**, for two reasons a passing probe
-does not change:
+**`g_oled` still draws everything to screen 3 and never switches away from it**, its one
+`setscreen` being 3 itself, the screen saver's wake, for two reasons a passing probe does not change:
 
 - **There is nothing to optimize.** `g_oled` clears and rebuilds screen 3 from stored state ten times
   a second, so nothing needs preserving and restore is automatic on the next frame. The saving would
@@ -642,5 +649,7 @@ controls the page, and does not copy the OLED*).
 
 ## Open
 
-- ⬜ **The drum page painted from Lua has not been looked at on the rig**: nothing should look
-  different from the boxes it replaced (`cut-it/drum-page-in-lua`).
+- ⬜ **The screen saver's wake has not been seen on the Organelle**: `oled-assert` holds what is
+  sent, and that mother's `setscreen` restarts its timer was read in its binary; whether a knob
+  turned under the saver brings its row back is the display checklist's last step
+  (`cut-it/pages-and-displays`).

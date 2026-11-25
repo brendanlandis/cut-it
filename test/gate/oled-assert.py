@@ -259,6 +259,25 @@ def run_asserts(cap):
                 "drew %s" % words(last("FAIL-GONE")))
 
     # ---- modal-off ---------------------------------------------------------
+    # ---- the Organelle's own screen saver ---------------------------------
+    # mother covers the screen after ten minutes without a key or the encoder,
+    # whatever is drawn (Reference, critter-guitari-organelle-s2), and
+    # /oled/setscreen puts the patch's screen back: so a layer raised asks for it.
+    print("\n--- waking the Organelle's own screen saver ---")
+    wake = ["sendtyped", "/oled/setscreen", "i", "3"]
+
+    def wakes(mark):
+        return [v for lab, v in W(mark) if lab == "OLED" and v[:2] == wake[:2]]
+
+    A.check("⛔ a parameter's row wakes the screen: setscreen 3, the patch's own, once",
+            wakes("PARAM") == [wake], "sent %s" % wakes("PARAM"))
+    A.check("... five rows in one instant wake it once, not five times",
+            wakes("FIVE") == [wake], "sent %s" % wakes("FIVE"))
+    A.check("⛔ a failure wakes it too", wakes("FAIL") == [wake], "sent %s" % wakes("FAIL"))
+    A.check("⛔ and home at rest wakes nothing, so the saver still comes when nothing happens",
+            not wakes("HOME") and not wakes("PARAM-GONE") and not wakes("FAIL-STILL"),
+            "sent %s" % (wakes("HOME") + wakes("PARAM-GONE") + wakes("FAIL-STILL")))
+
     print("\n--- modal-off, and the two reserved selectors ---")
     if live("MODAL-OFF"):
         drawn = words(last("MODAL-OFF"))

@@ -39,9 +39,9 @@
 #X obj 20 240 r oscOut;
 #X obj 20 280 route sendtyped;
 #X obj 900 330 print oscOut-not-sendtyped;
-#X obj 20 330 route /oled/gPrintln /oled/gClear /oled/gFillArea /oled/gFlip /oled/gShowInfoBar /oled/gBox;
+#X obj 20 330 route /oled/gPrintln /oled/gClear /oled/gFillArea /oled/gFlip /oled/gShowInfoBar /oled/gBox /oled/setscreen;
 #X obj 1780 410 print oscOut-unhandled;
-#X text 1780 460 gShowInfoBar and gBox are routed and left unconnected: both go out every frame and would drown the reject print \, which is kept for commands this previewer has never seen., f 28;
+#X text 1780 460 gShowInfoBar \, gBox and setscreen are routed and left unconnected: the first two go out every frame and would drown the reject print \, which is kept for commands this previewer has never seen \, and setscreen wakes a screen saver this previewer does not have., f 28;
 #X obj 20 410 list split 1;
 #X obj 20 450 list split 2;
 #X obj 20 490 t l l;
@@ -242,7 +242,7 @@
 #X connect 2 0 3 0;
 #X connect 3 1 4 0;
 #X connect 3 0 5 0;
-#X connect 5 6 6 0;
+#X connect 5 7 6 0;
 #X connect 5 0 8 0;
 #X connect 8 1 9 0;
 #X connect 9 1 10 0;

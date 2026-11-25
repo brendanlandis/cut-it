@@ -402,7 +402,8 @@ turned the page twice, at once, when the block lifted. **Fix:** `Link.send` give
 nothing unless it is ready and has a way out. A press is sent again by `resend` and, unanswered,
 given up (*The app can hear and not be heard*); a drag's next value follows. A sending socket that
 fails is made again by itself, the listener left hearing (`phone/CutIt/Link.swift`). That nothing
-arrives late on the phone is the phone checklist's step 17.
+arrives late on the phone is the phone checklist's step 17, passed on the phone with the app
+blocked (2026-11-24).
 
 ### The Organelle never waits for the phone
 
@@ -463,10 +464,3 @@ control for the time signature's bottom number:
   keyboard tab sent them too, which `c_synth` puts in the section, so the choice survived a reload.
   A voice's page sends `machine`, which isn't put, and the setup page's machine changes the voice
   itself. The synths checklist's steps 8 to 10 use the keys page instead.
-
-And one of the app's own:
-
-- ⬜ **The phone checklist's step 17 hasn't been run on a build with the fix** (`cut-it/cut-it-app`,
-  *A socket that can't send keeps what it's given*): `app-assert` holds the guard in the code, and
-  only the phone can block the app, so that a tap made while blocked never arrives isn't measured.
-

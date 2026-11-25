@@ -56,6 +56,8 @@ final class Cut {
     var pageKind = "perform"
     var pageRow = 0
     var voices = [Voice?](repeating: nil, count: 8)
+    /// The voice whose page is on show; none on a page of its own, or on the setup of a row not given one yet.
+    var pageVoice: Voice? { (1...8).contains(pageRow) ? voices[pageRow - 1] : nil }
 
     // The controls in play.
     var armed = 0

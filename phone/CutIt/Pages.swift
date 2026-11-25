@@ -353,11 +353,11 @@ struct SoundView: View {
         }
         .onAppear { name = voice?.shown ?? "" }
         .onChange(of: cut.pageRow) { _, _ in name = voice?.shown ?? "" }
+        // Another section's voice on the same row, or the name as the patch took it.
+        .onChange(of: voice?.name) { _, _ in if !typing { name = voice?.shown ?? "" } }
     }
 
-    private var voice: Cut.Voice? {
-        (1...8).contains(cut.pageRow) ? cut.voices[cut.pageRow - 1] : nil
-    }
+    private var voice: Cut.Voice? { cut.pageVoice }
 
     private var params: some View {
         let cols = Array(repeating: GridItem(.flexible(), spacing: 6), count: 8)
@@ -382,6 +382,116 @@ struct SoundView: View {
         } else {
             cut.press("voices", "instrument", cut.pageRow, m)
         }
+    }
+}
+
+// MARK: - a voice not made yet
+
+/// The setup page of a row with no voice (Brendan, 2026-11-25): what the voice will do and on what, chosen before
+/// it exists, for the section playing. Dim is what can't be chosen here: a behavior with no room for another voice,
+/// an instrument the behavior can't play on. Nothing is made until add voice, and then this is its setup page.
+/// The rules are u_voices.lua's, which checks what it's sent again.
+struct AddVoiceView: View {
+    @Environment(Cut.self) private var cut
+    @State private var pickedBehavior: String?
+    @State private var pickedInstrument: String?
+    @State private var sure = false
+    private static let behaviors = ["drums", "harmony", "melody", "keys"]
+    private static let instruments = ["kit", "fm", "strings", "sine", "saw", "square"]
+    /// How many voices can have a behavior: one drum sequencer, two generators; keys, any number.
+    private static let room = ["drums": 1, "harmony": 2, "melody": 2]
+    /// What each behavior plays on, the one a new voice starts on first: the first that no other voice has.
+    private static let plays = [
+        "drums": ["kit"], "harmony": ["strings", "fm", "sine", "saw", "square"],
+        "melody": ["fm", "strings", "saw", "square", "sine"], "keys": ["fm", "strings", "sine", "saw", "square"],
+    ]
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
+                Text(cut.songName.replacingOccurrences(of: "_", with: " ")).font(.system(size: 15, weight: .medium))
+                if cut.sections.indices.contains(cut.sectionPlaying - 1) {
+                    Text(cut.sections[cut.sectionPlaying - 1].name).font(.system(size: 15)).foregroundStyle(Theme.dim)
+                }
+                Spacer()
+                Text("row \(cut.pageRow)").font(.system(size: 15)).foregroundStyle(Theme.voice(cut.pageRow))
+            }
+            .frame(height: 22)
+            HStack(spacing: 10) {
+                column("behavior", Self.behaviors, behavior, can: hasRoom) { pickedBehavior = $0; sure = false }
+                column("instrument", Self.instruments, instrument, can: { playsOn.contains($0) }) {
+                    pickedInstrument = $0; sure = false
+                }
+            }
+            .frame(maxHeight: .infinity)
+            HStack(spacing: 8) {
+                if sure {
+                    Text("\(instrument) is another voice's").font(.system(size: 14))
+                    Pad(title: "use it", width: 80) { add() }
+                    Pad(title: "cancel", width: 80, color: .gray) { sure = false }
+                } else {
+                    Pad(title: "add voice", on: true, width: 110, color: Theme.voice(cut.pageRow)) { add() }
+                    Pad(title: "cancel", width: 80, color: .gray) { cut.press("voices", "right", cut.pageRow) }
+                }
+                Spacer()
+            }
+        }
+        .onChange(of: cut.pageRow) { _, _ in pickedBehavior = nil; pickedInstrument = nil; sure = false }
+    }
+
+    private func hasRoom(_ b: String) -> Bool {
+        guard let most = Self.room[b] else { return true }
+        return cut.voices.filter { $0?.behavior == b }.count < most
+    }
+
+    private func taken(_ i: String) -> Bool { cut.voices.contains { $0?.instrument == i } }
+
+    /// The one tapped, while it has room; else the first that has.
+    private var behavior: String {
+        if let p = pickedBehavior, hasRoom(p) { return p }
+        return Self.behaviors.first(where: hasRoom) ?? "keys"
+    }
+
+    private var playsOn: [String] { Self.plays[behavior] ?? [] }
+
+    /// The one tapped, while the behavior plays on it; else the first no other voice has.
+    private var instrument: String {
+        if let p = pickedInstrument, playsOn.contains(p) { return p }
+        return playsOn.first { !taken($0) } ?? playsOn.first ?? "sine"
+    }
+
+    /// Hardware is one voice's: a second voice on it asks first, as the setup page's instrument does.
+    private func add() {
+        if (instrument == "fm" || instrument == "strings") && taken(instrument) && !sure {
+            sure = true
+            return
+        }
+        cut.press("voices", "add", cut.pageRow, behavior, instrument)
+    }
+
+    private func column(_ label: String, _ options: [String], _ chosen: String, can: @escaping (String) -> Bool,
+                        pick: @escaping (String) -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label).font(.system(size: 12)).foregroundStyle(Theme.dim)
+            ForEach(options, id: \.self) { o in
+                let on = o == chosen
+                let ok = can(o)
+                Button {
+                    Tick.down()
+                    pick(o)
+                } label: {
+                    Text(o).font(.system(size: 15, weight: on ? .medium : .regular))
+                        .padding(.horizontal, 10)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                        .foregroundStyle(on ? Color.black : Color.white.opacity(ok ? 1 : 0.3))
+                        .background(on ? Theme.voice(cut.pageRow) : Color.white.opacity(ok ? 0.1 : 0.04),
+                                    in: .rect(cornerRadius: 5))
+                }
+                .buttonStyle(.plain)
+                .disabled(!ok)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 

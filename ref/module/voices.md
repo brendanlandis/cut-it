@@ -28,7 +28,7 @@ itself.
 | A left button, CC 90 − 10 × row | A row with a voice | Its behavior's page; the lit one again, the performance page | unknown |
 | | A row with none | Nothing | unknown |
 | A right button, CC 99 − 10 × row | A row with a voice | `sound`, its setup; the lit one again, the performance page | unknown |
-| | A row with none | Starts a new voice, `voice_<row>`, keys, on the first instrument no other has, and shows its setup | unknown |
+| | A row with none | `sound` for that row, with no voice yet: the phone asks what it does and on what, and nothing is made or put until its `add` (Brendan, 2026-11-25). Again, the performance page (`test/gate/lua/u_voices_test.lua`) | verified |
 | aux, on the Organelle, or songs under the phone's left column | Any page | Opens `songs`; again, back where it was | unknown |
 | Setup, on the Launchpad | Any page | Opens `diag`; again, back where it was. Its `pad-81` is the diagnostic layer, and `pad-82` test mode | unknown |
 | PLAY | A voice's left or right page, stopped | The performance page, by itself. Not from `songs` or `diag`, and not while the transport already runs | unknown |
@@ -50,6 +50,7 @@ itself.
 | Where it's saved | `put section voices <24 atoms>`, name, behavior and instrument a row, `-` for one with none, in the section playing ([songs.md](songs.md)). It shows as unsaved, as any change to a song does | unknown |
 | A section with no line | Is given the seed's when it starts: row 1 `drums`, on `kit`; row 2 `chords`, harmony, on `strings`; row 3 `melody`, on `fm`. `put seed-section voices`, which is no change to the song. That is the first song of a card with none, and a song saved before sections held voices | unknown |
 | A section with no voices | A line of 24 `-`: a new song's section, or one whose last voice was removed. It has none, and is given nothing (Brendan, 2026-11-25) (`test/gate/lua/u_voices_test.lua`) | verified |
+| A voice added | The phone's `add <r> <behavior> <instrument>`, on a row with none: named for its behavior, `melody`, then `melody_2` where that's taken, and its setup shown. A behavior with no room left warns `too-many-<behavior>`; a word that is no behavior fails `bad-behavior`, an instrument it doesn't play `bad-instrument`; none of them makes anything (`test/gate/lua/u_voices_test.lua`) | verified |
 | A new section | Copies them, as it copies every part | unknown |
 | A section starting | `restore voices`, first of its parts, on step 1 while the transport runs. The same voices as the last section's say nothing. Others assign the engines and tell the rows, and the page is said again only when what it hangs on changed, its voice's behavior, instrument or engine; a page whose row is gone gives way to the performance page (`test/gate/lua/u_voices_test.lua`) | verified |
 | A voice removed | The performance page, if it was on show | unknown |
@@ -61,7 +62,7 @@ itself.
 | | Is | Evidence |
 |---|---|---|
 | Inlet 1 | From `u_map`'s seventh outlet: `left-<r>`, `right-<r>`, `aux`, `setup`, each `<value>`; a release does nothing ([map.md](map.md)) | unknown |
-| Inlet 2 | The phone's `voices`, through `u_net`: `left <r>`, `right <r>`, `aux`, `setup`, `name <r> <words>`, `behavior <r> <m>`, `instrument <r> <m>`, `remove <r>` | unknown |
+| Inlet 2 | The phone's `voices`, through `u_net`: `left <r>`, `right <r>`, `aux`, `setup`, `add <r> <behavior> <instrument>`, `name <r> <words>`, `behavior <r> <m>`, `instrument <r> <m>`, `remove <r>` | unknown |
 | Outlet 1 | To `g_grid`, `voices <row> <kind> <8 behaviors>`, when it changes | unknown |
 | Outlet 2 | To the `c_melody`s, `assign` and `active` | unknown |
 | Outlet 3 | To `c_synth`, `instrument <instrument>` | unknown |
@@ -154,7 +155,7 @@ instrument's parameters choose one, `dx7-bank` and `dx7-voice`.
 | What a song keeps | The middle of the bank's, the voice's or the program's step, so the three decimals it writes bring the same one back | verified |
 
 **The Launchpad's sound page:** the instrument's first eight parameters as columns on rows 3 to 8, tapped to set; row 2 its
-song patches, tapped to recall; row 1 eight notes to hear it with.
+song patches, tapped to recall; row 1 eight notes to hear it with. A row with no voice yet has none of it.
 
 ## Traps
 

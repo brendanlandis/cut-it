@@ -48,8 +48,9 @@ SEQ = [
     (5400, "AUX-AGAIN", [param("og-aux", 1)], GAP),
     (5600, "SETUP", [param("lp-setup", 127)], GAP),
     (5800, "SETUP-AGAIN", [param("lp-setup", 127)], GAP),
-    # Row 5 made a harmony voice from the phone: the second engine's.
-    (6000, "BEHAVIOR", [phone("voices behavior 5 harmony"), phone("voices name 5 second chords")], GAP),
+    # Row 5 given a voice from the phone, then made a harmony voice: the second engine's.
+    (6000, "BEHAVIOR", [phone("voices add 5 keys sine"), phone("voices behavior 5 harmony"),
+                        phone("voices name 5 second chords")], GAP),
     (6200, "TOO-MANY", [phone("voices behavior 3 harmony"), phone("voices behavior 3 drums")], GAP),
     # A voice's page, and PLAY.
     (6400, "ON-PAGE", press(70), GAP),

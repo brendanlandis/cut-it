@@ -344,10 +344,13 @@ local function edges(st)
     if c ~= R.DARK then light(st, 90 + k, c) end
   end
   for r = 1, 8 do
+    local on = st.at_row == r
     if st.behaviors[r] and st.behaviors[r] ~= "-" then
-      local on = st.at_row == r
       light(st, 90 - 10 * r, (on and st.kind == "voice") and voice_full(r) or voice_dim(r))
       light(st, 99 - 10 * r, (on and st.kind == "setup") and voice_full(r) or voice_dim(r))
+    elseif on and st.kind == "setup" then
+      -- A row being given a voice on the phone: its right button alone, lit, and pressed again to leave.
+      light(st, 99 - 10 * r, voice_full(r))
     end
   end
   if st.page ~= "perform" and st.unsaved ~= 0 then
@@ -518,6 +521,8 @@ end
 -- its instrument's song patches; row 1 eight notes to hear it with.
 local function sound(st)
   local row = st.at_row > 0 and st.at_row or 1
+  -- A row being given a voice has no sound yet, and its notes would play nothing.
+  if (st.behaviors[row] or "-") == "-" then return end
   local full, dim = voice_full(row), voice_dim(row)
   for c = 1, 8 do
     for l = 1, st.levels[c] do light(st, pad(l + 2, c), full) end

@@ -249,6 +249,9 @@ RESOLVE = {
     ("Pages.swift", "voices behavior", "m"): lambda: swift_list("Pages.swift", r"static let behaviors = \[([^\]]*)\]"),
     ("Pages.swift", "voices instrument", "m"): lambda: swift_list("Pages.swift", r"static let instruments = \[([^\]]*)\]"),
     ("Pages.swift", "voices instrument", "sure"): lambda: swift_list("Pages.swift", r"static let instruments = \[([^\]]*)\]"),
+    # A voice not made yet: its two columns' choices, from the same lists.
+    ("Pages.swift", "voices add", "behavior"): lambda: swift_list("Pages.swift", r"static let behaviors = \[([^\]]*)\]"),
+    ("Pages.swift", "voices add", "instrument"): lambda: swift_list("Pages.swift", r"static let instruments = \[([^\]]*)\]"),
 }
 
 
@@ -477,6 +480,9 @@ def main():
                 takes("voices behavior", f, line, words, 3, keys("u_voices", "BEHAVIORS"))
             elif sub == ["instrument"]:
                 takes("voices instrument", f, line, words, 3, keys("u_voices", "INSTRUMENTS"))
+            elif sub == ["add"]:
+                takes("voices add", f, line, words, 3, keys("u_voices", "BEHAVIORS"))
+                takes("voices add", f, line, words, 4, keys("u_voices", "INSTRUMENTS"))
         elif c == "perform":
             sub = takes("perform", f, line, words, 1, keys("u_perform", "phone_cmds"))
             if sub == ["ctl"]:
@@ -510,6 +516,7 @@ def main():
             ("voices", "u_voices takes (R.phone_cmds)"),
             ("voices behavior", "u_voices has (R.BEHAVIORS)"),
             ("voices instrument", "u_voices has (R.INSTRUMENTS)"),
+            ("voices add", "u_voices has (R.BEHAVIORS, then R.INSTRUMENTS)"),
             ("perform", "u_perform takes (R.phone_cmds)"),
             ("perform ctl", "u_map routes (its destination route)"),
             ("perform ctl drums", "c_steps takes (R.presses)"),

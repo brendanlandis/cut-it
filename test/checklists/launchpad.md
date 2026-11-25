@@ -25,11 +25,11 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 
 - [ ] **5. An unused row**
   - **Do:** Press the fifth button down the left column. Then the fifth down the right column.
-  - **Pass if:** The left one does nothing. The right one starts a voice: both light, violet, the right bright. Save and revert light: the song has changed.
+  - **Pass if:** The left one does nothing. The right one goes bright violet, alone: the left stays dark, and the grid goes dark but for the lamps and the edges. The phone asks what the voice does and what it plays on. Save and revert stay dark: no voice has been made.
 
 - [ ] **6. The lit button again**
   - **Do:** Press the bright button.
-  - **Pass if:** It goes dim, and the grid goes back to the performance page. Revert, the rightmost small button in the lower row under the pads, takes the new voice back: press it on another page if you want it gone, since on the performance page that row is the nanoKONTROL's.
+  - **Pass if:** It goes dark, and the grid goes back to the performance page. The row is as it was, with no voice: both its buttons dark.
   - **Note:** That a release selects nothing is `voices-assert`'s, since a doubled selection would undo itself.
 
 - [ ] **7. Grid vocabulary stays off the OLED**

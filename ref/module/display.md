@@ -198,6 +198,7 @@ left column's CC 80 down to 10, and the right's CC 89 down to 19.
 | A row with a voice | Its row's color, at a quarter, on both columns | unknown |
 | The button whose page is on show | The same color, full: the left for what the voice does, the right for its setup | unknown |
 | A row with none | Dark | unknown |
+| A row with none, its setup on show | Its right button full, in the row's color, and its left dark: a voice being added, on the phone ([voices.md](voices.md)) (`test/gate/lua/g_grid_test.lua`) | verified |
 
 ⚠️ **They are RGB specs, 156 to 171 on the surface**: entries 28 to 43 of the RGB table, each row's full then its
 quarter: pink, cyan, amber, green, violet, yellow, orange and gray, rows 1 to 8.

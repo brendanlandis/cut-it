@@ -37,8 +37,9 @@ SEQ = [
     (14000, "harmony", press(70), GAP),
     (14500, "harmony-again", press(70), GAP),
     (15000, "melody", press(60), GAP),
-    (15500, "sound", press(69), GAP),
-    (16000, "new-voice", press(49), GAP),
+    # An unused row's right button first: aux and Setup come back to a voice's setup page, row 3's.
+    (15500, "new-voice", press(49), GAP),
+    (16000, "sound", press(69), GAP),
     (16500, "aux", ["\\; param og-aux 1"], GAP),
     (17000, "aux-again", ["\\; param og-aux 1"], GAP),
     (17500, "setup", ["\\; param lp-setup 127"], GAP),

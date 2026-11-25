@@ -91,7 +91,9 @@ starts. It joins the setlist and loads, at the next bar while playing.
 
 ### Starting a voice
 
-Press an unused row's right button. On the phone, give it a name, and choose its **behavior** and its **instrument**.
+Press an unused row's right button, or its + on the phone. The phone asks what the voice does, its **behavior**, and what
+it plays on, its **instrument**: tap one of each, then **add voice**. Nothing is made until then, and what's dim can't be
+chosen. The voice's setup page opens, where it can be named.
 Voices are the section's: each section has its own, and a new section starts with a copy of the one it was made from.
 
 | Behavior | Plays on | There can be |

@@ -207,21 +207,14 @@ function R.left(st, n)
   return go(st, "voice", r)
 end
 
--- A new voice on an unused row: keys, on an instrument no other voice has, named for its row.
-local function add(st, r, out)
-  st.voices[r] = { name = "voice_" .. r, behavior = "keys", instrument = first_free(st, "keys", r) }
-  return changed(st, out)
-end
-
--- A right button: that voice's setup. An unused row's starts a new voice; the lit one again goes
--- back to the performance page.
+-- A right button: that voice's setup; the lit one again goes back to the performance page. An unused
+-- row's is the setup of a voice not made yet, where the phone chooses what it does and on what: no
+-- voice until its add (Brendan, 2026-11-25; it made a keys voice at once, to be put right after).
 function R.right(st, n)
   local r = math.floor(num(n))
   if r < 1 or r > R.ROWS then return {} end
   if st.kind == "setup" and st.row == r then return go(st, "perform", 0) end
-  local out = {}
-  if not st.voices[r] then add(st, r, out) end
-  return go(st, "setup", r, out)
+  return go(st, "setup", r)
 end
 
 -- A page of its own, opened from anywhere and closed by the same button, back to where it was, each
@@ -260,6 +253,17 @@ local function row_of(a)
   return (r >= 1 and r <= R.ROWS) and r or nil
 end
 
+-- How many voices a behavior takes: one drum sequencer, a line of each engine, and any number of keys.
+local function full(st, m, r)
+  if m == "keys" then return false end
+  local count = 0
+  for x = 1, R.ROWS do
+    local o = st.voices[x]
+    if x ~= r and o and o.behavior == m then count = count + 1 end
+  end
+  return count >= (m == "drums" and 1 or R.ENGINES)
+end
+
 function R.rename(st, a)
   local r = row_of(a)
   local v = r and st.voices[r]
@@ -279,15 +283,7 @@ function R.set_behavior(st, a)
   if not v then return {} end
   if not FOR[m] then return { R.fail("bad-behavior") } end
   if v.behavior == m then return {} end
-  local count = 0
-  local limit = m == "drums" and 1 or R.ENGINES
-  if m ~= "keys" then
-    for x = 1, R.ROWS do
-      local o = st.voices[x]
-      if x ~= r and o and o.behavior == m then count = count + 1 end
-    end
-    if count >= limit then return { report("warn", "too-many-" .. m) } end
-  end
+  if full(st, m, r) then return { report("warn", "too-many-" .. m) } end
   v.behavior = m
   if not FOR[m][v.instrument] then v.instrument = first_free(st, m, r) end
   local out = changed(st, {})
@@ -307,6 +303,31 @@ function R.set_instrument(st, a)
   local out = changed(st, {})
   if st.row == r then show(st, out) end
   return out
+end
+
+-- A name no other voice has: the behavior's, then melody_2, the first number from 2 free.
+local function new_name(st, base)
+  local has = {}
+  for r = 1, R.ROWS do
+    if st.voices[r] then has[st.voices[r].name] = true end
+  end
+  if not has[base] then return base end
+  local n = 2
+  while has[base .. "_" .. n] do n = n + 1 end
+  return base .. "_" .. n
+end
+
+-- add <row> <behavior> <instrument>: a voice on an unused row, as the phone chose it, named for what
+-- it does, and its setup page. The phone has already asked, if another voice has the instrument.
+function R.add(st, a)
+  local r = row_of(a)
+  local m, i = a[2], a[3]
+  if not r or st.voices[r] then return {} end
+  if not FOR[m] then return { R.fail("bad-behavior") } end
+  if not FOR[m][i] then return { R.fail("bad-instrument") } end
+  if full(st, m, r) then return { report("warn", "too-many-" .. m) } end
+  st.voices[r] = { name = new_name(st, m), behavior = m, instrument = i }
+  return go(st, "setup", r, changed(st, {}))
 end
 
 -- A voice gone: back to the performance page if it was on show.
@@ -446,6 +467,7 @@ R.phone_cmds = {
   aux = function(st) return R.aux(st) end,
   setup = function(st) return R.setup(st) end,
   name = function(st, a) return R.rename(st, a) end,
+  add = function(st, a) return R.add(st, a) end,
   behavior = function(st, a) return R.set_behavior(st, a) end,
   instrument = function(st, a) return R.set_instrument(st, a) end,
   remove = function(st, a) return R.remove(st, a) end,

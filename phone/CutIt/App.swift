@@ -85,7 +85,8 @@ struct RootView: View {
         case "harmony": HarmonyView()
         case "melody": MelodyView()
         case "keys": KeysView()
-        case "sound": SoundView()
+        case "sound":
+            if cut.pageVoice == nil { AddVoiceView() } else { SoundView() }
         case "songs": SongsView()
         case "diag": DiagView()
         default: PerformView()
@@ -93,8 +94,8 @@ struct RootView: View {
     }
 }
 
-/// A column: eight buttons, in each voice's color; dark for a row with none. Over each, what its buttons are for;
-/// under the left one, songs.
+/// A column: eight buttons, in each voice's color; dark for a row with none, but for the row being given one, whose
+/// right button is lit as a voice's setup is. Over each, what its buttons are for; under the left one, songs.
 struct Rail: View {
     enum Side { case left, right }
     let side: Side
@@ -141,28 +142,29 @@ struct Rail: View {
         ForEach(1...8, id: \.self) { row in
             let v = cut.voices[row - 1]
             let lit = cut.pageRow == row && cut.pageKind == (side == .left ? "voice" : "setup")
+            let adding = v == nil && cut.pageRow == row && cut.pageKind == "setup"
             Button {
                 Tick.down()
                 cut.press("voices", side == .left ? "left" : "right", row)
             } label: {
-                Text(title(v, row))
+                Text(title(v, adding))
                     .font(.system(size: 12, weight: lit ? .semibold : .regular))
                     .lineLimit(2).minimumScaleFactor(0.7).multilineTextAlignment(.center)
                     .frame(width: 58).frame(maxHeight: .infinity)
-                    .foregroundStyle(lit ? Color.black : (v == nil ? Color.white.opacity(0.3) : Color.white))
-                    .background(fill(v, row, lit), in: .rect(cornerRadius: 5))
+                    .foregroundStyle(lit ? Color.black : (v == nil ? Color.white.opacity(adding ? 0.6 : 0.3) : Color.white))
+                    .background(fill(v, row, lit, adding), in: .rect(cornerRadius: 5))
             }
             .buttonStyle(.plain)
         }
     }
 
-    private func title(_ v: Cut.Voice?, _ row: Int) -> String {
-        guard let v else { return side == .right ? "+" : "" }
+    private func title(_ v: Cut.Voice?, _ adding: Bool) -> String {
+        guard let v else { return side == .right ? "+" : (adding ? "new" : "") }
         return side == .left ? v.shown : v.instrument
     }
 
-    private func fill(_ v: Cut.Voice?, _ row: Int, _ lit: Bool) -> Color {
-        guard v != nil else { return Color.white.opacity(0.05) }
+    private func fill(_ v: Cut.Voice?, _ row: Int, _ lit: Bool, _ adding: Bool) -> Color {
+        guard v != nil || adding else { return Color.white.opacity(0.05) }
         return lit ? Theme.voice(row) : Theme.voice(row).opacity(0.24)
     }
 }

@@ -172,7 +172,8 @@ still returns the device to Live Mode. Item 251 stays closed.
 **A row is a voice** (Brendan, 2026-11-06): CC 80 down to 10 on the left, each row's button for what its voice does, and
 CC 89 down to 19 on the right, for its setup. `g_grid` lights them in that voice's color, full where the page is, dim
 elsewhere and dark with no voice, so this is one surface rather than press-here-look-there. The lit one again goes back
-to the performance page, and an unused row's right button starts a voice ([voices.md](../module/voices.md)).
+to the performance page. An unused row's right button lights by itself, full: the setup of a voice not made yet, which the
+phone makes ([voices.md](../module/voices.md)).
 
 ⛔ **A CC button here sends 127 then 0**, where a nanoKONTROL button sends only the press, so `u_voices` takes the press
 alone, or a press would choose the same page twice, and the lit button would undo itself.

@@ -74,9 +74,26 @@ equal("⛔ the lit one again: back to the performance page", { page(R.right(st, 
 R.left(st, 2)
 equal("from its left page, its right button goes across", { page(R.right(st, 2)), st.kind }, { "sound", "setup" })
 out = R.right(st, 5)
-equal("⛔ an unused row's: a new voice on it, keys, on an instrument no other has, and its setup page",
-      { st.voices[5], page(out), st.row }, { { name = "voice_5", behavior = "keys", instrument = "sine" }, "sound", 5 })
-equal("... and the song holds it", of(out, "save")[1][2], "voices")
+equal("⛔ an unused row's: its setup page and no voice yet, so nothing for the section to hold",
+      { st.voices[5], page(out), st.kind, st.row, #of(out, "save") }, { nil, "sound", "setup", 5, 0 })
+equal("⛔ ... a section starting again on the same voices leaves it up", { R.restore(st, R.line(st)), st.kind, st.row },
+      { {}, "setup", 5 })
+equal("⛔ ... and the button again leaves it, no voice made", { page(R.right(st, 5)), st.voices[5] }, { "perform" })
+
+print("\n--- a voice added ---")
+st = seeded()
+R.right(st, 5)
+out = R.add(st, { 5, "melody", "saw" })
+equal("⛔ add: the voice as the phone chose it, named for what it does, the first number free; the section holds "
+      .. "it, and its setup page shows", { st.voices[5], #of(out, "save"), page(out), st.kind, st.row },
+      { { name = "melody_2", behavior = "melody", instrument = "saw" }, 1, "sound", "setup", 5 })
+equal("a row that has a voice takes none", R.add(st, { 5, "keys", "sine" }), {})
+equal("⛔ a behavior with no room warns, and adds nothing", { R.add(st, { 6, "drums", "kit" }), st.voices[6] },
+      { { { "err", "warn", { "u_voices", "too-many-drums" } } } })
+equal("an instrument the behavior can't play on fails", R.add(st, { 6, "keys", "kit" }),
+      { { "err", "fail", { "u_voices", "bad-instrument" } } })
+equal("a behavior it doesn't know fails", R.add(st, { 6, "dance", "fm" }),
+      { { "err", "fail", { "u_voices", "bad-behavior" } } })
 equal("a row off the eight does nothing", R.right(st, 9), {})
 
 print("\n--- aux, and Setup ---")
@@ -109,8 +126,7 @@ R.setup(st)
 
 print("\n--- the engines ---")
 st = seeded()
-R.right(st, 5)
-out = R.set_behavior(st, { 5, "melody" })
+out = R.add(st, { 5, "melody", "sine" })
 equal("⛔ each line of each engine is told its voice's instrument, by row order: row 3 and row 5 the melody's",
       { table.unpack(of(out, "engine"), 1, 4) },
       { { "engine", "assign", { 1, "h", "strings" } }, { "engine", "assign", { 1, "m", "fm" } },
@@ -119,7 +135,7 @@ equal("⛔ a voice's page says which engine it is in", of(R.left(st, 5), "engine
       { "engine", "active", { 2 } })
 equal("... a keys voice in none", (function()
   local s = seeded()
-  R.right(s, 4)
+  R.add(s, { 4, "keys", "sine" })
   return of(R.left(s, 4), "engine")[1]
 end)(), { "engine", "active", { 0 } })
 equal("u_perform is told the row on show and each row's engine", of(R.left(st, 3), "perform")[1],
@@ -131,16 +147,16 @@ equal("... and is left on the last for one that's no hardware", of(R.left(st, 5)
 
 print("\n--- too many, and the phone's voice page ---")
 st = seeded()
-R.right(st, 4)
-R.right(st, 5)
-R.right(st, 6)
+R.add(st, { 4, "keys", "sine" })
+R.add(st, { 5, "keys", "saw" })
+R.add(st, { 6, "keys", "square" })
 equal("a second harmony voice is fine: there are two engines", #of(R.set_behavior(st, { 4, "harmony" }), "save"), 1)
 equal("⛔ a third warns, and changes nothing", { R.set_behavior(st, { 5, "harmony" }), st.voices[5].behavior },
       { { { "err", "warn", { "u_voices", "too-many-harmony" } } }, "keys" })
 equal("⛔ so does a second drum voice", R.set_behavior(st, { 6, "drums" }),
       { { "err", "warn", { "u_voices", "too-many-drums" } } })
 st = seeded()
-R.right(st, 4)
+R.add(st, { 4, "keys", "sine" })
 equal("as many keys voices as there are rows", #of(R.set_behavior(st, { 4, "keys" }), "save"), 0)
 out = R.set_behavior(st, { 3, "keys" })
 equal("⛔ a behavior that can play on its instrument keeps it", { st.voices[3].instrument, #of(out, "save") }, { "fm", 1 })

@@ -59,9 +59,8 @@ def run_asserts(cap, state):
     A.check("⛔ the lit one again: the performance page", pages("LEFT-2-AGAIN") == [["perform"]],
             pages("LEFT-2-AGAIN"))
     A.check("⛔ a left button with no voice does nothing", not pages("LEFT-EMPTY"), pages("LEFT-EMPTY"))
-    A.check("⛔ an unused right button: a new voice the section holds, and its setup page",
-            pages("RIGHT-5") == [["sound"]] and puts("RIGHT-5", "put", "section", "voices") ==
-            [["put", "section", "voices"] + SEED + ["-"] * 3 + ["voice_5", "keys", "sine"] + ["-"] * 9],
+    A.check("⛔ an unused right button: its setup page, and no voice for the section to hold yet",
+            pages("RIGHT-5") == [["sound"]] and not puts("RIGHT-5", "put", "section", "voices"),
             "%s, %s" % (pages("RIGHT-5"), puts("RIGHT-5", "put", "section", "voices")))
     A.check("the lit one again: back", pages("RIGHT-5-AGAIN") == [["perform"]], pages("RIGHT-5-AGAIN"))
     A.check("⛔ aux, through the table: the songs page, and aux again back",
@@ -73,6 +72,9 @@ def run_asserts(cap, state):
 
     print("\n--- from the phone ---")
     v = puts("BEHAVIOR", "put", "section", "voices")
+    A.check("⛔ a voice added, through u_net: row 5 as the phone chose it, named for what it does, and its setup page",
+            v[:1] == [["put", "section", "voices"] + SEED + ["-"] * 3 + ["keys", "keys", "sine"] + ["-"] * 9]
+            and pages("BEHAVIOR")[:1] == [["sound"]], "%s, %s" % (v[:1], pages("BEHAVIOR")))
     A.check("⛔ a voice's behavior and name, through u_net: row 5 a harmony voice, second_chords",
             v[-1:] == [["put", "section", "voices"] + SEED + ["-"] * 3 + ["second_chords", "harmony", "sine"]
                        + ["-"] * 9], v)

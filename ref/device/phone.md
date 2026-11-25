@@ -16,7 +16,9 @@ the songs and the sections, where the tempo, the last step, the time signature, 
 drunkenness are set; and `diag`, which Setup opens. The Launchpad's two columns run down either
 side of it, headed behaviors and instruments, and a press on either moves both (`cut-it/cut-it-app`).
 Under the left one, songs opens and closes the songs page, as aux does, by sending `voices aux`
-(Brendan, 2026-11-24). It was a mirror of `disp` until 2026-11-04, with a remote screen of diagnostic buttons, and both went
+(Brendan, 2026-11-24). `sound` on a row with no voice is where one is added: the phone asks for a behavior and an
+instrument, and sends `voices add` (Brendan, 2026-11-25; [voices.md](../module/voices.md)). The phone was a mirror of `disp` until 2026-11-04, with a remote screen of
+diagnostic buttons, and both went
 with the split: that reverses the decision on [display.md](../module/display.md) that the phone
 stays a mirror, which was right for a readout and is not for a control surface.
 

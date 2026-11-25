@@ -172,8 +172,14 @@ equal("the held key releases on outlet 1", T.send(o, 1, "list", { 60, 0 }),
       { { 1, "note", { 60, 0 } } })
 equal("a new key leaves outlet 2, the Streichfett's", T.send(o, 1, "list", { 62, 90 }),
       { { 2, "note", { 62, 90 } } })
-equal("⛔ once a voice says, a section's saved choice doesn't overrule it; it puts back what is in force",
-      T.send(o, 2, "restore", { "fm" }), { { 3, "synth", { "strings" } }, { 4, "synth", { "strings" } } })
+equal("⛔ once a voice says, a section's saved choice doesn't overrule it, and goes back to the store as "
+      .. "it came, so a restore leaves the song as saved",
+      T.send(o, 2, "restore", { "fm" }), { { 3, "synth", { "strings" } }, { 4, "synth", { "fm" } } })
+equal("... one that names no synth puts back the one the section held",
+      T.send(o, 2, "restore", { "compose" }), { { 3, "synth", { "strings" } }, { 4, "synth", { "fm" } } })
+equal("... and synth strings, the line check's, is a change to the section, put though the choice is "
+      .. "strings already", T.send(o, 1, "synth", { "strings" }),
+      { { 3, "synth", { "strings" } }, { 4, "synth", { "strings" } } })
 equal("velocity off on inlet 1 leaves outlet 7, for the phone, and 4, to save",
       T.send(o, 1, "velocity", { "off" }),
       { { 7, "velocity", { "off" } }, { 4, "velocity", { "off" } } })

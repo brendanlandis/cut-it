@@ -52,13 +52,15 @@ end
 
 -- held[note] is the synth that note's note-on went to, while the key is down.
 function R.new()
-  return { choice = R.BOOT, held = {}, velocity = R.BOOT_VELOCITY, pd_slots = {}, pd_next = 0,
-           programs = { fm = R.NONE, strings = R.NONE } }
+  return { choice = R.BOOT, kept = R.BOOT, held = {}, velocity = R.BOOT_VELOCITY, pd_slots = {},
+           pd_next = 0, programs = { fm = R.NONE, strings = R.NONE } }
 end
 
--- The choice, out to the phone, and to the song store.
+-- The choice, out to the phone, and what the section playing holds, st.kept, to the song store. The
+-- two are one until a voice's page says which synth plays (R.machine): from then the choice is the
+-- voice's, and the section keeps its own.
 local function tell(st)
-  return { { "choice", "synth", { st.choice } }, { "save", "synth", { st.choice } } }
+  return { { "choice", "synth", { st.choice } }, { "save", "synth", { st.kept or st.choice } } }
 end
 
 -- The velocity switch, out to the phone, and to u_state.
@@ -141,8 +143,8 @@ function R.choose(st, atoms)
     st.pd_wave = nil
     st.pd_slots = {}
   end
-  if choice == st.choice and not left_pd then return {} end
-  st.choice = choice
+  if choice == st.choice and choice == st.kept and not left_pd then return {} end
+  st.choice, st.kept = choice, choice
   return tell(st)
 end
 
@@ -167,9 +169,15 @@ function R.machine(st, atoms)
 end
 
 -- A section's restore of synth: the choice saved, put straight back (ref/module/state.md). One
--- that names no synth keeps the one in force and puts that back, so the file is repaired.
+-- that names no synth keeps the one the section held and puts that back, so the file is repaired.
+-- Once a voice's page has said which synth plays, the saved choice doesn't overrule it, and still
+-- goes back as it came: putting back the voice's instead changed the song at every restore, so
+-- save and revert lit at a load and stayed lit after a revert (on the rig, 2026-11-24).
 function R.restore(st, atoms)
-  if KNOWN[atoms[1]] and not st.by_voice then st.choice = atoms[1] end
+  if KNOWN[atoms[1]] then
+    st.kept = atoms[1]
+    if not st.by_voice then st.choice = atoms[1] end
+  end
   return tell(st)
 end
 

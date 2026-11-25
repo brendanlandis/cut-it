@@ -54,13 +54,13 @@ Each part puts at load and on every change, and takes its restore.
 |-----|------|-------|----------|
 | `perform` | `u_perform` | The controls in play: each one's physical control, destination, arg, row and value, five atoms ([voices.md](voices.md)). A section with none is told so, `restore perform` with nothing after it, first of all, or the last section's would stay | unknown |
 | `drums` | `c_steps` | The pattern, 581 numbers, 743 with a track muted or soloed: 512 velocities, each track's own last step and randomness, the time signature, the drunkenness, the swing and the global last step ([sequencer.md](sequencer.md), *The pattern in a section*). The kit's sound is the song's, `put song kit` | unknown |
-| `melody`, `melody-2` | `c_melody`, each engine's | The generator, `R.save`'s numbers: its controls, the 32 steps, the 8 chords and the fields added later ([synths.md](synths.md), *The generator*). Its restore waits for step 1, as the tempo's and the programs' do | unknown |
+| `melody`, `melody-2` | `c_melody`, each engine's | The generator, `R.save`'s numbers: its controls, the 32 steps, the 8 chords and the fields added later ([synths.md](synths.md), *The generator*). Put at load as it starts, so a blank section holds it. Its restore waits for step 1, as the tempo's and the programs' do | unknown |
 | `programs` | `c_synth` | The FM-1's program, then the Streichfett's: 0 to 127, or `none` ([synths.md](synths.md)) | unknown |
 | `synth` | `c_synth` | `fm` or `strings` | unknown |
 | `tempo` | `u_tempo` | The BPM, as the tempo bus carries it ([tempo.md](tempo.md)) | unknown |
 | A part asked back | `recall <key>` on the third inlet, from `c_steps`, `pad-38`'s `recall tempo` (Brendan, 2026-11-05): the part as the saved song holds it in the section playing, or for a section never saved, or a part its save didn't hold, the draft's, back out as `restore <key> <atoms...>`, the way a section starting sends it. It still knows nothing of what a key means. The part puts back what it restores, so the draft takes it like any change. A part nobody holds sends nothing | verified |
 | `velocity` | `c_synth` | `on` or `off` | unknown |
-| `voices` | `u_voices` | The eight rows, name, behavior and instrument each, `-` for one with none, 24 atoms ([voices.md](voices.md)). Said first of a section's parts, with nothing after it for a section that holds none, which is then given the seed's. Its restore waits for step 1 while the transport runs | verified |
+| `voices` | `u_voices` | The eight rows, name, behavior and instrument each, `-` for one with none, 24 atoms ([voices.md](voices.md)). Said first of a section's parts, with nothing after it for a section that holds no line, which is then given the seed's; a line of 24 `-` is a section with no voices, and stays one. Its restore waits for step 1 while the transport runs | verified |
 | `sounds` | `u_sound` | Each voice's sound as it stands: its row, its patch or `-`, its instrument, how many values, then each parameter and its value ([voices.md](voices.md), *Instruments and patches*). Said second, after the voices it is for, though the section holds none; waits for step 1 too | verified |
 
 ### The parts a song holds
@@ -210,9 +210,9 @@ page (`R.lists` in `u_song.lua`).
 |---|---|---|
 | The selections | The phone's, held here: the song selected for `load`, `name`, `add` and `delete`, the entry selected for `up`, `down` and `remove` | unknown |
 | `load` | The selected song, as a key asks for it | unknown |
-| `new` | A song after the selected, "song 2", the first number from 2 no song has, of one section: a copy of the section playing, its name, length and parts. Saved as it is and selected; the setlist chosen's last entry, and selected there, while it has room; and asked for as its key would ask, so loaded at once, or at the bar while playing (Brendan, 2026-11-25) (`test/gate/lua/u_song_test.lua`) | verified |
+| `new` | A song after the selected, "song 2", the first number from 2 no song has, of one blank section: "section 1", no length, each part as it was put before any song loaded, and no voices; its song parts the same way. Nothing of the song it was made from. Saved as it is and selected; the setlist chosen's last entry, and selected there, while it has room; and asked for as its key would ask, so loaded at once, or at the bar while playing (Brendan, 2026-11-25) (`test/gate/lua/u_song_test.lua`) | verified |
 | `add` | The selected song, the setlist chosen's last entry, from silence, and selected; past 25, `warn u_song set-full` | unknown |
-| `delete` | The selected song goes, from every setlist too, its files with it, and the one now in its place is selected; the last song is `warn u_song last-song`; deleting the song loaded loads the one now in its place, at once. The phone asks first (*Delete asks first*, below) | unknown |
+| `delete` | The selected song goes, from every setlist too, its files with it, and the one now in its place is selected; the last song is `warn u_song last-song`; deleting the song loaded loads the one now in its place, at once, its patches and kit before its section's parts (`test/gate/lua/u_song_test.lua`). The phone asks first (*Delete asks first*, below) | unknown |
 | `entry`, `up`, `down`, `remove` | A row tapped selects an entry; move up and down move it and its key; remove takes it out, the one now in its place selected | unknown |
 | `choose` | `choose <n>`: setlist *n* chosen, its first entry selected, none in an empty one; a number with no setlist does nothing | unknown |
 | `new-set` | An empty setlist after the one chosen, "set 2" the same way as songs, and chosen | unknown |
@@ -359,11 +359,16 @@ is chosen on the songs tab, often for a song not loaded, and a rename that waite
 leave every song named before a gig unsaved until each was loaded and saved. A section's name is
 still part of the draft, as the song's sections are.
 
-### A new song is a copy of the section playing
+### A new song is one blank section
 
-One section, as the section playing is now, name and all, named "song 2" as a copied section is
-"verse 2" (judgment call, 2026-11-05): what you are playing is the likeliest start of the next
-song. **It joins the setlist chosen and loads** (Brendan, 2026-11-25): made and left off the setlist the
+"section 1", with every setting as Cut It starts and no voices (Brendan, 2026-11-25: "A new song should have one
+blank section with default settings and no voices"). It was a copy of the section playing, name and all (judgment
+call, 2026-11-05), and the new song's list then read as the old song's. **Blank is what every part put before any
+song loaded**, kept at the load: the store still knows nothing of what a part's key means, so no default is written
+here twice, and a part added later is in a blank section from the day it puts at load. The voices are the one part
+named, as 24 `-`, since a section with no line would be given the seed's ([voices.md](voices.md)).
+
+**It joins the setlist chosen and loads** (Brendan, 2026-11-25): made and left off the setlist the
 phone had up, not loaded, it looked like a tap that did nothing, and he took the song's unsaved changes for the
 cause. Loading it costs nothing, since the song left keeps its draft (*Each song keeps its own draft*, above). A
 full setlist doesn't take it, and the phone then shows all songs, where it is.

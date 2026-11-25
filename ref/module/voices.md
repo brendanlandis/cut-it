@@ -48,7 +48,8 @@ itself.
 | How many | One drums, two each of harmony and melody, what there are engines for: a third warns `too-many-harmony` and changes nothing. Keys as many as there are rows | unknown |
 | A name | Lowercase, one symbol, spaces as `_`, at most 16 characters | unknown |
 | Where it's saved | `put section voices <24 atoms>`, name, behavior and instrument a row, `-` for one with none, in the section playing ([songs.md](songs.md)). It shows as unsaved, as any change to a song does | unknown |
-| A section with none | Is given the seed's when it starts: row 1 `drums`, on `kit`; row 2 `chords`, harmony, on `strings`; row 3 `melody`, on `fm`. `put seed-section voices`, which is no change to the song | unknown |
+| A section with no line | Is given the seed's when it starts: row 1 `drums`, on `kit`; row 2 `chords`, harmony, on `strings`; row 3 `melody`, on `fm`. `put seed-section voices`, which is no change to the song. That is the first song of a card with none, and a song saved before sections held voices | unknown |
+| A section with no voices | A line of 24 `-`: a new song's section, or one whose last voice was removed. It has none, and is given nothing (Brendan, 2026-11-25) (`test/gate/lua/u_voices_test.lua`) | verified |
 | A new section | Copies them, as it copies every part | unknown |
 | A section starting | `restore voices`, first of its parts, on step 1 while the transport runs. The same voices as the last section's say nothing. Others assign the engines and tell the rows, and the page is said again only when what it hangs on changed, its voice's behavior, instrument or engine; a page whose row is gone gives way to the performance page (`test/gate/lua/u_voices_test.lua`) | verified |
 | A voice removed | The performance page, if it was on show | unknown |
@@ -174,7 +175,7 @@ performance page under the finger, and the pad's release would land on another p
 
 ### Seeding a section must not be a change to the song
 
-⛔ A section with no voices is given the seed's when it starts, at load and after every revert. As an ordinary
+⛔ A section that holds no voices line is given the seed's when it starts, at load and after every revert. As an ordinary
 `put section` it would light save and revert at load, and no revert could ever put them out.
 
 **Fix:** `put seed-section`, which goes into what's saved of the section as well.

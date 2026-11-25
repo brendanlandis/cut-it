@@ -84,6 +84,9 @@ this section holds for it. Carry on leaves it as it stands.
 **Save as new** makes what's playing a new section after the one it was, and the original goes back to how it was saved.
 Play around with a section until you like it, then press this.
 
+**New** under the songs makes a song of one blank section, section 1: no voices yet, and every setting as Cut It
+starts. It joins the setlist and loads, at the next bar while playing.
+
 ## Voices and their sound
 
 ### Starting a voice

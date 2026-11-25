@@ -44,6 +44,10 @@ R.MAX_LENGTH = 64
 R.MAX_NAME = 20
 -- With no song saved yet: one section, named so a copy of it is "section 2".
 R.SONG, R.FIRST = "song 1", "section 1"
+-- A section with no voices, in u_voices' words: eight rows, each no name, no behavior, no instrument.
+-- A section that holds no voices line at all is given the seed's instead.
+R.NO_VOICES = {}
+for i = 1, 24 do R.NO_VOICES[i] = "-" end
 -- A new setlist is "set 2", and the first "set 1".
 R.SET = "set 1"
 -- The Organelle's keys, og-key-60 to og-key-84: key N loads the Nth song of the setlist chosen,
@@ -675,6 +679,10 @@ end
 -- setlist, song 1 its opener. A song the index names with neither file is gone. Then the song
 -- loaded last starts at section 1, and the files missing are written.
 function R.load(st, draft_text, saved_text, index_text, files)
+  -- What every part put before any song loaded is what it starts as: a blank song's one section, and
+  -- the store still knows nothing of what any of it means.
+  st.blank = st.blank or { parts = copy_parts(st.song.parts or {}),
+                           section = copy_parts(st.song.sections[1].parts) }
   local ix = R.parse_index(index_text)
   files = files or {}
   local recs, by = {}, {}
@@ -1020,19 +1028,21 @@ function R.song_load(st)
   return R.ask(st, st.sel_song)
 end
 
--- new song: one section, a copy of the section playing, after the selected song, named "song
--- 2", the first number from 2 no song has, and selected; saved as it is, so there is nothing to
--- save. It joins the setlist chosen, its last entry, while there is room, so it shows on the list
+-- new song: one blank section, every part as it starts and no voices (Brendan, 2026-11-25; a copy of
+-- the section playing before, which made the new song's list look like the old one's), after the
+-- selected song, named "song 2", the first number from 2 no song has, and selected; saved as it is,
+-- so there is nothing to save. It joins the setlist chosen, its last entry, while there is room, so it shows on the list
 -- the phone has up, and it is asked for as its key would ask: loaded at once, or at the bar while
 -- playing (Brendan, 2026-11-25: a new song that was only made, off the setlist and not loaded,
 -- looked like a tap that did nothing).
 function R.song_new(st)
-  local p = st.playing
-  local s = { id = 1, name = p.name, length = p.length, parts = copy_parts(p.parts) }
+  local blank = st.blank or { parts = {}, section = {} }
+  local parts = copy_parts(blank.section)
+  parts.voices = R.NO_VOICES
+  local s = { id = 1, name = R.FIRST, length = 0, parts = parts }
   local names = {}
   for i, rec in ipairs(st.songs) do names[i] = rec.song.name end
-  local song = { name = R.next_name(names, "song"), parts = copy_parts(st.song.parts or {}),
-                 sections = { s } }
+  local song = { name = R.next_name(names, "song"), parts = copy_parts(blank.parts), sections = { s } }
   local rec = record(st.next_song, song, copy_song(song))
   rec.next_id, rec.write_saved = 2, true
   st.next_song = st.next_song + 1
@@ -1098,7 +1108,7 @@ function R.song_delete(st)
     st.pending, st.queued = nil, nil
     take(st, st.songs[k])
     st.selected, st.first = st.song.sections[1], 1
-    local out = begin(st, st.song.sections[1])
+    local out = song_parts(st, begin(st, st.song.sections[1]))
     table.insert(out, 1, loaded(st.cur))
     return out
   end

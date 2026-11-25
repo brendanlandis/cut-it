@@ -204,6 +204,22 @@ out = R.restore(st, {})
 equal("⛔ a section with none is seeded and saved so, though its voices are the ones already playing",
       { #out, out[1][1] }, { 1, "seed" })
 
+print("\n--- a section with no voices ---")
+st = seeded()
+R.left(st, 2)
+local none = {}
+for i = 1, 24 do none[i] = "-" end
+out = R.restore(st, none)
+equal("⛔ a line that names no voice leaves none, and is no seed: a new song's blank section",
+      { next(st.voices), #of(out, "seed"), page(out) }, { nil, 0, "perform" })
+equal("... the same again says nothing", R.restore(st, none), {})
+st = seeded()
+for r = 1, 3 do R.remove(st, { r }) end
+local line = R.line(st)
+equal("⛔ the last voice removed stays removed when the section starts again",
+      { table.concat(line, " "), next((function() R.restore(st, line) return st.voices end)()) },
+      { string.rep("-", 24, " "), nil })
+
 print("\n--- what the surfaces show ---")
 st = seeded()
 R.right(st, 2)

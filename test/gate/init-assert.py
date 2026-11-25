@@ -24,7 +24,7 @@ STAGES = ["modal booting", "modal wiring", "modal launchpad", "modal-off"]
 SEEDED = [["restore", "init-mprobe", "7"], ["restore", "init-probe", "42"]]
 # What the playing section holds at a fresh load, each part's put since load: the keys u_song's
 # load restores, sorted (ref/module/songs.md).
-SECTION_PARTS = ["drums", "programs", "synth", "tempo", "velocity"]
+SECTION_PARTS = ["drums", "melody", "melody-2", "programs", "synth", "tempo", "velocity"]
 
 _STAGE = re.compile(r"^DISP:\s+(modal booting|modal wiring|modal launchpad"
                     r"|modal-off)\s*$")

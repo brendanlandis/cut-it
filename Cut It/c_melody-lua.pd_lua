@@ -130,4 +130,6 @@ function MelodyLua:in_2(sel, atoms)
   end
   if sel == "restore" then F.stop(self, "save") end
   self:internal(sel, atoms)
+  -- Its starting line, put at load as every part puts its own: what a blank section starts as.
+  if sel == "init" then self:save_now() end
 end

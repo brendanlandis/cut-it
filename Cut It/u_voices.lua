@@ -349,18 +349,18 @@ function R.restore(st, a)
   local page = shown(st)
   st.restored = true
   st.voices = {}
-  local any = false
   for r = 1, R.ROWS do
     local i = (r - 1) * 3
     local name, behavior, instrument = a[i + 1], a[i + 2], a[i + 3]
     if type(name) == "number" then name = string.format("%g", name) end
     if type(name) == "string" and name ~= "-" and FOR[behavior] and FOR[behavior][instrument] then
       st.voices[r] = { name = name, behavior = behavior, instrument = instrument }
-      any = true
     end
   end
+  -- A section that holds no line is given the seed's. One whose line names no voice has none: a new
+  -- song's blank section, or the last voice removed (Brendan, 2026-11-25).
   local out = {}
-  if not any then
+  if #a == 0 then
     seed(st)
     out[1] = { "seed", "seed", R.line(st) }
   end

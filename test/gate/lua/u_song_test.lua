@@ -81,6 +81,15 @@ local function first_restore(sent)
   end
 end
 
+-- The key of every restore, in the order sent.
+local function restore_keys(out)
+  local r = {}
+  for _, e in ipairs(out) do
+    if e[1] == "state" and e[2] == "restore" then r[#r + 1] = e[3][1] end
+  end
+  return r
+end
+
 local function names(st)
   local n = {}
   for i, s in ipairs(st.song.sections) do n[i] = s.name end
@@ -543,9 +552,31 @@ equal("new song: after the selected, named song 2, selected, the setlist chosen'
       { { "night drive", "song 2", "song 1", "lantern" }, "song 2", { "song 1", "song 2" }, 2, 9,
         { "err", "info", { "u_song", "loaded-song-2" } } })
 local new = st.sel_song
-equal("... one section, a copy of the section playing, its parts as they are now",
-      { #new.song.sections, new.song.sections[1].name, new.song.sections[1].parts.tempo },
-      { 1, "intro", { 95 } })
+equal("... one blank section, section 1 with no length: nothing of the section playing, and no voices",
+      { #new.song.sections, new.song.sections[1].name, new.song.sections[1].length,
+        new.song.sections[1].parts.tempo, new.song.sections[1].parts.drums,
+        table.concat(new.song.sections[1].parts.voices, " "), next(new.song.parts) },
+      { 1, "section 1", 0, nil, nil, string.rep("-", 24, " "), nil })
+do
+  -- What every part put before any song loaded is what a blank section starts as.
+  local b = R.new()
+  R.put(b, { "tempo", 120 })
+  R.put(b, { "drums", 0, 0, 16 })
+  R.put_song(b, { "kit", 5, 5 })
+  R.load(b, songtext("song 1", { "a" }, 100), songtext("song 1", { "a" }, 100), nil, {})
+  R.put(b, { "tempo", 200 })
+  R.put_song(b, { "patches", "dry", "fm", 0 })
+  local made = R.song_new(b)
+  local n = b.sel_song.song
+  equal("... each part as it put itself before any song loaded, the song's parts too: none of the song left",
+        { n.sections[1].parts.tempo, n.sections[1].parts.drums, n.parts.kit, n.parts.patches,
+          table.concat(n.sections[1].parts.voices, " ") },
+        { { 120 }, { 0, 0, 16 }, { 5, 5 }, nil, string.rep("-", 24, " ") })
+  equal("... and it loads at once: the song's parts, the section's voices, none, and each part as it starts",
+        { b.cur.song.name, restore_keys(made), restores(made) },
+        { "song 2", { "patches", "kit", "voices", "sounds", "perform", "tweaks", "drums", "tempo" },
+          { "drums 0 0 16", "tempo 120" } })
+end
 equal("... saved as it is, both its files to write, its id the next, and the index",
       { R.differs(new.song, new.saved), st.write_saved, new.id, st.next_song, st.index_dirty },
       { false, true, 9, 10, true })
@@ -586,7 +617,8 @@ equal("... its files to go", st.removed, { 1 })
 R.song_select(st, 1)
 out = R.song_delete(st)
 equal("⛔ deleting the song loaded loads the one now in its place, at once, and says so",
-      { restores(out), out[1], st.cur.song.name }, { { "drums 1", "tempo 95" }, { "err", "info",
+      { restore_keys(out), out[1], st.cur.song.name },
+      { { "patches", "kit", "voices", "sounds", "perform", "tweaks" }, { "err", "info",
       { "u_song", "loaded-hollow-bell" } }, "hollow bell" })
 for _ = 1, 2 do R.song_delete(st) end
 equal("⛔ there is always a song: deleting the last is warn u_song last-song",
@@ -995,13 +1027,17 @@ equal("⛔ songs new, from the phone, stopped: after a sync the new song loads, 
       { { 3, "sync", {} }, 2, { 2, 2, "song 1", "-", "song 2", "loaded", 2, 2 } })
 equal("... its two files written at once, named for its id",
       { file("cut-it-song-2.txt"), file("cut-it-song-2-draft.txt") },
-      { "song song 2\nsection 1 0 intro\ndrums 1\ntempo 100\n",
-        "song song 2\nsection 1 0 intro\ndrums 1\ntempo 100\n" })
+      { "song song 2\nsection 1 0 section 1\nvoices" .. string.rep(" -", 24) .. "\n",
+        "song song 2\nsection 1 0 section 1\nvoices" .. string.rep(" -", 24) .. "\n" })
 T.send(o, 1, "key", { 1 })
 T.send(o, 3, "put", { "tempo", 120 })
 sent = T.send(o, 1, "key", { 2 })
-equal("key 2, stopped: song 2 loads, its section 1 restored", first_restore(sent), { 3, "restore",
-      { "drums", 1 } })
+local voiced
+for _, m in ipairs(sent) do
+  if m[1] == 3 and m[2] == "restore" and m[3][1] == "voices" then voiced = #m[3] end
+end
+equal("key 2, stopped: song 2 loads, its blank section 1 restored, its voices none",
+      { o.state.cur.id, voiced, first_restore(sent) }, { 2, 25, nil })
 equal("... and the lamps: dark, since song 2 is as saved", lamps(sent), { { 1, "unsaved", { 0 } } })
 T.send(o, 3, "flush", {})
 equal("⛔ the flush writes song 1's draft, its change kept, and the index, song 2 loaded",

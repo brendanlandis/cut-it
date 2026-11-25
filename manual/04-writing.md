@@ -14,7 +14,7 @@ track's random pitch, distortion, delay and reverb.
   to reroll just that one.
 - **The seven rows below:** the rhythm, each chord lit where it starts. Hold a chord and tap a step to move it there. Longer
   rhythms show the part that's playing.
-- **Upper bottom row:** on, roll chords, roll rhythm, bass only, modal or functional.
+- **Upper bottom row, the small buttons under the pads:** on, roll chords, roll rhythm, bass only, modal or functional.
 
 **Phone**
 
@@ -30,7 +30,7 @@ track's random pitch, distortion, delay and reverb.
 - **Top four rows:** 32 steps. Tap one to turn it on or off.
 - **Bottom four rows:** the mode's notes, low to high, with the tonic marked. The pad for the note playing lights up.
 - **To set a pitch:** hold a step and press a note.
-- **Upper bottom row:** on, roll, clear pins.
+- **Upper bottom row, the small buttons under the pads:** on, roll, clear pins.
 
 **Phone**
 

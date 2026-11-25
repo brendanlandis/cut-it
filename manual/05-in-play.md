@@ -23,7 +23,7 @@ physical control until you've turned that to the value or through it. So nothing
 
 Tapping a column sets its fader to that height, and the physical fader then has to catch up.
 
-**The two bottom rows** are the nanoKONTROL's sixteen buttons, which can't light themselves: dim off, bright on, in their
+**The two bottom rows,** the small buttons under the pads, are the nanoKONTROL's sixteen buttons, which can't light themselves: dim off, bright on, in their
 voices' colors. Pressing one does the same as its button.
 
 **Phone:** the same eight groups, each naming its knob, fader and two buttons, and whose they are.

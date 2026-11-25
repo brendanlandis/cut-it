@@ -63,7 +63,7 @@ each thing behaves as it does: [synths](../../ref/module/synths.md),
 - [ ] **10. The switch survives a reload**
   - **Need:** Row 3's keys page on show, as step 9 left it.
   - **Do:** Turn the phone's velocity switch off, wait three seconds, then load Cut It again from the Organelle menu. When it has booted, press row 3's left button if its keys page isn't on show, and play the nanoKEY, softly and hard.
-  - **Pass if:** The FM-1 plays, soft and hard keys the same, and the phone's switch is out. Turn it back on, then press revert, the lowest row's rightmost button, which puts row 3 back to melody.
+  - **Pass if:** The FM-1 plays, soft and hard keys the same, and the phone's switch is out. Turn it back on, then press revert, the rightmost small button in the lower row under the pads, which puts row 3 back to melody.
   - **Note:** The switch is the section's part velocity, in the song's draft, flushed within two seconds of a change ([songs](../../ref/module/songs.md)). The choice a voice's page makes isn't put, so it isn't this step's: the layout's FM and STRINGS buttons were what put one.
 
 - [ ] **11. Panic silences a held note**

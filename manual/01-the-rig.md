@@ -30,5 +30,6 @@ A song has up to eight voices, one a row, each with its own color on every surfa
 | Songs and sections | Aux, on the Organelle; aux again closes it |
 | Diagnostics | Setup, on the Launchpad; Setup again closes it |
 
-Save and revert are the rightmost buttons of the Launchpad's two bottom rows, on every page but the performance page.
+Save and revert are the rightmost of the small buttons under the Launchpad's pads, in its two bottom rows: save in the
+upper, revert in the lower. They work on every page but the performance page.
 They light when something's unsaved, and cover the whole song.

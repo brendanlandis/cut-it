@@ -173,7 +173,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 
 - [ ] **35. The effects are saved with a section**
   - **Need:** The pattern and effects from the steps before: pad 1 with its quarter-note delay, pad 2 with its reverb send. The Launchpad's top row with two sections.
-  - **Do:** Press the top row's second pad, the second section, and let it start; on the phone tap pad 1, then delay, and turn its level to 0, then tap pad 2, reverb, and turn its send to 0. Press the top row's first pad and let it start, then the second again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY.
+  - **Do:** Press the top row's second pad, the second section, and let it start; on the phone tap pad 1, then delay, and turn its level to 0, then tap pad 2, reverb, and turn its send to 0. Press the top row's first pad and let it start, then the second again. Then press save, the rightmost small button in the upper row under the pads, the red one, load Cut It again from the Organelle menu, and press PLAY.
   - **Pass if:** In the second section the two drums are dry; going back to the first, pad 1 echoes and pad 2 has its reverb again, and the phone's controls for each show the first section's settings; back in the second, dry again. After the reload each section has the effects it had when saved.
   - **Note:** The effects are a section's, with its pattern, as volume and pitch are (Brendan, 2026-11-05). That every effect reaches `c_kit` at a restore, and the delay's time and levels, are `sequencer-assert`'s and `kit-assert`'s; this is how they sound.
 
@@ -196,7 +196,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 
 - [ ] **39. Mute and solo are saved with a section**
   - **Need:** The pattern from the steps before, playing, nothing muted or soloed, in section 1, and section 2 a copy of it: on the phone's songs page, aux, tap section 1 in the middle column, then **new** under it, and press aux again.
-  - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone tap the M under pad 1 and the S under pad 3. Press the third button, section 1, and let it start, then the fourth again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn.
+  - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone tap the M under pad 1 and the S under pad 3. Press the third button, section 1, and let it start, then the fourth again. Then press save, the rightmost small button in the upper row under the pads, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn.
   - **Pass if:** In section 2 only pad 3 plays, and the phone shows pad 1's M and pad 3's S lit and the Launchpad every pad but pad 3 dim. In section 1 all three play, every M and S out and every pad bright; back in section 2, pad 1's M and pad 3's S again. After the reload each section has what it had when saved.
   - **Note:** Mute and solo are a section's, with its pattern (Brendan, 2026-11-05). That a section saved before them loads with nothing muted is `sequencer-assert`'s.
 
@@ -221,7 +221,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 
 - [ ] **43. The character is saved with a section**
   - **Need:** Pad 1's distortion from the steps before, soft, mix up. The Launchpad's top row with two sections, the second a copy of the first: on the phone's songs page, aux, tap section 1 in the middle column, then **new** under it, and press aux again.
-  - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone tap pad 1, then distortion, and tap crush. Press the third button, section 1, and let it start, then the fourth again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn. Last, on the phone turn pad 1's mix back to 0 in each section and save.
+  - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone tap pad 1, then distortion, and tap crush. Press the third button, section 1, and let it start, then the fourth again. Then press save, the rightmost small button in the upper row under the pads, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn. Last, on the phone turn pad 1's mix back to 0 in each section and save.
   - **Pass if:** In section 2 pad 1 is crushed and the phone shows crush lit; in section 1 it is soft again and soft is lit; back in section 2, crush. After the reload each section has the character it had when saved.
   - **Note:** A section saved before the characters loads every track soft, and keeps the tone it was saved with, so one saved with the old tone of 60 stays dull until its tone is turned up. That is `sequencer-assert`'s and the Lua's; this is the rig.
 
@@ -239,7 +239,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
 
 - [ ] **46. The type is saved with a section**
   - **Need:** The pattern from the steps before, playing, in section 1 with plate lit, and section 2 a copy of it: on the phone's songs page, aux, tap section 1 in the middle column, then **new** under it, and press aux again.
-  - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone's drum screen tap reverb, then free. Press the third button, section 1, and let it start, then the fourth again. Then press save, the upper bottom row's rightmost button, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn.
+  - **Do:** Press the fourth button of the top row, section 2, and let it start; on the phone's drum screen tap reverb, then free. Press the third button, section 1, and let it start, then the fourth again. Then press save, the rightmost small button in the upper row under the pads, the red one, load Cut It again from the Organelle menu, and press PLAY with each section in turn.
   - **Pass if:** Section 2 plays the freeverb and the phone shows free lit; section 1 plays the plate, plate lit; back in section 2, the freeverb again. After the reload each section has the type it had when saved, and a section saved before the types plays the plate.
   - **Note:** The type is a section's, as size and damping are (Brendan, 2026-11-05). That a line without it loads as the plate is `sequencer-assert`'s.
 
@@ -276,7 +276,7 @@ Page 2's drum page on the Launchpad, the sequencer playing the drum samples from
   - **Pass if:** From its end, the knob moves the tempo, and the repeat and its tails follow it. Let go, the tempo snaps back to what it was before the press, and the knob is held again.
 
 - [ ] **53. The saved tempo**
-  - **Need:** On the phone's songs page, aux, the tempo at 110. Press save, the upper bottom row's rightmost button, so it goes dark. Turn knob 1 through 110 and on to about 150: save and revert light.
+  - **Need:** On the phone's songs page, aux, the tempo at 110. Press save, the rightmost small button in the upper row under the pads, so it goes dark. Turn knob 1 through 110 and on to about 150: save and revert light.
   - **Do:** Press the pad under the fourth repeat pad. Turn knob 1 a little. Press it again with the tempo where it is. Then tap **new** under the songs page's middle column and start the new section from the top row, turn knob 1 to something else and press the pad.
   - **Pass if:** The press snaps the tempo to 110, and the phone says so. Save and revert go dark if nothing else changed. The knob changes nothing until it is turned through 110. A press at that tempo does nothing. In a section that has never been saved, the pad snaps to the tempo its draft holds, which is where the knob just left it, so nothing moves.
 

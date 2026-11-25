@@ -12,7 +12,7 @@ the phone's page under a finger, and the SD card across a real power cut.
 - The drums audible through the PA, the FM-1 and the Streichfett on, and the phone showing Cut It.
 - Two songs that sound different: on the songs page, aux on the Organelle, choose **all songs** from the dropdown
   atop its left column, tap **new** under the list, then **load**, and on the drum page change its drum pattern and
-  on the songs page its tempo; then press save, the upper bottom row's rightmost button.
+  on the songs page its tempo; then press save, the rightmost small button in the upper row under the pads.
 - A setlist of both: in all songs tap each in turn, then the **…** under the list and **add to setlist**.
 
 13 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md).
@@ -24,9 +24,9 @@ Why each thing behaves as it does: [songs](../../ref/module/songs.md).
   - **Pass if:** Three columns: on the left the setlist's name over its songs, each a row with its key's number and its name, the song loaded named in green with a green bar at its left, and load, new and **…** under them; in the middle the loaded song's name over its sections; on the right the selected section's name over length, tempo, last step, time, swing, drunk and tweaks. The tapped row lights. The dropdown lists the setlists, then all songs, new setlist and name this setlist; the **…** name, add to setlist, take off setlist, move up, move down and, in red, delete song.
 
 - [ ] **2. A new song, and naming it**
-  - **Need:** The songs page, all songs chosen from the dropdown, the song loaded saved: the Launchpad's two rightmost bottom buttons dark.
+  - **Need:** The songs page, all songs chosen from the dropdown, the song loaded saved: save and revert, the rightmost of the small buttons under the Launchpad's pads, dark.
   - **Do:** Tap **new**, then the **…** and **name**. Delete the name, type a new one with a capital, tap **Done**.
-  - **Pass if:** A row appears after the selected one, "song 2" or the next number free, selected. **name** opens an alert reading song's name over a field holding the new song's name. **Done** closes it, and the row reads the new name in lowercase. The Launchpad's two rightmost bottom buttons stay dark throughout.
+  - **Pass if:** A row appears after the selected one, "song 2" or the next number free, selected. **name** opens an alert reading song's name over a field holding the new song's name. **Done** closes it, and the row reads the new name in lowercase. Save and revert stay dark throughout.
 
 - [ ] **3. The setlist**
   - **Need:** A setlist of two songs or more.

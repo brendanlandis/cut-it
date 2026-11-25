@@ -1,7 +1,7 @@
 # Sections checklist
 
-The current song's sections: the Launchpad's top row, which plays them, save and revert on its
-bottom rows, and the phone's songs page, whose middle and right columns make, order, name and set them. `song-assert` proves
+The current song's sections: the Launchpad's top row, which plays them, save and revert among the
+small buttons under its pads, and the phone's songs page, whose middle and right columns make, order, name and set them. `song-assert` proves
 what a press restores, the queue at the loop, a length handing over, the lamps' colors, the program
 changes and the files across a reload; `phone-assert` the phone's side. What
 is left is music you can hear change on the downbeat, lamps you can see blink, and the SD card
@@ -19,8 +19,8 @@ each thing behaves as it does: [songs](../../ref/module/songs.md).
 
 - [ ] **1. The top row at rest**
   - **Need:** Cut It loaded, the transport stopped, a song of two or three sections.
-  - **Do:** Look at the Launchpad's top row and its two bottom rows' rightmost buttons.
-  - **Pass if:** The third button from the left is bright green: section 1, playing. One button to its right per further section is dim green, and the buttons past the last section are dark. The second button, the right arrow, is dim white; the first, the left arrow, is dark. Both rightmost bottom buttons are dark.
+  - **Do:** Look at the Launchpad's top row, and at save and revert: the rightmost of the small buttons under the pads, save in their upper row and revert in their lower.
+  - **Pass if:** The third button from the left is bright green: section 1, playing. One button to its right per further section is dim green, and the buttons past the last section are dark. The second button, the right arrow, is dim white; the first, the left arrow, is dark. Save and revert are both dark.
 
 - [ ] **2. Stopped, a section starts at once**
   - **Need:** The transport stopped, section 1 playing.
@@ -43,23 +43,23 @@ each thing behaves as it does: [songs](../../ref/module/songs.md).
   - **Pass if:** Section 1 plays its pattern twice and section 2 starts on the next step 1 by itself, with nothing pressed. Section 2, a loop, plays on until a button is pressed.
 
 - [ ] **6. A change lights save and revert**
-  - **Need:** Nothing changed since the last save: both rightmost bottom buttons dark.
+  - **Need:** Nothing changed since the last save: save and revert both dark.
   - **Do:** On the drum page, turn on one step of the playing section's drum pattern.
-  - **Pass if:** The upper bottom row's rightmost button lights red and the lowest row's rightmost gray, at once. Turning the step off again puts both out.
+  - **Pass if:** Save lights red and revert gray, at once: the rightmost of the small buttons under the pads, save in their upper row and revert in their lower. Turning the step off again puts both out.
 
 - [ ] **7. Revert**
   - **Need:** A step turned on since the last save, both lamps lit.
-  - **Do:** Press the lowest row's rightmost button, the gray one.
+  - **Do:** Press revert, the gray one.
   - **Pass if:** The step goes off on the drum page and the drums play the saved pattern, at once; both lamps go dark.
 
 - [ ] **8. Save, and a reload**
   - **Need:** A change made, both lamps lit.
-  - **Do:** Press the upper bottom row's rightmost button, the red one. Then load Cut It again from the Organelle menu.
+  - **Do:** Press save, the red one. Then load Cut It again from the Organelle menu.
   - **Pass if:** Both lamps go dark at the press. After the reload the change is still there and the lamps are dark.
 
 - [ ] **9. A power cut keeps the draft**
   - **Need:** A change made since the last save, both lamps lit.
-  - **Do:** Wait three seconds, then pull the Organelle's power. Power it on and load Cut It.
+  - **Do:** Wait five seconds, then pull the Organelle's power. Power it on and load Cut It.
   - **Pass if:** The change is there, section 1 playing, and both lamps are lit: it is still unsaved. Revert takes it back to the save.
 
 - [ ] **10. The phone's sections**

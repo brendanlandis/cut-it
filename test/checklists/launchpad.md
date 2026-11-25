@@ -29,7 +29,7 @@ Steps 22 to 24 are the three hot-swap cases, as on the [nanoKONTROL](nanokontrol
 
 - [ ] **6. The lit button again**
   - **Do:** Press the bright button.
-  - **Pass if:** It goes dim, and the grid goes back to the performance page. Revert, the lowest row's rightmost, takes the new voice back: press it on another page if you want it gone, since on the performance page that row is the nanoKONTROL's.
+  - **Pass if:** It goes dim, and the grid goes back to the performance page. Revert, the rightmost small button in the lower row under the pads, takes the new voice back: press it on another page if you want it gone, since on the performance page that row is the nanoKONTROL's.
   - **Note:** That a release selects nothing is `voices-assert`'s, since a doubled selection would undo itself.
 
 - [ ] **7. Grid vocabulary stays off the OLED**

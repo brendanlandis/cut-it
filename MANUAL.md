@@ -42,7 +42,8 @@ A song has up to eight voices, one a row, each with its own color on every surfa
 | Songs and sections | Aux, on the Organelle; aux again closes it |
 | Diagnostics | Setup, on the Launchpad; Setup again closes it |
 
-Save and revert are the rightmost buttons of the Launchpad's two bottom rows, on every page but the performance page.
+Save and revert are the rightmost of the small buttons under the Launchpad's pads, in its two bottom rows: save in the
+upper, revert in the lower. They work on every page but the performance page.
 They light when something's unsaved, and cover the whole song.
 
 ## Songs and sections
@@ -169,7 +170,7 @@ track's random pitch, distortion, delay and reverb.
   to reroll just that one.
 - **The seven rows below:** the rhythm, each chord lit where it starts. Hold a chord and tap a step to move it there. Longer
   rhythms show the part that's playing.
-- **Upper bottom row:** on, roll chords, roll rhythm, bass only, modal or functional.
+- **Upper bottom row, the small buttons under the pads:** on, roll chords, roll rhythm, bass only, modal or functional.
 
 **Phone**
 
@@ -185,7 +186,7 @@ track's random pitch, distortion, delay and reverb.
 - **Top four rows:** 32 steps. Tap one to turn it on or off.
 - **Bottom four rows:** the mode's notes, low to high, with the tonic marked. The pad for the note playing lights up.
 - **To set a pitch:** hold a step and press a note.
-- **Upper bottom row:** on, roll, clear pins.
+- **Upper bottom row, the small buttons under the pads:** on, roll, clear pins.
 
 **Phone**
 
@@ -224,7 +225,7 @@ physical control until you've turned that to the value or through it. So nothing
 
 Tapping a column sets its fader to that height, and the physical fader then has to catch up.
 
-**The two bottom rows** are the nanoKONTROL's sixteen buttons, which can't light themselves: dim off, bright on, in their
+**The two bottom rows,** the small buttons under the pads, are the nanoKONTROL's sixteen buttons, which can't light themselves: dim off, bright on, in their
 voices' colors. Pressing one does the same as its button.
 
 **Phone:** the same eight groups, each naming its knob, fader and two buttons, and whose they are.

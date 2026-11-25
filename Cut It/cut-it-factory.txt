@@ -1,4 +1,4 @@
-# Factory patches, good starting points outside any song: <machine> <name> <param> <value> ... A song
+# Factory patches, good starting points outside any song: <instrument> <name> <param> <value> ... A song
 # copies one and depends on nothing here after that.
 sine soft attack 0.25 release 0.4 bright 0.05 level 0.8
 sine bell attack 0 release 0.7 bright 0.5 level 0.7

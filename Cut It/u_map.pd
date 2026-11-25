@@ -1,7 +1,7 @@
 #N canvas 20 20 9900 6700 12;
 #X declare -lib pdlua;
 #X obj 20 300 r param;
-#X obj 20 1070 route tempo transport start stop panic fm1-note fm1-cc fm1-prog fm1-key recover diag drum-page test-mode drums arrangement section save revert song rush melody voices perform machine;
+#X obj 20 1070 route tempo transport start stop panic fm1-note fm1-cc fm1-prog fm1-key recover diag drum-page test-mode drums arrangement section save revert song rush melody voices perform instrument;
 #X obj 20 1160 c_mapped bpm 210 40;
 #X obj 20 1220 unpack f f;
 #X obj 20 1430 s tempo;

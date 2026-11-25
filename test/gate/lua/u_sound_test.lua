@@ -12,7 +12,7 @@ local function read(n)
   return t
 end
 
-local st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+local st = R.new(read("cut-it-instruments.txt"), read("cut-it-factory.txt"))
 local function rows(at, list)
   local a = { at }
   for r = 1, 8 do
@@ -34,7 +34,7 @@ equal("... a row with no voice does nothing", R.param(st, "5:reverb", 1), {})
 
 print("\n--- save, patches and the factory ---")
 out = R.save(st, false)
-equal("save with no patch yet makes one, for the machine", st.rows[2].patch, "strings-patch")
+equal("save with no patch yet makes one, for the instrument", st.rows[2].patch, "strings-patch")
 R.param(st, "2:reverb", 0)
 out = R.recall(st, "strings-patch")
 equal("recalled, it has what was saved", st.rows[2].values.reverb, 1)
@@ -56,39 +56,39 @@ equal("snap back takes it back to the patch, said out", { st.rows[2].values.reve
       { 0.5, { "strings", "cc", { 94, 64 } } })
 
 print("\n--- a Pd voice ---")
-st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+st = R.new(read("cut-it-instruments.txt"), read("cut-it-factory.txt"))
 R.rows(st, rows(3, { [3] = { "saw", 2, "m" } }))
 equal("its parameter goes to its engine and line", R.param(st, "3:bright", 0.5),
       { { "engine", "tone", { 2, "m", "bright", 0.5 } } })
 
 print("\n--- a song's files ---")
 R.copy_factory(st, "pad")
-local s2 = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+local s2 = R.new(read("cut-it-instruments.txt"), read("cut-it-factory.txt"))
 R.rows(s2, rows(3, { [3] = { "saw", 2, "m" } }))
 R.restore_patches(s2, R.save_patches and {} or {})
 local line = R.save_line(st)
 out = R.restore_sounds(s2, line)
 equal("a song's sounds restored: the same values, the same patch", { s2.rows[3].patch, s2.rows[3].values.bright },
       { "pad", 0.15 })
-equal("... said out to the machine", out[1][1], "engine")
+equal("... said out to the instrument", out[1][1], "engine")
 
 print("\n--- the phone ---")
 local ph = R.phone(st)
-equal("the patch, the song's patches for this machine, the factory's, the parameters",
+equal("the patch, the song's patches for this instrument, the factory's, the parameters",
       { ph[1], ph[2], ph[3], ph[4] }, { "pad", 1, "pad", 3 })
 
 print("\n--- a Pd voice's default is said ---")
-st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+st = R.new(read("cut-it-instruments.txt"), read("cut-it-factory.txt"))
 out = R.rows(st, rows(3, { [3] = { "saw", 2, "m" } }))
 equal("⛔ taken up, its parameters go to its engine, so another patch's don't linger", #out, 11)
 
-print("\n--- a keys voice on a Pd machine ---")
-st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+print("\n--- a keys voice on a Pd instrument ---")
+st = R.new(read("cut-it-instruments.txt"), read("cut-it-factory.txt"))
 R.rows(st, rows(4, { [4] = { "saw", 0, "-" } }))
 equal("⛔ its parameter goes to c_keys", R.param(st, "4:reverb", 0.5), { { "keys", "tone", { "reverb", 0.5 } } })
 
 print("\n--- the FM-1's effects: a top, and a switch ---")
-st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+st = R.new(read("cut-it-instruments.txt"), read("cut-it-factory.txt"))
 R.rows(st, rows(3, { [3] = { "fm", 1, "h" } }))
 equal("⛔ an effect's amount is scaled to its own top, 100, with its switch on before it",
       R.param(st, "3:reverb", 1), { { "fm", "cc", { 4, 1 } }, { "fm", "cc", { 7, 100 } } })
@@ -157,7 +157,7 @@ for i = 7, 161 do bass[#bass + 1] = R.TEST_VOICES[2][i] end
 local voices = packed(fancy) .. string.rep(packed(bass), 31)
 local file = "\xF0\x43\x00\x09\x20\x00" .. voices .. "\x00\xF7"
 
-st = R.new(read("cut-it-machines.txt"), read("cut-it-factory.txt"))
+st = R.new(read("cut-it-instruments.txt"), read("cut-it-factory.txt"))
 equal("a packed voice is 128 bytes, and a bank file 4104", { #packed(fancy), #file }, { 128, 4104 })
 equal("⛔ a file that isn't a 32-voice bank is turned away", { R.bank(st, 2, file:sub(1, 4000)),
       R.bank(st, 2, "\xF0\x43\x00\x00" .. file:sub(5)), st.library[2] }, { false, false })

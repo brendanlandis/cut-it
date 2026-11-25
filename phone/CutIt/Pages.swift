@@ -276,7 +276,7 @@ struct KeysView: View {
             Spacer()
             HStack(spacing: 10) {
                 Text(voiceName).font(.system(size: 22, weight: .medium)).foregroundStyle(Theme.voice(cut.pageRow))
-                Text(machine).font(.system(size: 18)).foregroundStyle(Theme.dim)
+                Text(instrument).font(.system(size: 18)).foregroundStyle(Theme.dim)
             }
             Pad(title: "velocity", on: cut.velocityOn, width: 120) {
                 cut.press("velocity", cut.velocityOn ? "off" : "on")
@@ -289,9 +289,9 @@ struct KeysView: View {
         guard (1...8).contains(cut.pageRow), let v = cut.voices[cut.pageRow - 1] else { return "" }
         return v.shown
     }
-    private var machine: String {
+    private var instrument: String {
         guard (1...8).contains(cut.pageRow), let v = cut.voices[cut.pageRow - 1] else { return "" }
-        return v.machine
+        return v.instrument
     }
 }
 
@@ -302,8 +302,8 @@ struct SoundView: View {
     @State private var name = ""
     @FocusState private var typing: Bool
     @State private var sure: String?
-    private static let machines = ["fm", "strings", "sine", "saw", "square"]
-    private static let methods = ["drums", "harmony", "melody", "keys"]
+    private static let instruments = ["fm", "strings", "sine", "saw", "square"]
+    private static let behaviors = ["drums", "harmony", "melody", "keys"]
 
     var body: some View {
         VStack(spacing: 8) {
@@ -317,11 +317,11 @@ struct SoundView: View {
                         .background(Theme.field, in: .rect(cornerRadius: 5))
                         .onSubmit { cut.press("voices", "name", cut.pageRow, name) }
                 }
-                Choice(label: "does", value: voice?.method ?? "-", options: Self.methods, width: 96) { _, m in
-                    cut.press("voices", "method", cut.pageRow, m)
+                Choice(label: "behavior", value: voice?.behavior ?? "-", options: Self.behaviors, width: 96) { _, m in
+                    cut.press("voices", "behavior", cut.pageRow, m)
                 }
-                if voice?.method != "drums" {
-                    Choice(label: "machine", value: voice?.machine ?? "-", options: Self.machines, width: 96) { _, m in
+                if voice?.behavior != "drums" {
+                    Choice(label: "instrument", value: voice?.instrument ?? "-", options: Self.instruments, width: 96) { _, m in
                         choose(m)
                     }
                 }
@@ -337,7 +337,7 @@ struct SoundView: View {
             if let sure {
                 HStack(spacing: 8) {
                     Text("\(sure) is another voice's").font(.system(size: 14))
-                    Pad(title: "use it", width: 80) { cut.press("voices", "machine", cut.pageRow, sure); self.sure = nil }
+                    Pad(title: "use it", width: 80) { cut.press("voices", "instrument", cut.pageRow, sure); self.sure = nil }
                     Pad(title: "cancel", width: 80, color: .gray) { self.sure = nil }
                     Spacer()
                 }
@@ -365,7 +365,7 @@ struct SoundView: View {
             LazyVGrid(columns: cols, spacing: 10) {
                 ForEach(cut.params) { p in
                     Knob(label: p.name, value: p.value, color: Theme.voice(cut.pageRow)) {
-                        cut.control("machine", p.name, $0)
+                        cut.control("instrument", p.name, $0)
                     }
                 }
             }
@@ -375,12 +375,12 @@ struct SoundView: View {
 
     private func choose(_ m: String) {
         let taken = cut.voices.enumerated().contains { i, v in
-            i + 1 != cut.pageRow && v?.machine == m
+            i + 1 != cut.pageRow && v?.instrument == m
         }
         if taken && (m == "fm" || m == "strings") {
             sure = m
         } else {
-            cut.press("voices", "machine", cut.pageRow, m)
+            cut.press("voices", "instrument", cut.pageRow, m)
         }
     }
 }

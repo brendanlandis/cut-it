@@ -14,9 +14,9 @@ Five surfaces, each with one job. The same control does the same thing on every 
 
 A song has up to eight voices, one a row, each with its own color on every surface.
 
-- The button on the **right** is the voice's setup: what machine it plays, its name, and its sound.
+- The button on the **right** is the voice's setup: what instrument it plays, its name, and its sound.
 - The button across from it on the **left** is what the voice does: a drum page, chords, a melody, or the nanoKEY.
-- The phone has the same two columns down its sides, headed behavior and setup. Pressing either device's button moves both.
+- The phone has the same two columns down its sides, headed behaviors and instruments. Pressing either device's button moves both.
 - A dark row has no voice yet. Its right button starts one.
 - Pressing the lit button again goes back to the performance page.
 

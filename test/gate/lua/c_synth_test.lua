@@ -162,12 +162,12 @@ equal("a key on inlet 1 leaves outlet 1, the FM-1's, as note <n> <v>",
       T.send(o, 1, "list", { 60, 100 }), { { 1, "note", { 60, 100 } } })
 equal("synth strings leaves outlets 3 and 4", T.send(o, 1, "synth", { "strings" }),
       { { 3, "synth", { "strings" } }, { 4, "synth", { "strings" } } })
-equal("⛔ machine fm, from u_voices: outlet 3 alone, the phone's, since looking at a voice's page changes "
-      .. "nothing in the song", T.send(o, 1, "machine", { "fm" }), { { 3, "synth", { "fm" } } })
-equal("... the same machine again says nothing", T.send(o, 1, "machine", { "fm" }), {})
-equal("... one it doesn't know is bad-synth", T.send(o, 1, "machine", { "organ" }),
+equal("⛔ instrument fm, from u_voices: outlet 3 alone, the phone's, since looking at a voice's page changes "
+      .. "nothing in the song", T.send(o, 1, "instrument", { "fm" }), { { 3, "synth", { "fm" } } })
+equal("... the same instrument again says nothing", T.send(o, 1, "instrument", { "fm" }), {})
+equal("... one it doesn't know is bad-synth", T.send(o, 1, "instrument", { "organ" }),
       { { 5, "fail", { "c_synth", "bad-synth" } } })
-T.send(o, 1, "machine", { "strings" })
+T.send(o, 1, "instrument", { "strings" })
 equal("the held key releases on outlet 1", T.send(o, 1, "list", { 60, 0 }),
       { { 1, "note", { 60, 0 } } })
 equal("a new key leaves outlet 2, the Streichfett's", T.send(o, 1, "list", { 62, 90 }),
@@ -225,16 +225,16 @@ equal("a report is one symbol of 21 characters or fewer",
 print("\n--- the nanoKEY on a Pd voice ---")
 do
   local st = R.new()
-  equal("⛔ a Pd machine: c_keys told its wave", R.machine(st, { "saw" }), { { "pd", "wave", { 1 } } })
+  equal("⛔ a Pd instrument: c_keys told its wave", R.instrument(st, { "saw" }), { { "pd", "wave", { 1 } } })
   equal("⛔ a key takes the first of its four", R.key(st, 60, 90), { { "pd", "list", { 1, 60, 90 } } })
   equal("... another the next", R.key(st, 64, 90), { { "pd", "list", { 2, 64, 90 } } })
   equal("⛔ a release is that key's", R.key(st, 60, 0), { { "pd", "list", { 1, 60, 0 } } })
   R.key(st, 61, 90); R.key(st, 62, 90); R.key(st, 63, 90)
   equal("⛔ a fifth takes one of the four", #R.key(st, 65, 90), 1)
-  R.machine(st, { "fm" })
-  equal("⛔ back on a hardware machine, keys go to it", R.key(st, 70, 90)[1][1], "fm")
+  R.instrument(st, { "fm" })
+  equal("⛔ back on a hardware instrument, keys go to it", R.key(st, 70, 90)[1][1], "fm")
   R.key(st, 70, 0)
-  R.machine(st, { "square" })
+  R.instrument(st, { "square" })
   equal("⛔ the phone's synth takes the nanoKEY off a Pd voice, the choice it already holds too, "
         .. "and says so", R.choose(st, { "fm" }), told("fm"))
   equal("... keys go to that synth", R.key(st, 72, 90), { note("fm", 72, 90) })

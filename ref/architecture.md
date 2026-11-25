@@ -72,7 +72,7 @@ file decides what that means; and nothing below that file knows what hardware ex
 - **`c_synth` holds the synth choice on every page**, and the nanoKEY's keys reach it by a cord
   from `m_nanokey`, not on `param`: a key means the chosen synth's note whichever page is up. It
   sends each key to `m_fm1` or `m_streich`, a release to the synth its press went to, and the
-  choice and its velocity switch to `u_net`, by cords. `u_voices` chooses, with the voice on show's machine.
+  choice and its velocity switch to `u_net`, by cords. `u_voices` chooses, with the voice on show's instrument.
   See [synths.md](module/synths.md).
 - **`u_voices` holds a song's voices and writes the page on the `mode` bus**, told by `u_map` and `u_net`, and `u_perform`
   is what the nanoKONTROL means this section, its moves going back into `u_map`'s route on `map-route`; each hands its

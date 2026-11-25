@@ -118,8 +118,8 @@ enum VoicesAt {
     static let voice = 3
     enum Voice {
         static let name = 0
-        static let method = 1
-        static let machine = 2
+        static let behavior = 1
+        static let instrument = 2
         static let width = 3
     }
     static let count = 27

@@ -1,12 +1,12 @@
 <!-- schema: module -->
 # The voices and the controls in play
 
-**Files:** `Cut It/e_line.pd`, `Cut It/e_echo.pd`, `Cut It/c_keys.pd`, `Cut It/u_sound.pd`, `Cut It/u_sound.lua`, `Cut It/u_sound-lua.pd_lua`, `Cut It/cut-it-machines.txt`, `Cut It/cut-it-factory.txt`, `Cut It/u_voices.pd`, `Cut It/u_voices.lua`, `Cut It/u_voices-lua.pd_lua`, `Cut It/u_perform.pd`, `Cut It/u_perform.lua`, `Cut It/u_perform-lua.pd_lua`, `Cut It/cut-it-controls.txt` · **Gate:** `test/gate/voices-assert.sh`, `test/gate/display-assert.sh` · **Checklist:** `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`
+**Files:** `Cut It/e_line.pd`, `Cut It/e_echo.pd`, `Cut It/c_keys.pd`, `Cut It/u_sound.pd`, `Cut It/u_sound.lua`, `Cut It/u_sound-lua.pd_lua`, `Cut It/cut-it-instruments.txt`, `Cut It/cut-it-factory.txt`, `Cut It/u_voices.pd`, `Cut It/u_voices.lua`, `Cut It/u_voices-lua.pd_lua`, `Cut It/u_perform.pd`, `Cut It/u_perform.lua`, `Cut It/u_perform-lua.pd_lua`, `Cut It/cut-it-controls.txt` · **Gate:** `test/gate/voices-assert.sh`, `test/gate/display-assert.sh` · **Checklist:** `test/checklists/launchpad.md`, `test/checklists/nanokontrol.md`
 
 ## What it is
 
 **A row of the Launchpad is a voice, not a fixed part** (Brendan, 2026-11-06). A song has up to eight voices, one a
-row. Each has a name, a method, what it does, and a machine, what it does it on. **Harmony, melody and the drum page
+row. Each has a name, a behavior, what it does, and an instrument, what it does it on. **Harmony, melody and the drum page
 are ways of doing something, not voices.** The button on the left is what the voice does, and the button across from it
 on the right sets it up.
 
@@ -25,10 +25,10 @@ itself.
 
 | Press | On | Does | Evidence |
 |---|---|---|---|
-| A left button, CC 90 − 10 × row | A row with a voice | Its method's page; the lit one again, the performance page | unknown |
+| A left button, CC 90 − 10 × row | A row with a voice | Its behavior's page; the lit one again, the performance page | unknown |
 | | A row with none | Nothing | unknown |
 | A right button, CC 99 − 10 × row | A row with a voice | `sound`, its setup; the lit one again, the performance page | unknown |
-| | A row with none | Starts a new voice, `voice_<row>`, keys, on the first machine no other has, and shows its setup | unknown |
+| | A row with none | Starts a new voice, `voice_<row>`, keys, on the first instrument no other has, and shows its setup | unknown |
 | aux, on the Organelle, or songs under the phone's left column | Any page | Opens `songs`; again, back where it was | unknown |
 | Setup, on the Launchpad | Any page | Opens `diag`; again, back where it was. Its `pad-81` is the diagnostic layer, and `pad-82` test mode | unknown |
 | PLAY | A voice's left or right page, stopped | The performance page, by itself. Not from `songs` or `diag`, and not while the transport already runs | unknown |
@@ -43,25 +43,25 @@ itself.
 
 | | | Evidence |
 |---|---|---|
-| A method | `drums`, `harmony`, `melody` or `keys` | unknown |
-| A machine | `kit`, on the drums; `fm`, `strings`, `sine`, `saw` or `square`, on the others | unknown |
+| A behavior | `drums`, `harmony`, `melody` or `keys` | unknown |
+| An instrument | `kit`, on the drums; `fm`, `strings`, `sine`, `saw` or `square`, on the others | unknown |
 | How many | One drums, two each of harmony and melody, what there are engines for: a third warns `too-many-harmony` and changes nothing. Keys as many as there are rows | unknown |
 | A name | Lowercase, one symbol, spaces as `_`, at most 16 characters | unknown |
-| Where it's saved | `put song voices <24 atoms>`, name, method and machine a row, `-` for one with none, in the song itself, for every section ([songs.md](songs.md)). It shows as unsaved, as any change to a song does | unknown |
+| Where it's saved | `put song voices <24 atoms>`, name, behavior and instrument a row, `-` for one with none, in the song itself, for every section ([songs.md](songs.md)). It shows as unsaved, as any change to a song does | unknown |
 | A song with none | Is given the seed's: row 1 `drums`, on `kit`; row 2 `chords`, harmony, on `strings`; row 3 `melody`, on `fm`. `put seed voices`, which is no change to the song | unknown |
 | A voice removed | The performance page, if it was on show | unknown |
-| A voice's engine | Each harmony and melody voice by row order: the first of each engine 1's, the second engine 2's. `assign <engine> <h or m> <machine or off>` tells each `c_melody` what it plays on; `active <engine>` which one the page's voice is in, 0 for neither, so the Launchpad, the phone and the nanoKEY reach only that one ([synths.md](synths.md)) | unknown |
-| The nanoKEY | `machine <fm or strings>` to `c_synth`, on a page whose voice is on hardware. The performance page, and a voice on a Pd machine, leave it on the last ([synths.md](synths.md)) | unknown |
+| A voice's engine | Each harmony and melody voice by row order: the first of each engine 1's, the second engine 2's. `assign <engine> <h or m> <instrument or off>` tells each `c_melody` what it plays on; `active <engine>` which one the page's voice is in, 0 for neither, so the Launchpad, the phone and the nanoKEY reach only that one ([synths.md](synths.md)) | unknown |
+| The nanoKEY | `instrument <fm or strings>` to `c_synth`, on a page whose voice is on hardware. The performance page, and a voice on a Pd instrument, leave it on the last ([synths.md](synths.md)) | unknown |
 
 ### The interface of `u_voices`
 
 | | Is | Evidence |
 |---|---|---|
 | Inlet 1 | From `u_map`'s seventh outlet: `left-<r>`, `right-<r>`, `aux`, `setup`, each `<value>`; a release does nothing ([map.md](map.md)) | unknown |
-| Inlet 2 | The phone's `voices`, through `u_net`: `left <r>`, `right <r>`, `aux`, `setup`, `name <r> <words>`, `method <r> <m>`, `machine <r> <m>`, `remove <r>` | unknown |
-| Outlet 1 | To `g_grid`, `voices <row> <kind> <8 methods>`, when it changes | unknown |
+| Inlet 2 | The phone's `voices`, through `u_net`: `left <r>`, `right <r>`, `aux`, `setup`, `name <r> <words>`, `behavior <r> <m>`, `instrument <r> <m>`, `remove <r>` | unknown |
+| Outlet 1 | To `g_grid`, `voices <row> <kind> <8 behaviors>`, when it changes | unknown |
 | Outlet 2 | To the `c_melody`s, `assign` and `active` | unknown |
-| Outlet 3 | To `c_synth`, `machine <machine>` | unknown |
+| Outlet 3 | To `c_synth`, `instrument <instrument>` | unknown |
 | Outlet 4 | To `u_net`, `voices <page> <kind> <row> <24 atoms>`, sent as `/cutit/voices`, when it changes and on every heartbeat | unknown |
 | Buses | Writes `mode`, `put song voices`, `put seed voices`, `put auto page` on `state`, `err`, and `voices-rows` to `u_perform`, the row on show and each row's engine. Hears `start`, `stop`, `panic` and `restore voices` and `restore page` on `state` | unknown |
 
@@ -103,18 +103,18 @@ takes.
 | A section starting | `restore perform <atoms>`: the list, each waiting. A section with none says so, an empty restore, or the last one's would stay | unknown |
 | What the surfaces hear | `cols` and `btns` to `g_grid`, `perform <113 atoms>` to `u_net`, sent as `/cutit/perform`, each when it changes, at most every 40 ms | unknown |
 
-### Machines and patches
+### Instruments and patches
 
-**`u_sound` is what each voice sounds like** (Brendan, 2026-11-06). `cut-it-machines.txt` lists each machine's
+**`u_sound` is what each voice sounds like** (Brendan, 2026-11-06). `cut-it-instruments.txt` lists each instrument's
 parameters and how each is said: a control change, a program change, a Pd voice's own or a DX7 voice of the library
-(below). A **patch** is a machine's saved sound. `cut-it-factory.txt` holds factory patches, good starting points outside any song; a song copies one and
+(below). A **patch** is an instrument's saved sound. `cut-it-factory.txt` holds factory patches, good starting points outside any song; a song copies one and
 depends on nothing after that. A song holds its patches (`put song patches`) and each voice's sound as it stands
 (`put song sounds`).
 
 | | | Evidence |
 |---|---|---|
-| A parameter moved | `<row>:<param> <value>`, 0 to 1, by way of the map's route: from the phone (`perform ctl <row> machine <param> <value>`), the Launchpad's sound page or a control in play | unknown |
-| A machine taken up | A hardware synth is told nothing, so it keeps its own sound, and is told only what's then set; a Pd voice takes its defaults at once | unknown |
+| A parameter moved | `<row>:<param> <value>`, 0 to 1, by way of the map's route: from the phone (`perform ctl <row> instrument <param> <value>`), the Launchpad's sound page or a control in play | unknown |
+| An instrument taken up | A hardware synth is told nothing, so it keeps its own sound, and is told only what's then set; a Pd voice takes its defaults at once | unknown |
 | A control change's range | 0 to 127, or to the row's sixth word, its top, where a device's stops short (the FM-1's effects: 100, 107, 10 or 2). A seventh is a switch: that controller said first, 1 while the value is above 0 and 0 at 0, so one control brings an effect in and takes it out (`test/gate/lua/u_sound_test.lua`) | verified |
 | A program moved | Said, then every control change that's been set, again behind it: the voice a program brings has settings of its own (`test/gate/lua/u_sound_test.lua`) | verified |
 | `sound patch <name>` | The song's patch, recalled | unknown |
@@ -127,15 +127,15 @@ depends on nothing after that. A song holds its patches (`put song patches`) and
 | A voice's save on the kit | What the kit snaps back to is what it sounds like now | unknown |
 
 | A Pd voice's effects | `e_line`, one a generator line and one for keys: `drive`, `drive-type`, `echo`, `echo-time`, `echo-fb`, `reverb` and `room`, each off until asked for, at its CPU cost then | unknown |
-| A keys voice on a Pd machine | `c_keys`, four notes at once, from `c_synth` | unknown |
+| A keys voice on a Pd instrument | `c_keys`, four notes at once, from `c_synth` | unknown |
 | The fm synth's test | Pads 83 and 84 on the diagnostics page, or the phone's: a DX7 voice built here, sent as the library's are, into the voice kept for them (below) | verified |
 
 ### The DX7 library
 
-**The `fm` machine plays any of 1,024 DX7 voices** (Brendan, 2026-11-24): Yamaha's factory ROMs 1A to 4B and its
+**The `fm` instrument plays any of 1,024 DX7 voices** (Brendan, 2026-11-24): Yamaha's factory ROMs 1A to 4B and its
 VRC-101 to 112 cartridges, 32 banks of 32. `cut-it-dx7.txt` lists the bank files in order and `u_sound`'s face reads each
 from the patch's `dx7` folder at load; the files are Yamaha's and outside git, as the drum samples are. Two of the
-machine's parameters choose one, `dx7-bank` and `dx7-voice`.
+instrument's parameters choose one, `dx7-bank` and `dx7-voice`.
 
 | | | Evidence |
 |---|---|---|
@@ -148,7 +148,7 @@ machine's parameters choose one, `dx7-bank` and `dx7-voice`.
 | A recall, a song loading, a section snapping back | The voice first, a program or a DX7 voice, then what's set | verified |
 | What a song keeps | The middle of the bank's, the voice's or the program's step, so the three decimals it writes bring the same one back | verified |
 
-**The Launchpad's sound page:** the machine's first eight parameters as columns on rows 3 to 8, tapped to set; row 2 its
+**The Launchpad's sound page:** the instrument's first eight parameters as columns on rows 3 to 8, tapped to set; row 2 its
 song patches, tapped to recall; row 1 eight notes to hear it with.
 
 ## Traps
@@ -180,7 +180,7 @@ would light save and revert at load, and no revert could ever put them out.
 ⛔ A voice's page chooses what the nanoKEY plays. Through `c_synth`'s `synth`, which the phone's buttons use, it would
 be put in the section, and lighting save and revert would be all it took to look around.
 
-**Fix:** `machine`, which sets the choice and tells the phone, and isn't put.
+**Fix:** `instrument`, which sets the choice and tells the phone, and isn't put.
 
 ## Design
 
@@ -193,7 +193,7 @@ Pd half, which holds the cords.
 
 ### Pages have names
 
-A page is what a voice does there, so a row's page follows its method, and a row's method can change. The table's
+A page is what a voice does there, so a row's page follows its behavior, and a row's behavior can change. The table's
 rows, `g_grid`'s painters and the phone's tabs all key on the name: a voice on the fifth row and one on the second are
 the same page, each in its own color.
 

@@ -66,7 +66,7 @@ Lines between `song` and the first `section` in its file. Sent on load and on re
 
 | Key | Part | Atoms | Evidence |
 |-----|------|-------|----------|
-| `voices` | `u_voices` | The eight rows, name, method and machine each, `-` for one with none, 24 atoms ([voices.md](voices.md)). A song with none is told so, `restore voices` with nothing after it, and is given the seed's | unknown |
+| `voices` | `u_voices` | The eight rows, name, behavior and instrument each, `-` for one with none, 24 atoms ([voices.md](voices.md)). A song with none is told so, `restore voices` with nothing after it, and is given the seed's | unknown |
 
 ### The interface
 

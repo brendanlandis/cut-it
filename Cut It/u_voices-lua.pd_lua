@@ -5,7 +5,7 @@
 -- <cmd> ..., through u_net. inlet 3: u_voices.pd's own -- restore <key> <atoms...>, start, stop, init.
 -- outlet 1: the page's name, to the mode bus. outlet 2: to g_grid, voices <atoms>. outlet 3: voices,
 -- seed and page <atoms>, to the state bus as put song voices, put seed voices and put auto page. outlet 4: to the c_melody engines,
--- assign and active. outlet 5: machine <machine>, to c_synth. outlet 6: voices <atoms>, to u_net.
+-- assign and active. outlet 5: instrument <instrument>, to c_synth. outlet 6: voices <atoms>, to u_net.
 -- outlet 7: err. outlet 8: a bang on init, the proof the Lua loaded. outlet 9: rows, to u_perform. outlet 10: rows, to u_sound. outlet 11: led <state>, to disp.
 
 local VoicesLua = pd.Class:new():register("u_voices-lua")

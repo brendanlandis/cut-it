@@ -13,7 +13,7 @@ final class Cut {
     }
 
     struct Voice: Equatable {
-        var name: String, method: String, machine: String
+        var name: String, behavior: String, instrument: String
         var shown: String { name.replacingOccurrences(of: "_", with: " ") }
     }
 
@@ -113,7 +113,7 @@ final class Cut {
     // The keys.
     var velocityOn = true
 
-    // A machine's parameters, and a voice's patches.
+    // An instrument's parameters, and a voice's patches.
     var params: [Param] = []
     var patches: [String] = []
     var patch = "-"
@@ -285,8 +285,8 @@ final class Cut {
             voices = (0..<8).map { r in
                 let b = VoicesAt.voice + r * VoicesAt.Voice.width
                 let name = a[b + VoicesAt.Voice.name].text
-                return name == "-" ? nil : Voice(name: name, method: a[b + VoicesAt.Voice.method].text,
-                                                 machine: a[b + VoicesAt.Voice.machine].text)
+                return name == "-" ? nil : Voice(name: name, behavior: a[b + VoicesAt.Voice.behavior].text,
+                                                 instrument: a[b + VoicesAt.Voice.instrument].text)
             }
         case "/cutit/perform":
             guard a.count >= PerformAt.count else { return }
@@ -347,7 +347,7 @@ final class Cut {
         sectionLengths = lengths
     }
 
-    /// The voice on show's patch and its machine's parameters.
+    /// The voice on show's patch and its instrument's parameters.
     private func sound(_ a: [OSCValue]) {
         var at = 0
         func next() -> OSCValue { defer { at += 1 }; return at < a.count ? a[at] : .number(0) }

@@ -48,10 +48,10 @@ local function name_of(what, n)
 end
 
 -- An address as the table writes it: Pd hands a number over as a float, and 0.0 isn't the table's 0.
--- What's known of a control: the table's row, or for a machine's parameter a value named for itself.
+-- What's known of a control: the table's row, or for an instrument's parameter a value named for itself.
 local function info_of(st, dest, arg)
   if type(arg) == "number" then arg = string.format("%g", arg) end
-  if dest == "machine" then return { kind = "value", label = tostring(arg) } end
+  if dest == "instrument" then return { kind = "value", label = tostring(arg) } end
   local exact = st.controls[dest .. " " .. tostring(arg)]
   if exact then return exact end
   -- A row for every track's, its label with the track's number on.
@@ -72,7 +72,7 @@ local function route(st, c, value)
   local arg = c.arg
   if c.dest == "melody" then
     arg = "e" .. math.max(1, st.rows[c.row] or 1) .. "-" .. arg
-  elseif c.dest == "machine" then
+  elseif c.dest == "instrument" then
     arg = c.row .. ":" .. arg
   end
   return { "route", "list", { c.dest, arg, value, value, 1 } }

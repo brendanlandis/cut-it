@@ -1,5 +1,5 @@
--- u_sound.lua -- a voice's sound: each machine's parameters, the song's patches and the factory's
--- (Brendan, 2026-11-06). A patch is a machine's saved sound. Factory patches are starting points, in a
+-- u_sound.lua -- a voice's sound: each instrument's parameters, the song's patches and the factory's
+-- (Brendan, 2026-11-06). A patch is an instrument's saved sound. Factory patches are starting points, in a
 -- library outside songs; song patches live with the song, copied and depending on nothing after that.
 -- Plain Lua with no Pd in it, so test/gate/lua/u_sound_test.lua runs it on the Mac with lua.org's
 -- interpreter. u_sound-lua.pd_lua is its Pd face, and u_sound.pd keeps the cords. ref/module/voices.md.
@@ -9,9 +9,9 @@
 --   {"fm" | "strings", "cc" | "program", {...}}   that synth's device layer
 --   {"engine", "tone", {engine, line, param, value}}   c_melody: a Pd voice's parameter
 --   {"save", "sounds" | "patches", {atoms}}       the state bus: put song
---   {"heard", "list", {"machine", param, value}}  u_perform: a parameter moved on the Launchpad
+--   {"heard", "list", {"instrument", param, value}}   u_perform: a parameter moved on the Launchpad
 --   {"kit", "bang", {}}                           c_steps: the kit's sound as it stands is what it snaps back to
---   {"keys", "tone" | "list", {...}}              c_keys: a keys voice on a Pd machine
+--   {"keys", "tone" | "list", {...}}              c_keys: a keys voice on a Pd instrument
 --   {"fm", "byte", {b}}                           m_fm1: a whole DX7 voice a byte at a time, from the library
 --   {"err", "warn" | "fail", {"u_sound", text}}   err (C-12)
 -- The phone's state (R.phone) is worked out by the face, and sent when it changes.
@@ -31,9 +31,9 @@ local function report(level, text)
 end
 function R.fail(text) return report("fail", text) end
 
--- cut-it-machines.txt: { machine = { list = {params in order}, by = {param = {how, n, default, top, switch}},
+-- cut-it-instruments.txt: { instrument = { list = {params in order}, by = {param = {how, n, default, top, switch}},
 -- bank = its bank parameter, voice = its voice parameter } }.
-function R.parse_machines(text)
+function R.parse_instruments(text)
   local t = {}
   for line in (text or ""):gmatch("[^\r\n]+") do
     if not line:match("^%s*#") then
@@ -51,7 +51,7 @@ function R.parse_machines(text)
   return t
 end
 
--- cut-it-factory.txt: { machine = { list = {names}, by = {name = {param = value}} } }.
+-- cut-it-factory.txt: { instrument = { list = {names}, by = {name = {param = value}} } }.
 function R.parse_factory(text)
   local t = {}
   for line in (text or ""):gmatch("[^\r\n]+") do
@@ -71,8 +71,8 @@ function R.parse_factory(text)
   return t
 end
 
-function R.new(machines_text, factory_text)
-  local st = { machines = R.parse_machines(machines_text), factory = R.parse_factory(factory_text),
+function R.new(instruments_text, factory_text)
+  local st = { instruments = R.parse_instruments(instruments_text), factory = R.parse_factory(factory_text),
                rows = {}, patches = {}, order = {}, at_row = 0, last_sent = {}, library = {} }
   return st
 end
@@ -150,7 +150,7 @@ end
 local function value_of(st, row, p)
   local v = row.values[p]
   if v ~= nil then return v end
-  local m = st.machines[row.machine]
+  local m = st.instruments[row.instrument]
   return m and m.by[p] and m.by[p].default or 0
 end
 
@@ -169,22 +169,22 @@ end
 -- last. Each counts in steps.
 local CHOOSES = { pc = true, bank = true, voice = true }
 
--- A whole voice into the program the machine keeps for DX7 voices, the voice parameter's top. The FM-1
+-- A whole voice into the program the instrument keeps for DX7 voices, the voice parameter's top. The FM-1
 -- takes a voice in place of the one it is on and keeps it for good (Reference, m-vave-fm-1), so its
 -- program change goes first, and as bytes like the voice: Pd sends a byte at once and queues a program
 -- change, so a [pgmout]'s would arrive behind the voice, which would land wherever the FM-1 was
 -- (ref/device/fm1.md). On MIDI channel 1, as the dump is.
-local function into_slot(machine, m, bytes, out)
-  out[#out + 1] = { machine, "byte", { 0xC0 } }
-  out[#out + 1] = { machine, "byte", { m.by[m.voice].top or 127 } }
-  for _, b in ipairs(bytes) do out[#out + 1] = { machine, "byte", { b } } end
+local function into_slot(instrument, m, bytes, out)
+  out[#out + 1] = { instrument, "byte", { 0xC0 } }
+  out[#out + 1] = { instrument, "byte", { m.by[m.voice].top or 127 } }
+  for _, b in ipairs(bytes) do out[#out + 1] = { instrument, "byte", { b } } end
   return out
 end
 
 -- A DX7 voice from the library. The same voice isn't sent twice running, since each is written into the
 -- FM-1. again: send it whatever was last sent, as a recall does. True if it went.
 local function say_voice(st, row, out, again)
-  local m = st.machines[row.machine]
+  local m = st.instruments[row.instrument]
   if not (m and m.bank and m.voice) then return false end
   local bank = index(value_of(st, row, m.bank), m.by[m.bank].n)
   local voice = index(value_of(st, row, m.voice), m.by[m.voice].n)
@@ -196,23 +196,23 @@ local function say_voice(st, row, out, again)
     return false
   end
   row.voiced = key
-  into_slot(row.machine, m, dump(R.unpacked(data, voice)), out)
+  into_slot(row.instrument, m, dump(R.unpacked(data, voice)), out)
   return true
 end
 
--- What a parameter's value says to its machine.
+-- What a parameter's value says to its instrument.
 local function say(st, r, row, param, value, out)
-  local m = st.machines[row.machine]
+  local m = st.instruments[row.instrument]
   local p = m and m.by[param]
   if not p then return out end
   if p.how == "cc" then
     -- A controller's own top (the FM-1's effects stop at 100, 107, 10 or 2), and its effect's on-off
     -- first: on above nothing, so one control both brings an effect in and takes it away.
     local v = math.floor(value * (p.top or 127) + 0.5)
-    if p.switch then out[#out + 1] = { row.machine, "cc", { p.switch, v > 0 and 1 or 0 } } end
-    out[#out + 1] = { row.machine, "cc", { p.n, v } }
+    if p.switch then out[#out + 1] = { row.instrument, "cc", { p.switch, v > 0 and 1 or 0 } } end
+    out[#out + 1] = { row.instrument, "cc", { p.n, v } }
   elseif p.how == "pc" then
-    out[#out + 1] = { row.machine, "program", { index(value, p.n) } }
+    out[#out + 1] = { row.instrument, "program", { index(value, p.n) } }
   elseif p.how == "bank" or p.how == "voice" then
     say_voice(st, row, out)
   elseif p.how == "pd" and row.engine and row.engine > 0 then
@@ -223,10 +223,10 @@ local function say(st, r, row, param, value, out)
   return out
 end
 
--- A row's whole sound said again: a machine taken up, a patch recalled, a song loaded.
+-- A row's whole sound said again: an instrument taken up, a patch recalled, a song loaded.
 local function say_all(st, r, out)
   local row = st.rows[r]
-  local m = row and st.machines[row.machine]
+  local m = row and st.instruments[row.instrument]
   if not m then return out end
   -- The voice itself first, a program or a DX7 voice, since it brings settings of its own; then the rest.
   for _, p in ipairs(m.list) do
@@ -250,12 +250,12 @@ local function sounds_line(st)
   local a = {}
   for r = 1, R.ROWS do
     local row = st.rows[r]
-    if row and st.machines[row.machine] then
+    if row and st.instruments[row.instrument] then
       a[#a + 1] = r
       a[#a + 1] = row.patch or "-"
-      a[#a + 1] = row.machine
+      a[#a + 1] = row.instrument
       local list = {}
-      for _, p in ipairs(st.machines[row.machine].list) do
+      for _, p in ipairs(st.instruments[row.instrument].list) do
         if row.values[p] ~= nil then list[#list + 1] = p end
       end
       a[#a + 1] = #list
@@ -273,7 +273,7 @@ local function patches_line(st)
   for _, name in ipairs(st.order) do
     local p = st.patches[name]
     a[#a + 1] = name
-    a[#a + 1] = p.machine
+    a[#a + 1] = p.instrument
     local keys = {}
     for k in pairs(p.values) do keys[#keys + 1] = k end
     table.sort(keys)
@@ -298,20 +298,20 @@ local function saved_patches(st, out)
   return saved(st, out)
 end
 
--- u_voices: the row on show, and each row's machine, engine and line (- 0 - for none). A machine a row
+-- u_voices: the row on show, and each row's instrument, engine and line (- 0 - for none). An instrument a row
 -- has just taken up starts from its defaults; the rest is as it was.
 function R.rows(st, a)
   st.at_row = math.floor(num(a[1]))
   local out = {}
   for r = 1, R.ROWS do
     local b = 2 + (r - 1) * 3
-    local machine, engine, line = a[b], math.floor(num(a[b + 1])), a[b + 2]
-    if machine == "-" or machine == nil then
+    local instrument, engine, line = a[b], math.floor(num(a[b + 1])), a[b + 2]
+    if instrument == "-" or instrument == nil then
       st.rows[r] = nil
     else
       local row = st.rows[r]
-      if not row or row.machine ~= machine then
-        st.rows[r] = { machine = machine, engine = engine, line = line, patch = nil, values = {}, base = {} }
+      if not row or row.instrument ~= instrument then
+        st.rows[r] = { instrument = instrument, engine = engine, line = line, patch = nil, values = {}, base = {} }
         say_all(st, r, out)
       else
         local moved = row.engine ~= engine or row.line ~= line
@@ -329,7 +329,7 @@ function R.param(st, row_param, value)
   r = tonumber(r)
   local row = r and st.rows[r]
   if not row then return {} end
-  local m = st.machines[row.machine]
+  local m = st.instruments[row.instrument]
   if not (m and m.by[p]) then return { report("warn", "no-param-" .. tostring(p)) } end
   value = math.max(0, math.min(1, num(value)))
   local how = m.by[p].how
@@ -381,7 +381,7 @@ end
 function R.recall(st, name)
   local row = row_on_show(st)
   local p = st.patches[name]
-  if not row or not p or p.machine ~= row.machine then return {} end
+  if not row or not p or p.instrument ~= row.instrument then return {} end
   row.patch = name
   row.values, row.base = copy(p.values), copy(p.values)
   local out = {}
@@ -393,11 +393,11 @@ end
 function R.copy_factory(st, name)
   local row = row_on_show(st)
   if not row then return {} end
-  local f = st.factory[row.machine]
+  local f = st.factory[row.instrument]
   local p = f and f.by[name]
   if not p then return { report("warn", "no-factory-patch") } end
   local n = unique(st, name)
-  st.patches[n] = { machine = row.machine, values = copy(p) }
+  st.patches[n] = { instrument = row.instrument, values = copy(p) }
   st.order[#st.order + 1] = n
   local out = R.recall(st, n)
   return saved_patches(st, out)
@@ -407,13 +407,13 @@ end
 function R.save(st, as_new)
   local row = row_on_show(st)
   if not row then return {} end
-  if row.machine == "kit" then return { { "kit", "bang", {} } } end
+  if row.instrument == "kit" then return { { "kit", "bang", {} } } end
   local name = row.patch
   if as_new or not name then
-    name = unique(st, row.patch or (row.machine .. "-patch"))
+    name = unique(st, row.patch or (row.instrument .. "-patch"))
     st.order[#st.order + 1] = name
   end
-  st.patches[name] = { machine = row.machine, values = copy(row.values) }
+  st.patches[name] = { instrument = row.instrument, values = copy(row.values) }
   row.patch, row.base = name, copy(row.values)
   return saved_patches(st, {})
 end
@@ -425,7 +425,7 @@ function R.tweaks(st, keep)
   local out = {}
   for r = 1, R.ROWS do
     local row = st.rows[r]
-    local m = row and st.machines[row.machine]
+    local m = row and st.instruments[row.instrument]
     if row and row.base and m then
       local moved, chosen = {}, false
       for k, v in pairs(row.base) do
@@ -455,7 +455,7 @@ function R.restore_patches(st, a)
   st.patches, st.order = {}, {}
   local i = 1
   while i <= #a do
-    local name, machine, n = a[i], a[i + 1], math.floor(num(a[i + 2]))
+    local name, instrument, n = a[i], a[i + 1], math.floor(num(a[i + 2]))
     if type(name) == "number" then name = string.format("%g", name) end
     i = i + 3
     local v = {}
@@ -463,8 +463,8 @@ function R.restore_patches(st, a)
       v[a[i]] = num(a[i + 1])
       i = i + 2
     end
-    if type(name) == "string" and type(machine) == "string" then
-      st.patches[name] = { machine = machine, values = v }
+    if type(name) == "string" and type(instrument) == "string" then
+      st.patches[name] = { instrument = instrument, values = v }
       st.order[#st.order + 1] = name
     end
   end
@@ -476,7 +476,7 @@ function R.restore_sounds(st, a)
   local out = {}
   st.loaded = true
   while i <= #a do
-    local r, patch, machine, n = math.floor(num(a[i])), a[i + 1], a[i + 2], math.floor(num(a[i + 3]))
+    local r, patch, instrument, n = math.floor(num(a[i])), a[i + 1], a[i + 2], math.floor(num(a[i + 3]))
     i = i + 4
     local v = {}
     for _ = 1, n do
@@ -484,7 +484,7 @@ function R.restore_sounds(st, a)
       i = i + 2
     end
     local row = st.rows[r]
-    if row and row.machine == machine then
+    if row and row.instrument == instrument then
       row.values, row.base = v, copy(v)
       row.patch = type(patch) == "string" and patch ~= "-" and patch or nil
       say_all(st, r, out)
@@ -493,7 +493,7 @@ function R.restore_sounds(st, a)
   return out
 end
 
--- /cutit/sound: the voice on show's patch, the song's patches for its machine, the factory's, then its
+-- /cutit/sound: the voice on show's patch, the song's patches for its instrument, the factory's, then its
 -- parameters, name and value.
 function R.phone(st)
   local row = row_on_show(st)
@@ -501,14 +501,14 @@ function R.phone(st)
   local a = { row.patch or "-" }
   local names = {}
   for _, n in ipairs(st.order) do
-    if st.patches[n].machine == row.machine then names[#names + 1] = n end
+    if st.patches[n].instrument == row.instrument then names[#names + 1] = n end
   end
   a[#a + 1] = #names
   for _, n in ipairs(names) do a[#a + 1] = n end
-  local f = st.factory[row.machine]
+  local f = st.factory[row.instrument]
   a[#a + 1] = f and #f.list or 0
   for _, n in ipairs(f and f.list or {}) do a[#a + 1] = n end
-  local m = st.machines[row.machine]
+  local m = st.instruments[row.instrument]
   a[#a + 1] = m and #m.list or 0
   for _, p in ipairs(m and m.list or {}) do
     a[#a + 1] = p
@@ -517,8 +517,8 @@ function R.phone(st)
   return a
 end
 
--- The Launchpad's sound page (Brendan, 2026-11-06): the machine's first eight parameters as columns on rows
--- 3 to 8, tapped to set; row 2 this machine's song patches, tapped to recall; row 1 eight notes to hear it
+-- The Launchpad's sound page (Brendan, 2026-11-06): the instrument's first eight parameters as columns on rows
+-- 3 to 8, tapped to set; row 2 this instrument's song patches, tapped to recall; row 1 eight notes to hear it
 -- with. A pad's p<row><column> <1 or 0>.
 R.NOTES = { 60, 62, 64, 65, 67, 69, 71, 72 }
 R.LEVELS = 6
@@ -531,8 +531,8 @@ function R.pad(st, nn, value)
   if r == 1 then
     local n = R.NOTES[c]
     st.held_note = down and c or 0
-    if R.HARDWARE[row.machine] then
-      return { { row.machine, "note", { n, down and 90 or 0 } } }
+    if R.HARDWARE[row.instrument] then
+      return { { row.instrument, "note", { n, down and 90 or 0 } } }
     elseif row.engine and row.engine > 0 then
       return { { "engine", "hear", { row.engine, row.line, n, down and 1 or 0 } } }
     end
@@ -542,25 +542,25 @@ function R.pad(st, nn, value)
   if r == 2 then
     local names = {}
     for _, n in ipairs(st.order) do
-      if st.patches[n].machine == row.machine then names[#names + 1] = n end
+      if st.patches[n].instrument == row.instrument then names[#names + 1] = n end
     end
     return names[c] and R.recall(st, names[c]) or {}
   end
-  local m = st.machines[row.machine]
+  local m = st.instruments[row.instrument]
   local p = m and m.list[c]
   if not p then return {} end
   local v = (r - 2) / R.LEVELS
   local out = R.param(st, st.at_row .. ":" .. p, v)
-  out[#out + 1] = { "heard", "list", { "machine", p, v } }
+  out[#out + 1] = { "heard", "list", { "instrument", p, v } }
   return out
 end
 
--- g_grid: 8 levels, 0 for a column with no parameter or at the bottom; how many song patches this machine
+-- g_grid: 8 levels, 0 for a column with no parameter or at the bottom; how many song patches this instrument
 -- has; which is in use; the note held.
 function R.grid(st)
   local a = {}
   local row = row_on_show(st)
-  local m = row and st.machines[row.machine]
+  local m = row and st.instruments[row.instrument]
   for c = 1, 8 do
     local p = m and m.list[c]
     local v = p and value_of(st, row, p) or 0
@@ -569,7 +569,7 @@ function R.grid(st)
   local count, at = 0, 0
   if row then
     for _, n in ipairs(st.order) do
-      if st.patches[n].machine == row.machine then
+      if st.patches[n].instrument == row.instrument then
         count = count + 1
         if n == row.patch then at = count end
       end
@@ -579,7 +579,7 @@ function R.grid(st)
   return a
 end
 
--- What arrives from the map: a machine's parameter, <row>:<param>, or a pad on the sound page, p<nn>.
+-- What arrives from the map: an instrument's parameter, <row>:<param>, or a pad on the sound page, p<nn>.
 function R.mapped(st, sel, value)
   local nn = tostring(sel):match("^p(%d%d)$")
   if nn then return R.pad(st, tonumber(nn), value) end
@@ -622,7 +622,7 @@ R.TEST_VOICES = {
 
 function R.test_voice(st, n)
   local v = R.TEST_VOICES[math.floor(num(n))]
-  local m = st.machines.fm
+  local m = st.instruments.fm
   if not (v and m and m.voice) then return {} end
   local out = into_slot("fm", m, v, {})
   -- Whatever row held a DX7 voice no longer has it there.

@@ -14,7 +14,7 @@ moves; the phone shows the page `u_voices` names on `/cutit/voices`: `perform`, 
 play; `drums`, the drum screen; `harmony`, `melody`, `keys` and `sound`, a voice's pages; `songs`,
 the songs and the sections, where the tempo, the last step, the time signature, the swing and the
 drunkenness are set; and `diag`, which Setup opens. The Launchpad's two columns run down either
-side of it, headed behavior and setup, and a press on either moves both (`cut-it/cut-it-app`).
+side of it, headed behaviors and instruments, and a press on either moves both (`cut-it/cut-it-app`).
 Under the left one, songs opens and closes the songs page, as aux does, by sending `voices aux`
 (Brendan, 2026-11-24). It was a mirror of `disp` until 2026-11-04, with a remote screen of diagnostic buttons, and both went
 with the split: that reverses the decision on [display.md](../module/display.md) that the phone
@@ -205,7 +205,7 @@ What `songs` carries, each one `u_song`'s own (`R.songs_cmds` in `u_song.lua`).
 | `set-name <name>` | The setlist's new name | unknown | — |
 
 What `synth` carries, `c_synth.lua`'s `R.SYNTHS`. The app sends
-neither: a voice's machine chooses the synth (`voices`).
+neither: a voice's instrument chooses the synth (`voices`).
 
 | Synth | Is | Evidence | Item |
 |-------|----|----------|------|
@@ -463,5 +463,5 @@ control for the time signature's bottom number:
 - ⬜ **No choosing the nanoKEY's synth but by a voice's page** (`cut-it/cut-it-app`), outside the
   line check, whose FM and STRINGS send `synth fm` and `synth strings` in test mode: the layout's
   keyboard tab sent them too, which `c_synth` puts in the section, so the choice survived a reload.
-  A voice's page sends `machine`, which isn't put, and the setup page's machine changes the voice
+  A voice's page sends `instrument`, which isn't put, and the setup page's instrument changes the voice
   itself. The synths checklist's steps 8 to 10 use the keys page instead.

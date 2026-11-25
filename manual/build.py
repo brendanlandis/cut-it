@@ -2,8 +2,8 @@
 """Cut It's manual as one file, MANUAL.md at the repo's top, read on GitHub (Brendan, 2026-11-11).
 
 The prose is here in manual/, one Markdown file a section, in filename order, each section's title
-its first heading. Its tables are made from the files the instrument itself reads, so a control
-can't go unlisted: a section names one on a line of its own as {{machines}}, {{factory}},
+its first heading. Its tables are made from the files Cut It itself reads, so a control
+can't go unlisted: a section names one on a line of its own as {{instruments}}, {{factory}},
 {{controls}} or {{map}}.
 
     python3 manual/build.py            writes MANUAL.md
@@ -42,7 +42,7 @@ def grouped(pairs):
     return by
 
 
-MACHINE_NAMES = {
+INSTRUMENT_NAMES = {
     'fm': 'FM (FM-1)',
     'strings': 'strings (Streichfett)',
     'sine': 'sine',
@@ -51,17 +51,17 @@ MACHINE_NAMES = {
 }
 
 
-def machines_table():
-    by = grouped((r[0], r[1]) for r in rows('cut-it-machines.txt'))
-    lines = ["## Each machine's parameters", '', '| Machine | Parameters |', '|---|---|']
-    lines += [f'| {MACHINE_NAMES.get(m, m)} | {", ".join(ps)} |' for m, ps in by.items()]
+def instruments_table():
+    by = grouped((r[0], r[1]) for r in rows('cut-it-instruments.txt'))
+    lines = ["## Each instrument's parameters", '', '| Instrument | Parameters |', '|---|---|']
+    lines += [f'| {INSTRUMENT_NAMES.get(m, m)} | {", ".join(ps)} |' for m, ps in by.items()]
     return '\n'.join(lines)
 
 
 def factory_table():
     by = grouped((r[0], r[1]) for r in rows('cut-it-factory.txt'))
-    lines = ['## Factory patches', '', '| Machine | Patches |', '|---|---|']
-    lines += [f'| {MACHINE_NAMES.get(m, m)} | {", ".join(ns)} |' for m, ns in by.items()]
+    lines = ['## Factory patches', '', '| Instrument | Patches |', '|---|---|']
+    lines += [f'| {INSTRUMENT_NAMES.get(m, m)} | {", ".join(ns)} |' for m, ns in by.items()]
     return '\n'.join(lines)
 
 
@@ -79,7 +79,7 @@ def part_of(dest, arg):
 
 def controls_table():
     lines = ['## What can be taken into play', '',
-             "Besides these, every parameter of a voice's machine.", '',
+             "Besides these, every parameter of a voice's instrument.", '',
              '| Control | Part | Kind |', '|---|---|---|']
     for dest, arg, kind, label in (r[:4] for r in rows('cut-it-controls.txt')):
         lines.append(f'| {label} | {part_of(dest, arg)} | {kind} |')
@@ -159,7 +159,7 @@ MEANS = {
     'melody h': 'chords on the top row, the rhythm below',
     'melody m': "32 steps above, the mode's notes below",
     'perform pad-': 'tap a column to set its fader',
-    'machine p': 'parameters above, patches on row 2, notes on row 1',
+    'instrument p': 'parameters above, patches on row 2, notes on row 1',
 }
 
 
@@ -215,7 +215,7 @@ def map_tables():
 
 
 TABLES = {
-    'machines': machines_table,
+    'instruments': instruments_table,
     'factory': factory_table,
     'controls': controls_table,
     'map': map_tables,

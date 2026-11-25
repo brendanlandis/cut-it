@@ -233,7 +233,7 @@ def static_lint():
     stars = sorted((f[0], f[2], f[3]) for _, f in rows if len(f) == 4 and f[1] == "pad-*")
     A.check("⛔ pad-* is the harmony, melody, performance and sound pages'",
             stars == [("harmony", "melody", "h"), ("melody", "melody", "m"),
-                      ("perform", "perform", "pad-"), ("sound", "machine", "p")], stars)
+                      ("perform", "perform", "pad-"), ("sound", "instrument", "p")], stars)
 
     seen, dupes = {}, []
     for n, f in rows:

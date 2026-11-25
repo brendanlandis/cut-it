@@ -42,4 +42,4 @@ A note or chord you edit by hand is **pinned**: rolls and drift leave it alone u
 
 ## Keys
 
-The nanoKEY plays the voice on show. A voice that does keys has nothing else: choose its machine and play.
+The nanoKEY plays the voice on show. A voice that does keys has nothing else: choose its instrument and play.

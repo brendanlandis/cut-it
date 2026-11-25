@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The manual: MANUAL.md is what manual/build.py writes from manual/ and the instrument's tables.
 
-A change to the prose or to a table the instrument reads (cut-it-map.txt, -controls, -machines,
+A change to the prose or to a table Cut It reads (cut-it-map.txt, -controls, -instruments,
 -factory) that wasn't built into MANUAL.md fails here, so the manual on GitHub can't fall behind
 the instrument. The fix is to run python3 manual/build.py, never to edit MANUAL.md.
 

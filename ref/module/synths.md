@@ -7,7 +7,7 @@
 
 **`c_synth` holds which synth the nanoKEY plays, and holds it on every page.** There are two:
 `fm`, the M-VAVE FM-1, and `strings`, the Waldorf Streichfett, and `fm` at a first load (Brendan,
-2026-11-04). A voice's page chooses its machine, if that's one of these ([voices.md](voices.md)), and the
+2026-11-04). A voice's page chooses its instrument, if that's one of these ([voices.md](voices.md)), and the
 phone with two buttons, and the choice stays put through a page with none, so the nanoKEY plays the chosen synth
 everywhere ([nanokey.md](../device/nanokey.md)).
 
@@ -35,7 +35,7 @@ and which synth each held key went to, as plain Lua that runs on the Mac without
 
 | | Is | Evidence |
 |---|---|---|
-| Inlet | `<note> <velocity>` from `m_nanokey`, 0 a release; `machine <choice>` from `u_voices`, the voice on show's; `synth <choice>` from `u_net` (the phone's `/cutit synth <choice>`); `velocity <on or off>` from `u_net` (the phone's `/cutit velocity <on or off>`) | unknown |
+| Inlet | `<note> <velocity>` from `m_nanokey`, 0 a release; `instrument <choice>` from `u_voices`, the voice on show's; `synth <choice>` from `u_net` (the phone's `/cutit synth <choice>`); `velocity <on or off>` from `u_net` (the phone's `/cutit velocity <on or off>`) | unknown |
 | Outlet 1 | `note <n> <v>` and `program <n>` to `m_fm1` | unknown |
 | Outlet 2 | `note <n> <v>` and `program <n>` to `m_streich` | unknown |
 | Outlet 3 | `synth <choice>` to `u_net`'s third inlet, which sends `/cutit/synth <choice>` to the phone at once and on every heartbeat ([phone.md](../device/phone.md)) | unknown |
@@ -55,7 +55,7 @@ every change, never on a change that changes nothing.
 | A press of a key held on the other synth | Releases it there first, then plays it on the choice: a nanoKEY never does this, a stray note-on can | unknown |
 | A release with no press on record | Goes to the synth chosen now: a note-off nothing holds is harmless, and one sent nowhere could leave a note hanging | unknown |
 | `synth <choice>` | Changes the choice, says so and puts it, and takes the nanoKEY off a Pd voice, so the line check's FM and STRINGS are heard whatever page was shown last; the same choice again, with no Pd voice to leave, changes nothing and says nothing; a choice it does not know is `bad-synth` and changes nothing | unknown |
-| `machine <choice>` | Changes the choice and tells the phone, and isn't put: looking at a voice's page changes nothing in the song, so save and revert stay dark. From then the choice is the voice's and the section keeps its own, the one it last restored or `synth` last chose. Otherwise as `synth` | unknown |
+| `instrument <choice>` | Changes the choice and tells the phone, and isn't put: looking at a voice's page changes nothing in the song, so save and revert stay dark. From then the choice is the voice's and the section keeps its own, the one it last restored or `synth` last chose. Otherwise as `synth` | unknown |
 | A value of 0 after the choice | A release, ignored; the phone sends no value | unknown |
 | `velocity off` | Every note-on from then goes out at 127, on either synth; a release stays 0, so a key held through the switch still lets go (Brendan, 2026-11-04) | unknown |
 | `velocity on` | A key's own velocity reaches the synth again. The same setting twice says nothing; anything else is `bad-velocity` | unknown |
@@ -88,14 +88,14 @@ tapped alone turns on or off; a note there alone sounds. Its commands: on, roll 
 `h<NN>` and `m<NN>`, from one `pad-*` row each ([map.md](map.md)).
 
 **There are two engines**, `[c_melody 1 melody]` and `[c_melody 2 melody-2]`, each a harmony line and a melody line,
-and `u_voices` says what each plays on: `assign <e> <h or m> <machine or off>`, `off` silencing that line. **Only the
+and `u_voices` says what each plays on: `assign <e> <h or m> <instrument or off>`, `off` silencing that line. **Only the
 engine whose voice is on show hears the Launchpad, the phone and the nanoKEY and speaks to them**, told by `active
 <e>`; a message `e<n>-<name>`, from `u_perform`, is for engine n, on show or not. A section holds each under its own
-key, `melody` and `melody-2`. The section's own word for a machine is overruled by the voice's, which is the song's.
+key, `melody` and `melody-2`. The section's own word for an instrument is overruled by the voice's, which is the song's.
 
 **`c_melody` rolls a loop of up to 8 chords and a loop of up to 32 notes in a key and mode, by
 weighted dice, and a lock on each keeps or drifts what it rolled** (Brendan, 2026-11-05). `c_steps`'
-clock drives it, each part plays on its own machine, and the phone's tabs and the voices' pages in the
+clock drives it, each part plays on its own instrument, and the phone's tabs and the voices' pages in the
 map control it. `c_melody.lua` holds the rules, and `c_melody.pd` the cords, the note timing and the
 state bus, as `c_synth`'s are.
 

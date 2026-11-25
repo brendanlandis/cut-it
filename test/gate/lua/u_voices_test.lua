@@ -36,9 +36,9 @@ equal("before anything: the performance page, no voice", { st.kind, st.row, R.pa
 local out = R.restore(st, {})
 equal("⛔ a song with none is seeded: its old drum page and the generator's two lines",
       { st.voices[1], st.voices[2], st.voices[3], st.voices[4] },
-      { { name = "drums", method = "drums", machine = "kit" },
-        { name = "chords", method = "harmony", machine = "strings" },
-        { name = "melody", method = "melody", machine = "fm" } })
+      { { name = "drums", behavior = "drums", instrument = "kit" },
+        { name = "chords", behavior = "harmony", instrument = "strings" },
+        { name = "melody", behavior = "melody", instrument = "fm" } })
 equal("⛔ ... and saved so, first, as a seed: no change to the song", out[1],
       { "seed", "seed", { "drums", "drums", "kit", "chords", "harmony", "strings", "melody", "melody", "fm",
         "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-", "-" } })
@@ -48,7 +48,7 @@ local other = R.new()
 out = R.restore(other, line)
 equal("⛔ restoring what it holds: the same voices, and no seed and no save", { other.voices, #of(out, "seed"),
       #of(out, "save") }, { st.voices, 0, 0 })
-equal("a row with a method or machine it doesn't know is no voice", (function()
+equal("a row with a behavior or instrument it doesn't know is no voice", (function()
   local s = R.new()
   R.restore(s, { "a", "organ", "fm", "b", "keys", "fm" })
   return { s.voices[1], s.voices[2].name }
@@ -57,7 +57,7 @@ end)(), { nil, "b" })
 print("\n--- the left button ---")
 st = seeded()
 out = R.left(st, 1)
-equal("⛔ a voice's left button: its page, its method's name on the mode bus", { page(out), st.kind, st.row },
+equal("⛔ a voice's left button: its page, its behavior's name on the mode bus", { page(out), st.kind, st.row },
       { "drums", "voice", 1 })
 equal("... and the last power-off's page is saved as this one", of(out, "page")[1], { "page", "page", { "voice", 1 } })
 equal("another's, harmony", page(R.left(st, 2)), "harmony")
@@ -74,8 +74,8 @@ equal("⛔ the lit one again: back to the performance page", { page(R.right(st, 
 R.left(st, 2)
 equal("from its left page, its right button goes across", { page(R.right(st, 2)), st.kind }, { "sound", "setup" })
 out = R.right(st, 5)
-equal("⛔ an unused row's: a new voice on it, keys, on a machine no other has, and its setup page",
-      { st.voices[5], page(out), st.row }, { { name = "voice_5", method = "keys", machine = "sine" }, "sound", 5 })
+equal("⛔ an unused row's: a new voice on it, keys, on an instrument no other has, and its setup page",
+      { st.voices[5], page(out), st.row }, { { name = "voice_5", behavior = "keys", instrument = "sine" }, "sound", 5 })
 equal("... and the song holds it", of(out, "save")[1][2], "voices")
 equal("a row off the eight does nothing", R.right(st, 9), {})
 
@@ -110,8 +110,8 @@ R.setup(st)
 print("\n--- the engines ---")
 st = seeded()
 R.right(st, 5)
-out = R.set_method(st, { 5, "melody" })
-equal("⛔ each line of each engine is told its voice's machine, by row order: row 3 and row 5 the melody's",
+out = R.set_behavior(st, { 5, "melody" })
+equal("⛔ each line of each engine is told its voice's instrument, by row order: row 3 and row 5 the melody's",
       { table.unpack(of(out, "engine"), 1, 4) },
       { { "engine", "assign", { 1, "h", "strings" } }, { "engine", "assign", { 1, "m", "fm" } },
         { "engine", "assign", { 2, "h", "off" } }, { "engine", "assign", { 2, "m", "sine" } } })
@@ -124,9 +124,9 @@ equal("... a keys voice in none", (function()
 end)(), { "engine", "active", { 0 } })
 equal("u_perform is told the row on show and each row's engine", of(R.left(st, 3), "perform")[1],
       { "perform", "rows", { 3, 0, 1, 1, 0, 2, 0, 0, 0 } })
-equal("⛔ the nanoKEY plays a hardware voice's machine, unsaved: machine, to c_synth", of(R.left(st, 2), "synth")[1],
-      { "synth", "machine", { "strings" } })
-R.set_machine(st, { 5, "saw" })
+equal("⛔ the nanoKEY plays a hardware voice's instrument, unsaved: instrument, to c_synth", of(R.left(st, 2), "synth")[1],
+      { "synth", "instrument", { "strings" } })
+R.set_instrument(st, { 5, "saw" })
 equal("... and is left on the last for one that's no hardware", of(R.left(st, 5), "synth"), {})
 
 print("\n--- too many, and the phone's voice page ---")
@@ -134,29 +134,32 @@ st = seeded()
 R.right(st, 4)
 R.right(st, 5)
 R.right(st, 6)
-equal("a second harmony voice is fine: there are two engines", #of(R.set_method(st, { 4, "harmony" }), "save"), 1)
-equal("⛔ a third warns, and changes nothing", { R.set_method(st, { 5, "harmony" }), st.voices[5].method },
+equal("a second harmony voice is fine: there are two engines", #of(R.set_behavior(st, { 4, "harmony" }), "save"), 1)
+equal("⛔ a third warns, and changes nothing", { R.set_behavior(st, { 5, "harmony" }), st.voices[5].behavior },
       { { { "err", "warn", { "u_voices", "too-many-harmony" } } }, "keys" })
-equal("⛔ so does a second drum voice", R.set_method(st, { 6, "drums" }),
+equal("⛔ so does a second drum voice", R.set_behavior(st, { 6, "drums" }),
       { { "err", "warn", { "u_voices", "too-many-drums" } } })
 st = seeded()
 R.right(st, 4)
-equal("as many keys voices as there are rows", #of(R.set_method(st, { 4, "keys" }), "save"), 0)
-out = R.set_method(st, { 3, "keys" })
-equal("⛔ a method that can play on its machine keeps it", { st.voices[3].machine, #of(out, "save") }, { "fm", 1 })
-equal("⛔ a method that can't takes the first one free", (function()
+equal("as many keys voices as there are rows", #of(R.set_behavior(st, { 4, "keys" }), "save"), 0)
+out = R.set_behavior(st, { 3, "keys" })
+equal("⛔ a behavior that can play on its instrument keeps it", { st.voices[3].instrument, #of(out, "save") }, { "fm", 1 })
+equal("⛔ a behavior that can't takes the first one free", (function()
   local s = seeded()
-  R.set_method(s, { 1, "keys" })
-  return s.voices[1].machine
+  R.set_behavior(s, { 1, "keys" })
+  return s.voices[1].instrument
 end)(), "sine")
-equal("a method it doesn't know fails", R.set_method(st, { 3, "dance" }), { { "err", "fail", { "u_voices", "bad-method" } } })
+equal("a behavior it doesn't know fails", R.set_behavior(st, { 3, "dance" }),
+      { { "err", "fail", { "u_voices", "bad-behavior" } } })
 equal("⛔ the page follows, if it's on this voice", (function()
   local s = seeded()
   R.left(s, 3)
-  return page(R.set_method(s, { 3, "keys" }))
+  return page(R.set_behavior(s, { 3, "keys" }))
 end)(), "keys")
-equal("⛔ a machine: the song holds it", { #of(R.set_machine(st, { 2, "saw" }), "save"), st.voices[2].machine }, { 1, "saw" })
-equal("one the method can't play on fails", R.set_machine(st, { 1, "fm" }), { { "err", "fail", { "u_voices", "bad-machine" } } })
+equal("⛔ an instrument: the song holds it", { #of(R.set_instrument(st, { 2, "saw" }), "save"), st.voices[2].instrument },
+      { 1, "saw" })
+equal("one the behavior can't play on fails", R.set_instrument(st, { 1, "fm" }),
+      { { "err", "fail", { "u_voices", "bad-instrument" } } })
 equal("⛔ a name: lowercase, one symbol, as long as a song's", (function()
   R.rename(st, { 3, "My", "Lead", "Line", "With", "Far", "Too", "Many" })
   return st.voices[3].name
@@ -185,7 +188,7 @@ equal("⛔ a song with no such row: off that page, to the performance page", pag
 print("\n--- what the surfaces show ---")
 st = seeded()
 R.right(st, 2)
-equal("g_grid: the row on show, the kind, each row's method", { table.unpack(R.grid(st), 1, 6) },
+equal("g_grid: the row on show, the kind, each row's behavior", { table.unpack(R.grid(st), 1, 6) },
       { 2, "setup", "drums", "harmony", "melody", "-" })
 local ph = R.phone(st)
 equal("the phone: the page's name, kind and row, then the voices, three atoms each: 27", { #ph, ph[1], ph[2], ph[3],

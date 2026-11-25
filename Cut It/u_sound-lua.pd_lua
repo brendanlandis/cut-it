@@ -1,4 +1,4 @@
--- u_sound-lua -- u_sound.lua's Pd face, made inside u_sound.pd as [u_sound-lua]. It reads the machines'
+-- u_sound-lua -- u_sound.lua's Pd face, made inside u_sound.pd as [u_sound-lua]. It reads the instruments'
 -- and the factory's tables and the DX7 library, turns messages into calls on the rules and the rules' answers into outlets,
 -- and nothing else. ref/module/voices.md.
 --
@@ -22,7 +22,7 @@ local SAVE_EVERY, SHOW_EVERY = 300, 60
 
 function SoundLua:initialize()
   self.inlets, self.outlets = 3, 11
-  self.state = R.new(F.read(self, "cut-it-machines.txt"), F.read(self, "cut-it-factory.txt"))
+  self.state = R.new(F.read(self, "cut-it-instruments.txt"), F.read(self, "cut-it-factory.txt"))
   -- The DX7 library's banks, in cut-it-dx7.txt's order. One that isn't there is no error: the files are
   -- outside git, and its voices just aren't sent (ref/module/voices.md).
   for i, name in ipairs(R.parse_library(F.read(self, "cut-it-dx7.txt"))) do

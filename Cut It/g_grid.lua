@@ -94,7 +94,7 @@ function R.new(text)
                fast = 0, recall = 0, quiet = {},
                -- The page and the edges.
                page = "perform", kind = "perform", at_row = 0, beat = 0, top = {}, unsaved = 0,
-               methods = {},
+               behaviors = {},
                -- The generator's, the voice on show's.
                chords = 0, sounding = 0, on_h = 0, on_m = 0, total = 16, bass = 0, style = 1,
                starts = {}, loop = 32, tonic = 0, scale = { 0, 2, 4, 5, 7, 9, 11 }, notes = {},
@@ -103,7 +103,7 @@ function R.new(text)
                cols = {}, btns = {}, cells = {}, ci = {}, cc = {},
                -- The sound page's.
                levels = { 0, 0, 0, 0, 0, 0, 0, 0 }, n_patches = 0, patch_at = 0, note_at = 0 }
-  for k = 1, 8 do st.top[k], st.methods[k], st.starts[k] = 0, "-", -1 end
+  for k = 1, 8 do st.top[k], st.behaviors[k], st.starts[k] = 0, "-", -1 end
   for k = 1, R.STEPS do st.notes[k], st.codes[k] = 0, 0 end
   for k = 1, 8 do st.cols[k] = { 0, 0, 0 } end
   for k = 1, 16 do st.btns[k] = { 0, 0 } end
@@ -231,10 +231,10 @@ R.inputs = {
     st.unsaved = num(a[1])
     return {}
   end,
-  -- voices <row> <kind> <8 methods>, from u_voices: the row on show and each row's method.
+  -- voices <row> <kind> <8 behaviors>, from u_voices: the row on show and each row's behavior.
   voices = function(st, a)
     st.at_row, st.kind = num(a[1]), a[2]
-    for k = 1, 8 do st.methods[k] = a[k + 2] end
+    for k = 1, 8 do st.behaviors[k] = a[k + 2] end
     return {}
   end,
   -- melody <67 atoms>, the generator's state for the phone: the harmony page reads its own.
@@ -344,7 +344,7 @@ local function edges(st)
     if c ~= R.DARK then light(st, 90 + k, c) end
   end
   for r = 1, 8 do
-    if st.methods[r] and st.methods[r] ~= "-" then
+    if st.behaviors[r] and st.behaviors[r] ~= "-" then
       local on = st.at_row == r
       light(st, 90 - 10 * r, (on and st.kind == "voice") and voice_full(r) or voice_dim(r))
       light(st, 99 - 10 * r, (on and st.kind == "setup") and voice_full(r) or voice_dim(r))
@@ -515,7 +515,7 @@ local function perform(st)
 end
 
 -- A voice's sound page (Brendan, 2026-11-06): its first eight parameters as columns on rows 3 to 8; row 2
--- its machine's song patches; row 1 eight notes to hear it with.
+-- its instrument's song patches; row 1 eight notes to hear it with.
 local function sound(st)
   local row = st.at_row > 0 and st.at_row or 1
   local full, dim = voice_full(row), voice_dim(row)

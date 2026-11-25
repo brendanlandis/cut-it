@@ -15,13 +15,13 @@ What is left is two synths you can hear and a chord under real fingers.
 each thing behaves as it does: [synths](../../ref/module/synths.md),
 [streichfett](../../ref/device/streichfett.md), [nanokey](../../ref/device/nanokey.md).
 
-- [ ] **1. A voice's page chooses its machine**
+- [ ] **1. A voice's page chooses its instrument**
   - **Do:** Press the second button down the Launchpad's left column.
   - **Pass if:** It goes bright, and the phone turns to row 2's harmony page, its left button lit in the voice's color and the button across from it reading strings. Save and revert stay dark: looking at a voice's page changes nothing in the song.
 
 - [ ] **2. The right column's the same**
   - **Do:** Press the third button down the right column, and then the second.
-  - **Pass if:** The phone turns to row 3's setup page, its machine reading fm, and then to row 2's, reading strings. Save and revert stay dark.
+  - **Pass if:** The phone turns to row 3's setup page, its instrument reading fm, and then to row 2's, reading strings. Save and revert stay dark.
 
 - [ ] **3. The nanoKEY plays the Streichfett**
   - **Need:** Row 2's page on show, so strings is chosen.
@@ -51,7 +51,7 @@ each thing behaves as it does: [synths](../../ref/module/synths.md),
 - [ ] **8. The phone's keys page**
   - **Need:** Row 3's setup page on show, the third button down the right column, the song as saved.
   - **Do:** On the phone choose keys under does. Then press row 3's left button, look at the phone, and play the nanoKEY.
-  - **Pass if:** Save and revert light at the choice: a voice's method is the song's. Row 3's left page on the phone is the keys page: the voice's name in its color, fm beside it, and the velocity switch under them, lit, its word black. The FM-1 plays every key.
+  - **Pass if:** Save and revert light at the choice: a voice's behavior is the song's. Row 3's left page on the phone is the keys page: the voice's name in its color, fm beside it, and the velocity switch under them, lit, its word black. The FM-1 plays every key.
   - **Note:** The layout's keyboard tab chose the synth with two buttons, FM and STRINGS; the app chooses it only by the voice on show ([phone](../../ref/device/phone.md), *Open*).
 
 - [ ] **9. The velocity switch**

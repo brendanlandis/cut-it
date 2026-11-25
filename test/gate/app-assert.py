@@ -55,7 +55,7 @@ end
 local wanted = {
   { "c_steps", { "presses" } }, { "c_synth", { "inputs", "VELOCITY", SYNTHS = true } },
   { "u_tempo", { "inputs" } }, { "u_song", { "phone_cmds", "songs_cmds" } },
-  { "c_melody", { "inputs", ORDER = true } }, { "u_voices", { "phone_cmds", METHODS = true, MACHINES = true } },
+  { "c_melody", { "inputs", ORDER = true } }, { "u_voices", { "phone_cmds", BEHAVIORS = true, INSTRUMENTS = true } },
   { "u_perform", { "phone_cmds" } }, { "u_sound", { "phone_cmds" } },
 }
 for _, w in ipairs(wanted) do
@@ -246,9 +246,9 @@ RESOLVE = {
     # The melody page's rows of knobs: row([<control>, ...]).
     ("Pages.swift", "perform ctl", "n"): lambda: swift_list("Pages.swift", r"\brow\(\[([^\]]*)\]\)"),
     # The setup page's choices, from its own lists.
-    ("Pages.swift", "voices method", "m"): lambda: swift_list("Pages.swift", r"static let methods = \[([^\]]*)\]"),
-    ("Pages.swift", "voices machine", "m"): lambda: swift_list("Pages.swift", r"static let machines = \[([^\]]*)\]"),
-    ("Pages.swift", "voices machine", "sure"): lambda: swift_list("Pages.swift", r"static let machines = \[([^\]]*)\]"),
+    ("Pages.swift", "voices behavior", "m"): lambda: swift_list("Pages.swift", r"static let behaviors = \[([^\]]*)\]"),
+    ("Pages.swift", "voices instrument", "m"): lambda: swift_list("Pages.swift", r"static let instruments = \[([^\]]*)\]"),
+    ("Pages.swift", "voices instrument", "sure"): lambda: swift_list("Pages.swift", r"static let instruments = \[([^\]]*)\]"),
 }
 
 
@@ -473,17 +473,17 @@ def main():
                 takes("melody set", f, line, words, 2, keys("c_melody", "ORDER") | {"arrive", "octave"})
         elif c == "voices":
             sub = takes("voices", f, line, words, 1, keys("u_voices", "phone_cmds"))
-            if sub == ["method"]:
-                takes("voices method", f, line, words, 3, keys("u_voices", "METHODS"))
-            elif sub == ["machine"]:
-                takes("voices machine", f, line, words, 3, keys("u_voices", "MACHINES"))
+            if sub == ["behavior"]:
+                takes("voices behavior", f, line, words, 3, keys("u_voices", "BEHAVIORS"))
+            elif sub == ["instrument"]:
+                takes("voices instrument", f, line, words, 3, keys("u_voices", "INSTRUMENTS"))
         elif c == "perform":
             sub = takes("perform", f, line, words, 1, keys("u_perform", "phone_cmds"))
             if sub == ["ctl"]:
                 dest = takes("perform ctl", f, line, words, 3, set(dests))
                 # drums and melody: the destination's own table, as u_map hands the arg on (a
-                # melody arg as e<engine>-<arg>, which c_melody's face takes off). machine's are
-                # the machine's parameters, which the patch tells the app: data, not words.
+                # melody arg as e<engine>-<arg>, which c_melody's face takes off). instrument's are
+                # the instrument's parameters, which the patch tells the app: data, not words.
                 if dest == ["drums"]:
                     takes("perform ctl drums", f, line, words, 4, keys("c_steps", "presses"))
                 elif dest == ["melody"]:
@@ -508,8 +508,8 @@ def main():
             ("melody", "c_melody takes (R.inputs)"),
             ("melody set", "c_melody's set knows (R.ORDER, arrive and octave)"),
             ("voices", "u_voices takes (R.phone_cmds)"),
-            ("voices method", "u_voices has (R.METHODS)"),
-            ("voices machine", "u_voices has (R.MACHINES)"),
+            ("voices behavior", "u_voices has (R.BEHAVIORS)"),
+            ("voices instrument", "u_voices has (R.INSTRUMENTS)"),
             ("perform", "u_perform takes (R.phone_cmds)"),
             ("perform ctl", "u_map routes (its destination route)"),
             ("perform ctl drums", "c_steps takes (R.presses)"),

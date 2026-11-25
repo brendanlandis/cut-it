@@ -1385,13 +1385,13 @@ local function flip_style(st, atoms)
   return out
 end
 
--- What the voices say this engine plays (Brendan, 2026-11-06): assign <engine> <h or m> <machine or
--- off>. A section's own word for the machine is overruled: a voice's machine is the song's.
+-- What the voices say this engine plays (Brendan, 2026-11-06): assign <engine> <h or m> <instrument or
+-- off>. A section's own word for the instrument is overruled: a voice's instrument is the song's.
 local function assign_line(st, a)
   if num(a[1]) ~= st.engine then return {} end
-  local line, machine = a[2], a[3]
+  local line, instrument = a[2], a[3]
   local name = line == "h" and "voice-h" or "voice-m"
-  local off = machine == "off"
+  local off = instrument == "off"
   local out = {}
   if line == "h" then st.off_h = off else st.off_m = off end
   if off then
@@ -1401,7 +1401,7 @@ local function assign_line(st, a)
     return out
   end
   for i, v in ipairs(R.VOICES) do
-    if v == machine then
+    if v == instrument then
       st.fixed[name] = i
       if st[name] ~= i then
         st[name] = i

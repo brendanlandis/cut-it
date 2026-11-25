@@ -17,7 +17,7 @@ import lib_grid as G                                           # noqa: E402
 
 TAG = "VOICES"
 WINDOWS = ["LOADED", "LEFT-2", "LEFT-2-AGAIN", "LEFT-EMPTY", "RIGHT-5", "RIGHT-5-AGAIN", "AUX", "AUX-AGAIN",
-           "SETUP", "SETUP-AGAIN", "METHOD", "TOO-MANY", "ON-PAGE", "PLAY", "PLAY-AGAIN", "STOP",
+           "SETUP", "SETUP-AGAIN", "BEHAVIOR", "TOO-MANY", "ON-PAGE", "PLAY", "PLAY-AGAIN", "STOP",
            "BACK-PERFORM", "ARM", "HEARD", "BIND", "BOUND", "MOVE", "ON-ROW-2", "ARM-2", "HEARD-2",
            "BIND-2", "ON-ROW-5", "ACTIVE-2", "ON-PERFORM", "PLAYED-2", "LAMP-2", "NEW", "SECTION-2",
            "HELD", "CAUGHT", "TAP", "SECTION-NONE", "FLUSHED"]
@@ -51,7 +51,7 @@ def run_asserts(cap, state):
     A.check("⛔ ... and the page says so: the performance page",
             [e[1] for e in pre if e[0] == "MODE"] == [["perform"]],
             [e[1] for e in pre if e[0] == "MODE"])
-    A.check("⛔ a left button, through the table: its method's page, once for a press and release",
+    A.check("⛔ a left button, through the table: its behavior's page, once for a press and release",
             pages("LEFT-2") == [["harmony"]], pages("LEFT-2"))
     A.check("... and the page is saved in the auto file's key, its kind and row",
             puts("LEFT-2", "put", "auto", "page") == [["put", "auto", "page", "voice", "2"]],
@@ -72,8 +72,8 @@ def run_asserts(cap, state):
             "%s %s" % (pages("SETUP"), pages("SETUP-AGAIN")))
 
     print("\n--- from the phone ---")
-    v = puts("METHOD", "put", "song", "voices")
-    A.check("⛔ a voice's method and name, through u_net: row 5 a harmony voice, second_chords",
+    v = puts("BEHAVIOR", "put", "song", "voices")
+    A.check("⛔ a voice's behavior and name, through u_net: row 5 a harmony voice, second_chords",
             v[-1:] == [["put", "song", "voices"] + SEED + ["-"] * 3 + ["second_chords", "harmony", "sine"]
                        + ["-"] * 9], v)
     A.check("⛔ a third harmony voice and a second drum voice warn, and change nothing",

@@ -57,7 +57,7 @@ function R.new()
 end
 
 -- The choice, out to the phone, and what the section playing holds, st.kept, to the song store. The
--- two are one until a voice's page says which synth plays (R.machine): from then the choice is the
+-- two are one until a voice's page says which synth plays (R.instrument): from then the choice is the
 -- voice's, and the section keeps its own.
 local function tell(st)
   return { { "choice", "synth", { st.choice } }, { "save", "synth", { st.kept or st.choice } } }
@@ -69,7 +69,7 @@ local function tell_velocity(st)
 end
 
 -- The nanoKEY on a Pd voice (Brendan, 2026-11-06), which c_keys plays, four notes at once: a wave for each
--- machine, and which of its four each key is on. A press with all four down takes the oldest's.
+-- instrument, and which of its four each key is on. A press with all four down takes the oldest's.
 R.PD = { sine = 0, saw = 1, square = 2 }
 R.PD_SLOTS = 4
 local function pd_key(st, n, v)
@@ -148,9 +148,9 @@ function R.choose(st, atoms)
   return tell(st)
 end
 
--- machine <choice>, from u_voices: the voice on show's machine, which the nanoKEY plays. The phone
+-- instrument <choice>, from u_voices: the voice on show's instrument, which the nanoKEY plays. The phone
 -- hears, and it isn't put: looking at a voice's page changes nothing in the song.
-function R.machine(st, atoms)
+function R.instrument(st, atoms)
   local choice = atoms[1]
   if R.PD[choice] then
     st.by_voice = true
@@ -223,13 +223,13 @@ function R.boot(st)
   return out
 end
 
--- What reaches the inlet: a key from m_nanokey, machine <choice> from u_voices, synth <choice> or
+-- What reaches the inlet: a key from m_nanokey, instrument <choice> from u_voices, synth <choice> or
 -- velocity <on or off> from u_net.
 R.inputs = {
   list = function(st, a) return R.key(st, a[1], a[2]) end,
   float = function(st, a) return R.key(st, a[1], 0) end,
   synth = function(st, a) return R.choose(st, a) end,
-  machine = function(st, a) return R.machine(st, a) end,
+  instrument = function(st, a) return R.instrument(st, a) end,
   velocity = function(st, a) return R.set_velocity(st, a) end,
 }
 

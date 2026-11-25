@@ -535,7 +535,7 @@ instrument, with a song whose one section holds `synth strings` and `velocity of
 into `u_net`'s own port, from a socket the driver builds with `lib_drive`'s `extra`.
 
 **It checks:** the saved choice and switch restored and put back, the first key on the
-Streichfett's channel alone, at 127, the phone's `velocity on` and `off` put, a voice's button choosing its machine and putting nothing, any channel of the nanoKEY's port playing, a key held through the
+Streichfett's channel alone, at 127, the phone's `velocity on` and `off` put, a voice's button choosing its instrument and putting nothing, any channel of the nanoKEY's port playing, a key held through the
 phone's switch releasing on the FM-1, only a press choosing (two buttons held), notes on four other
 ports playing nothing, the choice holding on the performance page, `bad-synth` from
 the phone, and `bad-velocity`, a soft key at 127 with the switch off and its release at 0, panic's
@@ -601,7 +601,7 @@ the grid's own clock, which is one too. Without it the transport plays nothing a
 ## `voices-assert.sh` — the voices and the controls in play
 
 **It runs the rules' Lua tests first**, with lua.org's Lua 5.4 and no Pd: `test/gate/lua/u_voices_test.lua` the seed,
-every button's page, aux and Setup over each other, PLAY, the engines, too many of a method, the phone's voice page and a
+every button's page, aux and Setup over each other, PLAY, the engines, too many of a behavior, the phone's voice page and a
 page waiting for its song; `test/gate/lua/u_perform_test.lua` arm, heard and bind, pickup, a section's list, toggle and hit,
 what a lane shows and the phone. Then **a scratch copy of the instrument with no song saved**, driven on `param` and over
 OSC, which proves the cords: a press through the map to the page on the `mode` bus, the song's voices into its draft,

@@ -43,16 +43,16 @@ audio).
 effect channel 2, as it ships. Change either on the device and the notes or the effects stop,
 with nothing in the patch to say so.
 
-So the `fm` machine's parameters are its program, its effects and a DX7 voice of the library, sent
+So the `fm` instrument's parameters are its program, its effects and a DX7 voice of the library, sent
 whole (below, *`byte` is a whole voice*); nothing of a voice's own parameters. Each effect's
 amount carries that effect's own on-off, on above 0 and off at 0, and stops at the FM-1's top for
-it: 100, the cutoff's 107, the Q's 10, a type's 2 ([voices.md](../module/voices.md), *Machines and
+it: 100, the cutoff's 107, the Q's 10, a type's 2 ([voices.md](../module/voices.md), *Instruments and
 patches*).
 
-`u_sound` says a machine's parameters in `cut-it-machines.txt`'s order, the program first: a
+`u_sound` says an instrument's parameters in `cut-it-instruments.txt`'s order, the program first: a
 program change brings that voice's own effect settings with it (Reference), so what's set after it
 is what stands, and a program or a DX7 voice moved on its own says what's been set again behind it
-([voices.md](../module/voices.md), *Machines and patches*).
+([voices.md](../module/voices.md), *Instruments and patches*).
 
 ### Presence: `none`, and that is a fact rather than a gap
 
@@ -165,7 +165,7 @@ diagnostics page's two test voices.
 
 ⛔ **A voice sent this way is written into the FM-1 for good**, over the voice it is on, and is
 still there after a power cycle (Reference). So every one goes into **the FM-1's voice 128**
-(program 127, the `dx7-voice` row's top in `cut-it-machines.txt`), which Cut It keeps for it: the
+(program 127, the `dx7-voice` row's top in `cut-it-instruments.txt`), which Cut It keeps for it: the
 program change first, then the voice. ✅ Voice 002 sounded the same before and after, and 128 took
 the voice (2026-11-24, recorded from the FM-1's USB audio).
 

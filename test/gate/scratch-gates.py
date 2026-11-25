@@ -532,7 +532,7 @@ def voices(g):
               "Cut It/u_perform.pd", "Cut It/u_perform.lua", "Cut It/u_perform-lua.pd_lua",
               "Cut It/cut-it-controls.txt", "test/gate/lua/u_voices_test.lua",
               "test/gate/lua/u_perform_test.lua", "test/gate/lua/u_sound_test.lua", "test/gate/lua/u_once_test.lua", "Cut It/u_once.lua",
-              "Cut It/u_sound.lua", "Cut It/cut-it-machines.txt", "Cut It/cut-it-factory.txt")
+              "Cut It/u_sound.lua", "Cut It/cut-it-instruments.txt", "Cut It/cut-it-factory.txt")
     # The rules first, in Lua and without Pd: the pages, the voices, what's in play. Then the Pd half:
     # the cords between them through the running instrument.
     print("   the voices' rules, in Lua ...")

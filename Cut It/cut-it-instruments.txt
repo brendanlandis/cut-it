@@ -1,4 +1,4 @@
-# Each machine's parameters: <machine> <param> <how> <n> <default 0-1> [<top> [<switch>]]. how: cc <n>, a
+# Each instrument's parameters: <instrument> <param> <how> <n> <default 0-1> [<top> [<switch>]]. how: cc <n>, a
 # control change to the device, 0 to <top> (127 with none), and with a <switch>, that controller before it,
 # 1 while the value is above 0 and 0 at 0 (an effect's on-off, kept with its amount); pc <n>, its program
 # change, <n> programs; pd, a Pd voice's own; bank <n> and voice <n>, a DX7 voice from the library, one of <n>

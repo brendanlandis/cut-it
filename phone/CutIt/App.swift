@@ -93,7 +93,7 @@ struct RootView: View {
     }
 }
 
-/// A column: eight buttons, in each voice's color; dark for a row with none. Over each, the page its buttons open;
+/// A column: eight buttons, in each voice's color; dark for a row with none. Over each, what its buttons are for;
 /// under the left one, songs.
 struct Rail: View {
     enum Side { case left, right }
@@ -108,10 +108,11 @@ struct Rail: View {
         }
     }
 
-    /// What the column's buttons open, in the manual's words for the two pages (Brendan, 2026-11-24: "the left and
-    /// right columns are easy to forget about the functionality of. Can they have small labels on top?").
+    /// What the column's buttons are for: the voices' behaviors on the left, their instruments on the right
+    /// (Brendan, 2026-11-24: "the left and right columns are easy to forget about the functionality of. Can they
+    /// have small labels on top?"; these words, 2026-11-25).
     private var head: some View {
-        Text(side == .left ? "behavior" : "setup")
+        Text(side == .left ? "behaviors" : "instruments")
             .font(.system(size: 12)).foregroundStyle(Theme.dim).lineLimit(1).minimumScaleFactor(0.7)
             .frame(width: 58, height: 16)
     }
@@ -157,7 +158,7 @@ struct Rail: View {
 
     private func title(_ v: Cut.Voice?, _ row: Int) -> String {
         guard let v else { return side == .right ? "+" : "" }
-        return side == .left ? v.shown : v.machine
+        return side == .left ? v.shown : v.instrument
     }
 
     private func fill(_ v: Cut.Voice?, _ row: Int, _ lit: Bool) -> Color {

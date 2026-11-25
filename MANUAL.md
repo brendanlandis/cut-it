@@ -26,9 +26,9 @@ Five surfaces, each with one job. The same control does the same thing on every 
 
 A song has up to eight voices, one a row, each with its own color on every surface.
 
-- The button on the **right** is the voice's setup: what machine it plays, its name, and its sound.
+- The button on the **right** is the voice's setup: what instrument it plays, its name, and its sound.
 - The button across from it on the **left** is what the voice does: a drum page, chords, a melody, or the nanoKEY.
-- The phone has the same two columns down its sides, headed behavior and setup. Pressing either device's button moves both.
+- The phone has the same two columns down its sides, headed behaviors and instruments. Pressing either device's button moves both.
 - A dark row has no voice yet. Its right button starts one.
 - Pressing the lit button again goes back to the performance page.
 
@@ -88,9 +88,9 @@ Play around with a section until you like it, then press this.
 
 ### Starting a voice
 
-Press an unused row's right button. On the phone, give it a name, say what it **does**, and choose its **machine**.
+Press an unused row's right button. On the phone, give it a name, and choose its **behavior** and its **instrument**.
 
-| Does | Plays on | There can be |
+| Behavior | Plays on | There can be |
 |---|---|---|
 | drums | The kit | One, for now |
 | harmony | FM, strings, sine, saw or square | Two |
@@ -102,7 +102,7 @@ second. Choosing a synth another voice has asks first, since it can only play on
 
 ### Patches
 
-A patch is a machine's saved sound.
+A patch is an instrument's saved sound.
 
 - **Factory patches** are starting points, outside any song. Choosing one copies it into the song, which depends on nothing
   after that. They show in the patch dropdown with a +.
@@ -127,16 +127,16 @@ A sine, saw or square voice's patch can hold **distortion** (drive and its type)
 
 ### The setup page
 
-- **Phone:** name, what it does, machine and patch along the top, and every parameter as a knob.
-- **Launchpad:** the first eight parameters as columns to tap; below, the machine's song patches; on the bottom row, eight
+- **Phone:** name, behavior, instrument and patch along the top, and every parameter as a knob.
+- **Launchpad:** the first eight parameters as columns to tap; below, the instrument's song patches; on the bottom row, eight
   notes to hear it with.
 
 The kit's sound (each pad's volume, pitch and effects) is on the phone's drum page. Save to patch on a drum voice makes that
 what it snaps back to.
 
-### Each machine's parameters
+### Each instrument's parameters
 
-| Machine | Parameters |
+| Instrument | Parameters |
 |---|---|
 | FM (FM-1) | program, filter, cutoff, resonance, reverb, delay, drive, chorus, phaser, filter-type, reverb-type, reverb-decay, delay-time, delay-feedback, drive-tone, drive-level, chorus-rate, chorus-depth, phaser-rate, phaser-depth, dx7-bank, dx7-voice |
 | strings (Streichfett) | program, registration, octaves, release, crescendo, ensemble-type, ensemble, solo-tone, tremolo, split, solo-sustain, solo-attack, solo-decay, balance, fx-type, animate, phaser, reverb |
@@ -146,7 +146,7 @@ what it snaps back to.
 
 ### Factory patches
 
-| Machine | Patches |
+| Instrument | Patches |
 |---|---|
 | sine | soft, bell |
 | saw | pluck, pad, brass |
@@ -198,7 +198,7 @@ A note or chord you edit by hand is **pinned**: rolls and drift leave it alone u
 
 ### Keys
 
-The nanoKEY plays the voice on show. A voice that does keys has nothing else: choose its machine and play.
+The nanoKEY plays the voice on show. A voice that does keys has nothing else: choose its instrument and play.
 
 ## In play
 
@@ -234,7 +234,7 @@ The nanoKONTROL's ninth group isn't used.
 
 ### What can be taken into play
 
-Besides these, every parameter of a voice's machine.
+Besides these, every parameter of a voice's instrument.
 
 | Control | Part | Kind |
 |---|---|---|
@@ -378,5 +378,5 @@ Generated from the tables the instrument reads, so nothing can go unlisted.
 |---|---|
 | Launchpad pad, row 8, column 1 | the diagnostic screen |
 | Launchpad pad, row 8, column 2 | test mode |
-| Launchpad pad, row 8, column 3 | machine vox1 |
-| Launchpad pad, row 8, column 4 | machine vox2 |
+| Launchpad pad, row 8, column 3 | instrument vox1 |
+| Launchpad pad, row 8, column 4 | instrument vox2 |

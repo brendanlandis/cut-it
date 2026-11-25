@@ -2,9 +2,9 @@
 
 ## Starting a voice
 
-Press an unused row's right button. On the phone, give it a name, say what it **does**, and choose its **machine**.
+Press an unused row's right button. On the phone, give it a name, and choose its **behavior** and its **instrument**.
 
-| Does | Plays on | There can be |
+| Behavior | Plays on | There can be |
 |---|---|---|
 | drums | The kit | One, for now |
 | harmony | FM, strings, sine, saw or square | Two |
@@ -16,7 +16,7 @@ second. Choosing a synth another voice has asks first, since it can only play on
 
 ## Patches
 
-A patch is a machine's saved sound.
+A patch is an instrument's saved sound.
 
 - **Factory patches** are starting points, outside any song. Choosing one copies it into the song, which depends on nothing
   after that. They show in the patch dropdown with a +.
@@ -41,13 +41,13 @@ A sine, saw or square voice's patch can hold **distortion** (drive and its type)
 
 ## The setup page
 
-- **Phone:** name, what it does, machine and patch along the top, and every parameter as a knob.
-- **Launchpad:** the first eight parameters as columns to tap; below, the machine's song patches; on the bottom row, eight
+- **Phone:** name, behavior, instrument and patch along the top, and every parameter as a knob.
+- **Launchpad:** the first eight parameters as columns to tap; below, the instrument's song patches; on the bottom row, eight
   notes to hear it with.
 
 The kit's sound (each pad's volume, pitch and effects) is on the phone's drum page. Save to patch on a drum voice makes that
 what it snaps back to.
 
-{{machines}}
+{{instruments}}
 
 {{factory}}

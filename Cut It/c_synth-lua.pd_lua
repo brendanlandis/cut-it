@@ -2,7 +2,7 @@
 -- messages into calls on the rules and the rules' answers into outlets, and nothing else: what
 -- the router does is in c_synth.lua. ref/module/synths.md.
 --
--- inlet 1: <note> <velocity> from m_nanokey, 0 a release, machine <choice> from u_voices, synth
+-- inlet 1: <note> <velocity> from m_nanokey, 0 a release, instrument <choice> from u_voices, synth
 -- <choice> and velocity <on or off> from u_net. inlet 2: c_synth.pd's own -- restore <the saved choice>,
 -- restore-velocity <the saved setting>, restore-programs <fm> <streichfett>, init.
 -- outlet 1: note <n> <v> and program <n>, to m_fm1. outlet 2: the same, to m_streich. outlet

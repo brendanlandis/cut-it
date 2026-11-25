@@ -1,6 +1,6 @@
 #N canvas 20 20 3000 1400 12;
 #X declare -lib pdlua;
-#X text 20 20 u_sound -- a voice's sound: each machine's parameters \, the song's patches and the factory's. The rules are in u_sound.lua \, the machines in cut-it-machines.txt and the factory's patches in cut-it-factory.txt. ref/module/voices.md, f 58;
+#X text 20 20 u_sound -- a voice's sound: each instrument's parameters \, the song's patches and the factory's. The rules are in u_sound.lua \, the instruments in cut-it-instruments.txt and the factory's patches in cut-it-factory.txt. ref/module/voices.md, f 58;
 #X text 700 20 inlet 1: u_map's <row>:<param> <value>. inlet 2: the phone's sound <cmd> ... \, through u_net. Outlet 1: to m_fm1. Outlet 2: to m_streich. Outlet 3: tone \, to the c_melody engines. Outlet 4: sound <atoms> \, to u_net. It hears voices-sound., f 58;
 #X obj 20 300 inlet;
 #X obj 300 300 inlet;

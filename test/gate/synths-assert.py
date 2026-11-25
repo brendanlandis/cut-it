@@ -61,7 +61,7 @@ def run_asserts(cap, state):
             and not notes("PHONE-VEL-ON") and not errs("PHONE-VEL-ON"),
             "state %s noteout %s err %s" % (vputs("PHONE-VEL-ON"), notes("PHONE-VEL-ON"),
                                             errs("PHONE-VEL-ON")))
-    A.check("⛔ a voice's button chooses its machine, and looking at its page changes nothing in the "
+    A.check("⛔ a voice's button chooses its instrument, and looking at its page changes nothing in the "
             "song: no put, and nothing said", not puts("VOICE-FM") and not errs("VOICE-FM"),
             "state %s err %s" % (puts("VOICE-FM"), errs("VOICE-FM")))
     A.check("a key on any channel of the nanoKEY's port, 50, plays the FM-1 alone",

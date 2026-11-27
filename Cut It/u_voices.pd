@@ -78,3 +78,5 @@
 #X connect 36 0 28 0;
 #X connect 4 9 37 0;
 #X connect 4 10 38 0;
+#X obj 2260 800 s voices-drums;
+#X connect 4 11 39 0;

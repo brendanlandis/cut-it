@@ -14,6 +14,9 @@ Voices are the section's: each section has its own, and a new section starts wit
 | melody | FM, strings, sine, saw or square | Two |
 | keys | FM, strings, sine, saw or square | As many as you like |
 
+A section with no drums voice plays no drums. Removing its drums voice, or giving it another behavior, clears the section's
+drum pattern, so a drums voice added back starts from an empty one; revert brings the pattern back until you save.
+
 A melody follows the chords of the harmony voice in the same place: the first melody the first harmony, the second the
 second. Choosing a synth another voice has asks first, since it can only play one part.
 

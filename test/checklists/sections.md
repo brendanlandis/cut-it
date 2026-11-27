@@ -14,7 +14,7 @@ across a real power cut.
   under the middle column, the sections; then on the drum page change the drum pattern while the new section plays
   (step 3 says how to play it), and on the songs page its tempo, with the plus or minus beside tempo.
 
-12 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why
+13 steps. How to read one, and how to send a **Send** line: [the checklists' README](README.md). Why
 each thing behaves as it does: [songs](../../ref/module/songs.md).
 
 - [ ] **1. The top row at rest**
@@ -76,3 +76,8 @@ each thing behaves as it does: [songs](../../ref/module/songs.md).
   - **Need:** The songs page, a section selected in the middle column.
   - **Do:** Tap the **…** under the middle column, then **name**. Delete the name, type a new one with a capital, a space and a digit, and tap **Done**. Then do it again and tap **Cancel**.
   - **Pass if:** An alert reads section's name over a field holding the selected section's name. **Done** closes it, and the row and the right column's heading read the new name in lowercase. **Cancel** leaves the name as it was.
+
+- [ ] **13. A section with no drums voice**
+  - **Need:** Playing, two sections, each with a drums voice and a drum pattern, section 2 playing, save and revert dark.
+  - **Do:** Open the drums voice's setup page, its row's right button, and tap **remove voice** on the phone. Press revert. Tap **remove voice** again, then queue section 1 with its top-row button, and once it has come in, section 2. Last, on section 2, add a drums voice on an unused row and open its drum page.
+  - **Pass if:** The drums stop at the removal, and save lights red and revert gray; revert brings the voice and the drums back, playing. After the second removal section 1 comes in with its drums on its first step, the downbeat played, and section 2 comes back with none, its first step silent too. The drums voice added back plays nothing and its drum page is empty, while the arrangement page's time signature, swing, drunk and last step are as they were.

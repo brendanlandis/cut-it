@@ -224,3 +224,6 @@
 #X obj 1800 530 list prepend restore-old;
 #X connect 35 1 114 0;
 #X connect 114 0 37 0;
+#X obj 2200 640 r voices-drums;
+#X text 2200 760 voiced <1 or 0> and clear \, from u_voices: whether a row of the section is a drums voice \, and its drums voice gone (ref/module/voices.md)., f 30;
+#X connect 115 0 26 1;

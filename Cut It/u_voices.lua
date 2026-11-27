@@ -18,6 +18,8 @@
 --   {"sound", "rows", {row, 8 of instrument, engine, line}}   u_sound: the same, and each row's instrument
 --   {"phone", "voices", {atoms}}             u_net: /cutit/voices
 --   {"disp", "led", {state}}                 g_led: white while the songs page is open
+--   {"drums", "voiced", {1 or 0}}            c_steps: whether a row is a drums voice, so the kit plays
+--   {"drums", "clear", {}}                   c_steps: the drums voice went, and the section's pattern
 --   {"err", "fail" | "warn", {"u_voices", text}}   err (C-12)
 
 local R = {}
@@ -190,10 +192,38 @@ local function go(st, kind, row, out)
   return show(st, out)
 end
 
+-- Whether a row is a drums voice. With none the kit plays nothing (Brendan, 2026-11-26), as the
+-- generator's lines play nothing with no voice of theirs (assign): c_steps is told when it changes.
+function R.has_drums(st)
+  for r = 1, R.ROWS do
+    local v = st.voices[r]
+    if v and v.behavior == "drums" then return true end
+  end
+  return false
+end
+
+local function tell_drums(st, out)
+  local on = R.has_drums(st) and 1 or 0
+  if st.drums_told ~= on then
+    st.drums_told = on
+    out[#out + 1] = { "drums", "voiced", { on } }
+  end
+  return out
+end
+
 local function changed(st, out)
   out[#out + 1] = { "save", "voices", R.line(st) }
   for _, e in ipairs(assign(st)) do out[#out + 1] = e end
+  tell_drums(st, out)
   return tell_rows(st, out)
+end
+
+-- A drums voice gone, removed or made another: the section's drum pattern goes with it (Brendan,
+-- 2026-11-26), so one added back starts from an empty pattern. c_steps clears it, and puts that as
+-- a change to the section, which revert brings back.
+local function lost_drums(was, out)
+  if was == "drums" then out[#out + 1] = { "drums", "clear", {} } end
+  return out
 end
 
 -- ------------------------------------------------------------------ the buttons
@@ -284,9 +314,10 @@ function R.set_behavior(st, a)
   if not FOR[m] then return { R.fail("bad-behavior") } end
   if v.behavior == m then return {} end
   if full(st, m, r) then return { report("warn", "too-many-" .. m) } end
+  local was = v.behavior
   v.behavior = m
   if not FOR[m][v.instrument] then v.instrument = first_free(st, m, r) end
-  local out = changed(st, {})
+  local out = lost_drums(was, changed(st, {}))
   if st.row == r then show(st, out) end
   return out
 end
@@ -334,8 +365,9 @@ end
 function R.remove(st, a)
   local r = row_of(a)
   if not (r and st.voices[r]) then return {} end
+  local was = st.voices[r].behavior
   st.voices[r] = nil
-  local out = changed(st, {})
+  local out = lost_drums(was, changed(st, {}))
   if st.row == r then go(st, "perform", 0, out) end
   return out
 end
@@ -385,6 +417,7 @@ function R.restore(st, a)
     seed(st)
     out[1] = { "seed", "seed", R.line(st) }
   end
+  tell_drums(st, out)
   local due = st.page_due
   st.page_due = nil
   if was == table.concat(R.line(st), " ") and not due then return out end

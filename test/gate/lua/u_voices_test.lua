@@ -236,6 +236,30 @@ equal("⛔ the last voice removed stays removed when the section starts again",
       { table.concat(line, " "), next((function() R.restore(st, line) return st.voices end)()) },
       { string.rep("-", 24, " "), nil })
 
+print("\n--- the drums voice, for c_steps ---")
+-- A section with no drums voice plays no drums, and losing its drums voice throws the section's
+-- pattern away (Brendan, 2026-11-26): c_steps hears voiced when a row's being one changes, and clear
+-- when the drums voice goes.
+local function drums(out) return of(out, "drums") end
+st = R.new()
+equal("⛔ the first section: c_steps told it has a drums voice", drums(R.restore(st, {})),
+      { { "drums", "voiced", { 1 } } })
+equal("⛔ one with none: told it has none, and nothing cleared, since starting a section loses nothing",
+      drums(R.restore(st, none)), { { "drums", "voiced", { 0 } } })
+equal("... and the same again says nothing", drums(R.restore(st, none)), {})
+st = seeded()
+equal("⛔ the drums voice removed: c_steps told there is none, and to clear the section's pattern",
+      drums(R.remove(st, { 1 })), { { "drums", "voiced", { 0 } }, { "drums", "clear", {} } })
+equal("⛔ ... and added back: told there is one again, and nothing cleared",
+      drums(R.add(st, { 5, "drums", "kit" })), { { "drums", "voiced", { 1 } } })
+equal("another voice removed: nothing for c_steps", drums(R.remove(st, { 2 })), {})
+equal("nor a drums voice renamed", drums(R.rename(st, { 5, "kick", "snare" })), {})
+equal("⛔ the drums voice made another behavior: told there is none, and to clear",
+      drums(R.set_behavior(st, { 5, "keys" })), { { "drums", "voiced", { 0 } }, { "drums", "clear", {} } })
+equal("⛔ ... and a voice made drums: told there is one", drums(R.set_behavior(st, { 3, "drums" })),
+      { { "drums", "voiced", { 1 } } })
+equal("a behavior it doesn't know, on the drums voice: refused, and nothing cleared", drums(R.set_behavior(st, { 3, "dance" })), {})
+
 print("\n--- what the surfaces show ---")
 st = seeded()
 R.right(st, 2)
@@ -250,7 +274,7 @@ equal("⛔ every field of it writes as many atoms as it says, so each is where t
 print("\n--- the Pd face ---")
 local class = T.load_class(DIR .. "u_voices-lua.pd_lua", DIR)
 local o = T.new(class, {})
-check("an object has three inlets and eleven outlets", o.inlets == 3 and o.outlets == 11)
+check("an object has three inlets and twelve outlets", o.inlets == 3 and o.outlets == 12)
 local at_init = T.send(o, 3, "init", {})
 equal("init: the bang on outlet 8 that says it loaded", at_init[#at_init], { 8, "bang", {} })
 local sent = T.send(o, 3, "restore", { "voices" })
@@ -270,6 +294,12 @@ equal("... and one it doesn't know is bad-selector, on outlet 7", T.send(o, 1, "
       { { 7, "fail", { "u_voices", "bad-selector" } } })
 sent = T.send(o, 2, "left", { 1 })
 equal("the phone's left 1, the lit one: back to the performance page", sel(sent, 1), { "perform" })
+sent = T.send(o, 2, "remove", { 1 })
+equal("⛔ the drums voice removed: voiced 0 and clear on outlet 12, for c_steps", (function()
+  local r = {}
+  for _, m in ipairs(sent) do if m[1] == 12 then r[#r + 1] = { m[2], m[3] } end end
+  return r
+end)(), { { "voiced", { 0 } }, { "clear", {} } })
 sent = T.send(o, 3, "restore", { "page", "voice", 2 })
 equal("restore page on inlet 3", sel(sent, 1), { "harmony" })
 equal("a key not its own is nothing", T.send(o, 3, "restore", { "tempo", 120 }), {})

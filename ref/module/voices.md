@@ -54,6 +54,8 @@ itself.
 | A new section | Copies them, as it copies every part | unknown |
 | A section starting | `restore voices`, first of its parts, on step 1 while the transport runs. The same voices as the last section's say nothing. Others assign the engines and tell the rows, and the page is said again only when what it hangs on changed, its voice's behavior, instrument or engine; a page whose row is gone gives way to the performance page (`test/gate/lua/u_voices_test.lua`) | verified |
 | A voice removed | The performance page, if it was on show | unknown |
+| The drums voice removed, or given another behavior | Takes the section's drum pattern with it (Brendan, 2026-11-26), so a drums voice added back starts from an empty one: `clear` on `voices-drums`, and `c_steps` sets every hit and each track's own last step, randomness, mute and solo back to a blank section's and puts that, a change to the section like any other, which revert brings back. The time signature, swing, drunkenness and global last step stay, the section's clock and not the kit's, and so does the kit's sound, the song's (`test/gate/lua/u_voices_test.lua`, `test/gate/lua/c_steps_test.lua`) | verified |
+| A section with no drums voice | Plays no drums, as harmony and melody play nothing with no voice of theirs (Brendan, 2026-11-26): `voiced <1 or 0>` on `voices-drums` whenever a row's being one changes, and `c_steps` plays no hit while it is 0, its playhead and loops going on. It goes by the rows, not the pattern, so a section saved with a pattern and no drums voice is quiet too. A section starting while the transport runs says it on its step 1, with its voices, and `c_steps` hears it before it decides that step, so the downbeat plays by the new section's rows (`test/gate/lua/c_steps_test.lua`) | verified |
 | A voice's engine | Each harmony and melody voice by row order: the first of each engine 1's, the second engine 2's. `assign <engine> <h or m> <instrument or off>` tells each `c_melody` what it plays on; `active <engine>` which one the page's voice is in, 0 for neither, so the Launchpad, the phone and the nanoKEY reach only that one ([synths.md](synths.md)) | unknown |
 | The nanoKEY | `instrument <fm or strings>` to `c_synth`, on a page whose voice is on hardware. The performance page, and a voice on a Pd instrument, leave it on the last ([synths.md](synths.md)) | unknown |
 
@@ -67,7 +69,7 @@ itself.
 | Outlet 2 | To the `c_melody`s, `assign` and `active` | unknown |
 | Outlet 3 | To `c_synth`, `instrument <instrument>` | unknown |
 | Outlet 4 | To `u_net`, `voices <page> <kind> <row> <24 atoms>`, sent as `/cutit/voices`, when it changes and on every heartbeat | unknown |
-| Buses | Writes `mode`, `put section voices`, `put seed-section voices`, `put auto page` on `state`, `err`, and `voices-rows` to `u_perform`, the row on show and each row's engine. Hears `start`, `stop`, `panic` and `restore voices` and `restore page` on `state` | unknown |
+| Buses | Writes `mode`, `put section voices`, `put seed-section voices`, `put auto page` on `state`, `err`, `voices-rows` to `u_perform`, the row on show and each row's engine, and `voices-drums` to `c_steps`, `voiced` and `clear`. Hears `start`, `stop`, `panic` and `restore voices` and `restore page` on `state` | unknown |
 
 ### Taking a control into play
 

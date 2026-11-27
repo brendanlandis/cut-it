@@ -53,7 +53,7 @@ Each part puts at load and on every change, and takes its restore.
 | Key | Part | Atoms | Evidence |
 |-----|------|-------|----------|
 | `perform` | `u_perform` | The controls in play: each one's physical control, destination, arg, row and value, five atoms ([voices.md](voices.md)). A section with none is told so, `restore perform` with nothing after it, first of all, or the last section's would stay | unknown |
-| `drums` | `c_steps` | The pattern, 581 numbers, 743 with a track muted or soloed: 512 velocities, each track's own last step and randomness, the time signature, the drunkenness, the swing and the global last step ([sequencer.md](sequencer.md), *The pattern in a section*). The kit's sound is the song's, `put song kit` | unknown |
+| `drums` | `c_steps` | The pattern, 581 numbers, 743 with a track muted or soloed: 512 velocities, each track's own last step and randomness, the time signature, the drunkenness, the swing and the global last step ([sequencer.md](sequencer.md), *The pattern in a section*). The kit's sound is the song's, `put song kit`. Unheard while the section has no drums voice, and cleared when its drums voice goes ([voices.md](voices.md)) | unknown |
 | `melody`, `melody-2` | `c_melody`, each engine's | The generator, `R.save`'s numbers: its controls, the 32 steps, the 8 chords and the fields added later ([synths.md](synths.md), *The generator*). Put at load as it starts, so a blank section holds it. Its restore waits for step 1, as the tempo's and the programs' do | unknown |
 | `programs` | `c_synth` | The FM-1's program, then the Streichfett's: 0 to 127, or `none` ([synths.md](synths.md)) | unknown |
 | `synth` | `c_synth` | `fm` or `strings` | unknown |

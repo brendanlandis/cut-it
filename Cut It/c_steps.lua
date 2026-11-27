@@ -217,6 +217,7 @@ function R.new(bank)
                randomness = {}, vol = {}, pitch = {}, heard = {}, rolled = {}, hist = {},
                rep = 0, rk = 0, win = {}, rand = math.random,
                bpm = R.BOOT_BPM, pair = 0, pair_swing = R.BOOT_SWING, taping = false, fast = false, ran = {},
+               voiced = true,
                knob = { last = { held = true }, track = { held = true },
                         swing = { held = true } } }
   for i = 1, R.TRACKS * R.STEPS do st.pattern[i] = 0 end
@@ -911,7 +912,8 @@ end
 -- the reverb and the wet sound's last steps loop in time with them (R.tape). Every track plays its
 -- hit, track 1 first, all in one logical instant, its rolled pitch or its set pitch told first
 -- when c_kit holds another, but a track muted, or left out of a solo, plays nothing (R.sounds):
--- not what is written, not a coin its randomness adds, not a repeat's. Mute and solo are asked
+-- not what is written, not a coin its randomness adds, not a repeat's; and none plays while the
+-- section has no drums voice (R.voiced). Mute and solo are asked
 -- now, not when the step was decided, so a track muted or soloed under a held repeat is silenced or
 -- soloed in it; and its loop and its repeat go on, so it comes back in where it would have been.
 -- Then the playhead, the selected track's step, and the step clock's rate for the step's length,
@@ -951,7 +953,7 @@ function R.tick(st)
   if #h > R.REPEATS then table.remove(h, 1) end
   local solo = R.any_solo(st)
   for t = 1, R.TRACKS do
-    if d.vel[t] >= 1 and R.sounds(st, t, solo) then
+    if st.voiced and d.vel[t] >= 1 and R.sounds(st, t, solo) then
       heard_pitch(st, t, d.pitch[t] or st.pitch[t], out)
       out[#out + 1] = { "note", "pad", { R.pad(st, t), d.vel[t] } }
     end
@@ -981,6 +983,43 @@ function R.take_one(st)
   end
   for _, e in ipairs(st.on_one or {}) do out[#out + 1] = e end
   st.on_one = nil
+  return out
+end
+
+-- Whether a tick should send what waits for step 1 (R.take_one) before its step is decided, so all
+-- that a section brings on the 1 has landed by then. Its voices come then (u_song's R.ON_THE_ONE),
+-- and u_voices answers in the same instant with whether a row is a drums voice (R.voiced): decided
+-- first, a section's step 1 would play by the old section's rows, a downbeat lost or a stray hit.
+-- Not while rush waits for the step, which it takes instead (R.internal.tick). c_steps-lua sends
+-- it, then the tick, whose own take_one then finds nothing; and only when something waits, since
+-- every answer costs the phone's state a look, eight times a second.
+function R.one_waits(st)
+  return st.rush ~= "waiting" and (st.bar_passed or st.on_one ~= nil) or false
+end
+
+-- voiced <1 or 0>, from u_voices: whether any row of the section is a drums voice. With none the kit
+-- plays nothing of the pattern (Brendan, 2026-11-26), as harmony and melody go quiet with no voice
+-- of theirs; the pattern stays, so a section saved with one and no drums voice is quiet too. Until
+-- u_voices says, it plays.
+function R.voiced(st, on)
+  st.voiced = num(on) ~= 0
+  return {}
+end
+
+-- clear, from u_voices: the section's drums voice went, removed or given another behavior, and its
+-- pattern goes with it (Brendan, 2026-11-26), so one added back starts from nothing. Every hit, and
+-- each track's own last step, randomness, mute and solo, back to a blank section's; the time
+-- signature, swing, drunkenness and global last step stay, the section's clock and not the kit's,
+-- and the kit's sound is the song's (R.kit_line). Put, a change to the section like any other, so
+-- revert brings it back.
+function R.clear(st)
+  for i = 1, R.TRACKS * R.STEPS do st.pattern[i] = 0 end
+  for t = 1, R.TRACKS do
+    st.own[t], st.randomness[t], st.mute[t], st.solo[t] = 0, 0, 0, 0
+  end
+  rearm(st.knob.track)
+  local out = { R.save(st), R.page_last(st), R.steps(st) }
+  tell_quiet(st, out)
   return out
 end
 
@@ -1548,7 +1587,8 @@ R.presses = {
 }
 
 -- What c_steps.pd itself sends: the clock's step, with the tempo bus's BPM, which a step decided
--- keeps for a held repeat's tails (R.tape); PLAY, STOP, u_state's restore, and the load.
+-- keeps for a held repeat's tails (R.tape); PLAY, STOP, u_state's restore, and the load; and
+-- u_voices', voiced and clear.
 -- The drum page's controls as a control in play moves them, 0 to 1 (Brendan, 2026-11-06), each to what the
 -- phone's own command takes: <name>-<track>, or the kit's and the song's with no track.
 local function scale(v, lo, hi)
@@ -1584,6 +1624,8 @@ R.internal = {
   end,
   start = function(st) return R.start(st) end,
   stop = function(st) return R.stop(st) end,
+  voiced = function(st, a) return R.voiced(st, a[1]) end,
+  clear = function(st) return R.clear(st) end,
   restore = function(st, a) return R.restore(st, a) end,
   ["restore-old"] = function(st, a) return R.restore_old(st, a) end,
   init = function(st) return R.boot(st) end,

@@ -14,7 +14,8 @@
 -- size, damping and verb-type, and each track's mute, solo and rnd-pitch, from u_net.
 -- inlet 2: c_steps.pd's own -- tick <bpm>, start, stop, restore <the saved line>, restore-old <the
 -- line the auto key held before sections>, init, and sync off the state bus: put the pattern now if
--- it is being held.
+-- it is being held; and u_voices', off voices-drums: voiced <1 or 0>, whether a row is a drums
+-- voice, and clear, the drums voice gone.
 -- outlet 1: pad <pad> <velocity>, and a track's vol <pad> <dB> and pitch <pad> <semitones> and
 -- its effects, drive, tone, dist, char, delay-time, feedback, delay and send <pad> <value>, and the
 -- reverb's size and damping <value> and verb-type <0-2>, and a held repeat's tape <span> <units>
@@ -120,6 +121,8 @@ end
 
 function StepsLua:in_2(sel, atoms)
   if sel == "sync" then return self:save_now() end
+  -- What waits for step 1 goes, and is answered, before the step is decided (R.one_waits).
+  if sel == "tick" and R.one_waits(self.state) then self:answer(sel, R.take_one, self.state) end
   if sel == "restore" or sel == "restore-old" then
     -- the pattern is replaced: what was held is the old one's, and u_song's sync put it already
     F.stop(self, "save")

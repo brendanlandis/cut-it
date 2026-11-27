@@ -2103,6 +2103,87 @@ equal("⛔ STOP lets go of what waits, since no step 1 is coming", (function()
   return R.internal.stop(st, {})[1][1]
 end)(), "page")
 
+print("\n--- a section with no drums voice ---")
+-- A section none of whose rows is a drums voice plays no drums, and losing its drums voice throws
+-- its pattern away (Brendan, 2026-11-26). u_voices says which: voiced <1 or 0>, and clear.
+st = R.new(1)
+R.internal.init(st, {})
+for k = 1, 2 do R.presses.step(st, { k, 100 }) end
+R.presses.last(st, { at(16) })
+R.presses.last(st, { at(2) })
+R.internal.start(st, {})
+equal("until u_voices says, the kit plays", run(st, 2), "1:1@95 2:1@95")
+equal("⛔ voiced 0: nothing is heard, and the playhead goes on", { R.internal.voiced(st, { 0 }), run(st, 2) },
+      { {}, "1: 2:" })
+equal("⛔ ... and the pattern is kept: voiced 1, it plays again", (function()
+  R.internal.voiced(st, { 1 })
+  return run(st, 2)
+end)(), "1:1@95 2:1@95")
+R.internal.voiced(st, { 0 })
+st.rand = dice(0.1, 0.99, 0.123)
+R.presses.randomness(st, { 3, 100 })
+equal("⛔ a coin its randomness flips adds no hit either, and the dice still roll, so the next ones are "
+      .. "the same with a drums voice or without", { run(st, 1), st.rand() }, { "1:", 0.123 })
+st = R.new(1)
+R.internal.init(st, {})
+R.presses.select(st, { 3 })
+for k = 1, 4 do R.presses.step(st, { k, 100 }) end
+R.presses["set-track-last"](st, { 3, 8 })
+R.presses.randomness(st, { 3, 40 })
+R.presses.mute(st, { 5, 1 })
+R.presses.solo(st, { 7, 1 })
+R.presses.num(st, { 1 })
+R.presses.drunk(st, { 30 })
+R.presses["set-swing"](st, { 60 })
+R.presses["set-last"](st, { 12 })
+R.presses.vol(st, { 3, -6 })
+local cleared = R.internal.clear(st, {})
+equal("⛔ clear: every hit, each track's own last step, randomness, mute and solo back to a blank "
+      .. "section's, put at once; the time signature, drunkenness, swing and global last step stay",
+      cleared[1], { "save", "list", line(zeros(CELLS), nil, { num = 5, drunk = 30, swing = 60, last = 12 }) })
+equal("⛔ ... and the page told: the selected track's last step and its steps, and no pad quiet",
+      { cleared[2], cleared[3], cleared[4] },
+      { { "page", "last", { 12 } }, { "page", "steps", zeros(32) }, quiet() })
+equal("⛔ the kit's sound is the song's, and stays", st.vol[3], -6)
+equal("a clear of what is clear already puts the same line, and tells the page no pad", (function()
+  local again = R.internal.clear(st, {})
+  return { #again, again[1] }
+end)(), { 3, cleared[1] })
+
+print("\n--- a section's drums voice comes on the 1 ---")
+-- A section's voices land on its step 1, with what u_song holds for it, and u_voices says then whether
+-- one is a drums voice: so c_steps-lua sends what waits for the 1 before the step is decided.
+local function on_the_one(voiced_next)
+  local q = T.new(class, { 1 })
+  T.send(q, 2, "init", {})
+  T.send(q, 1, "step", { 1, 100 })
+  T.send(q, 1, "set-last", { 2 })
+  T.send(q, 2, "voiced", { voiced_next == 1 and 0 or 1 })
+  T.send(q, 2, "start", {})
+  T.send(q, 2, "tick", {})
+  T.send(q, 2, "tick", {})
+  -- u_song, on one: the next section's voices, and u_voices' answer, in the same instant.
+  q.outlet = function(self, n, sel, atoms)
+    table.insert(self.sent, { n, sel, atoms })
+    if n == 9 and sel == "one" then self:in_2("voiced", { voiced_next }) end
+  end
+  local pads = {}
+  for _, m in ipairs(T.send(q, 2, "tick", {})) do
+    if m[1] == 1 and m[2] == "pad" then pads[#pads + 1] = m[3][1] end
+  end
+  return pads
+end
+check("⛔ R.one_waits: only once a bar has passed, or a restore waits", (function()
+  local q = R.new(1)
+  local before = R.one_waits(q)
+  q.bar_passed = true
+  local after = R.one_waits(q)
+  q.rush = "waiting"
+  return before == false and after == true and R.one_waits(q) == false
+end)(), "")
+equal("⛔ a section with no drums voice after one with: its step 1 is silent", on_the_one(0), {})
+equal("⛔ one with a drums voice after one without: its step 1 plays, the downbeat not lost", on_the_one(1), { 1 })
+
 print("\n--- the saved-tempo pad ---")
 st = R.new(1)
 R.internal.start(st, {})

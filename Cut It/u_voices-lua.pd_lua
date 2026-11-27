@@ -7,18 +7,20 @@
 -- seed and page <atoms>, to the state bus as put section voices, put seed-section voices and put auto page. outlet 4: to the c_melody engines,
 -- assign and active. outlet 5: instrument <instrument>, to c_synth. outlet 6: voices <atoms>, to u_net.
 -- outlet 7: err. outlet 8: a bang on init, the proof the Lua loaded. outlet 9: rows, to u_perform. outlet 10: rows, to u_sound. outlet 11: led <state>, to disp.
+-- outlet 12: voiced <1 or 0> and clear, to c_steps, on voices-drums.
 
 local VoicesLua = pd.Class:new():register("u_voices-lua")
 
 local R = dofile(VoicesLua._loadpath .. "u_voices.lua")
 
-local OUTLET = { mode = 1, save = 3, seed = 3, page = 3, engine = 4, synth = 5, err = 7, perform = 9, sound = 10, disp = 11 }
+local OUTLET = { mode = 1, save = 3, seed = 3, page = 3, engine = 4, synth = 5, err = 7, perform = 9, sound = 10, disp = 11,
+                 drums = 12 }
 
 local F = dofile(VoicesLua._loadpath .. "lua-face.lua")
 F.carry(VoicesLua, R, OUTLET, 3, 8)
 
 function VoicesLua:initialize()
-  self.inlets, self.outlets = 3, 11
+  self.inlets, self.outlets = 3, 12
   self.state = R.new()
   return true
 end
